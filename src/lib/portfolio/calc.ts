@@ -112,3 +112,6 @@ export function topHoldings(positions: Position[], cash: number, n = 5): RankedH
     .sort((a, b) => b.value - a.value)
     .slice(0, n);
 }
+
+/** Total market value of a group of positions. */
+export const totalValue = (positions: Position[]) => sum(positions.map(marketValue));

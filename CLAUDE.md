@@ -27,6 +27,9 @@ Next.js (App Router) + TypeScript · Tailwind CSS v4 + shadcn/ui (base-ui) · Re
 - `src/app/` — routes (Dashboard `/`, Holdings `/holdings`) and layout shell
 - `src/components/layout/` top bar with horizontal tabs · `shared/` Panel, Num, PageHeader · `ui/` shadcn primitives
 - `src/lib/portfolio/` — ALL portfolio math as pure, tested functions (value, cost, gain/loss, weights)
+- `src/lib/holdings/` — validation (zod) shared by the form and server actions
+- `src/lib/import/` — CSV/Excel parsing, flexible column matching, row cleanup + warnings
+- `src/components/holdings/` — tables, add/edit/remove dialogs, cash card, import dialog
 - `src/lib/format.ts` — the only place numbers are formatted (currency, percent, dates)
 - `src/data/` — data layer; the only code that talks to Prisma
 - `src/config/` — nav items and editable settings (e.g. S&P 500 sector weights + as-of date)

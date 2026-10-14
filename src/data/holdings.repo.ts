@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import type { HoldingClass, Position } from "@/lib/portfolio/types";
+import type { HoldingInput } from "@/lib/holdings/schema";
 import { DEMO_CASH, DEMO_HOLDINGS } from "./seed-demo";
 
 export interface PortfolioData {
@@ -77,4 +78,81 @@ export async function clearDemoData() {
     }),
     prisma.appState.update({ where: { id: 1 }, data: { isDemoData: false } }),
   ]);
+}
+
+// ---- Writes. Any edit by the user means the portfolio is no longer pure demo data. ----
+
+const leaveDemoMode = () =>
+  prisma.appState.upsert({
+    where: { id: 1 },
+    update: { isDemoData: false },
+    create: { id: 1, isDemoData: false, seeded: true },
+  });
+
+const toRow = (h: HoldingInput) => ({
+  ticker: h.ticker,
+  name: h.name,
+  assetClass: h.assetClass,
+  sector: h.sector,
+  shares: h.shares,
+  costBasisPerShare: h.costBasisPerShare,
+  currentPrice: h.currentPrice,
+  priceAsOf: h.priceAsOf,
+});
+
+/** Create (id = null) or update a holding. Throws a Prisma P2002 error on a duplicate ticker. */
+export async function saveHolding(id: string | null, input: HoldingInput) {
+  if (id) await prisma.holding.update({ where: { id }, data: toRow(input) });
+  else await prisma.holding.create({ data: toRow(input) });
+  await leaveDemoMode();
+}
+
+export async function deleteHolding(id: string) {
+  await prisma.holding.delete({ where: { id } });
+  await leaveDemoMode();
+}
+
+export async function setCash(amount: number) {
+  await prisma.cashBalance.upsert({
+    where: { id: 1 },
+    update: { amount },
+    create: { id: 1, amount },
+  });
+  await leaveDemoMode();
+}
+
+export interface ImportResult {
+  added: number;
+  skipped: number;
+}
+
+/**
+ * Save imported holdings. "add" keeps everything and skips tickers that already exist
+ * in the same class; "replace" wipes current holdings first. Cash rows from the file
+ * are added to (add) or replace (replace) the cash balance.
+ */
+export async function importHoldings(
+  mode: "add" | "replace",
+  holdings: HoldingInput[],
+  cashAmount?: number,
+): Promise<ImportResult> {
+  const existing =
+    mode === "add"
+      ? new Set((await prisma.holding.findMany({ select: { assetClass: true, ticker: true } })).map((h) => `${h.assetClass}:${h.ticker}`))
+      : new Set<string>();
+  const toCreate = holdings.filter((h) => !existing.has(`${h.assetClass}:${h.ticker}`));
+
+  const currentCash = (await prisma.cashBalance.findUnique({ where: { id: 1 } }))?.amount ?? 0;
+  const newCash =
+    cashAmount === undefined ? undefined : mode === "add" ? currentCash + cashAmount : cashAmount;
+
+  await prisma.$transaction([
+    ...(mode === "replace" ? [prisma.holding.deleteMany()] : []),
+    prisma.holding.createMany({ data: toCreate.map(toRow) }),
+    ...(newCash !== undefined
+      ? [prisma.cashBalance.upsert({ where: { id: 1 }, update: { amount: newCash }, create: { id: 1, amount: newCash } })]
+      : []),
+  ]);
+  await leaveDemoMode();
+  return { added: toCreate.length, skipped: holdings.length - toCreate.length };
 }
