@@ -1,0 +1,42 @@
+// Portfolio data model. SQLite file lives locally and is git-ignored.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// One row per position. Cash is NOT stored here (see CashBalance).
+model Holding {
+  id               String   @id @default(cuid())
+  ticker           String
+  name             String
+  assetClass       String // "Equities" | "Fixed Income" | "Alternatives" (validated in code)
+  sector           String? // equities only
+  shares           Float
+  costBasisPerShare Float
+  currentPrice     Float // entered manually
+  priceAsOf        DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([assetClass, ticker])
+}
+
+// The portfolio's cash is a single amount, stored as one row (id is always 1).
+model CashBalance {
+  id        Int      @id @default(1)
+  amount    Float    @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+// One row (id always 1): tracks whether the demo portfolio is loaded and
+// whether first-run seeding has already happened.
+model AppState {
+  id         Int     @id @default(1)
+  isDemoData Boolean @default(false)
+  seeded     Boolean @default(false)
+}

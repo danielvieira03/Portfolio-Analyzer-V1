@@ -147,3 +147,14 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Local database & Prisma
+*.db
+*.db-journal
+prisma/*.db
+src/generated
+
+# macOS
+.DS_Store
+
+/src/generated/prisma
