@@ -25,7 +25,7 @@ Next.js (App Router) + TypeScript · Tailwind CSS v4 + shadcn/ui (base-ui) · Re
 
 ## Folder map
 - `src/app/` — routes (Dashboard `/`, Holdings `/holdings`) and layout shell
-- `src/components/layout/` sidebar + top bar · `shared/` Panel, Num, PageHeader · `ui/` shadcn primitives
+- `src/components/layout/` top bar with horizontal tabs · `shared/` Panel, Num, PageHeader · `ui/` shadcn primitives
 - `src/lib/portfolio/` — ALL portfolio math as pure, tested functions (value, cost, gain/loss, weights)
 - `src/lib/format.ts` — the only place numbers are formatted (currency, percent, dates)
 - `src/data/` — data layer; the only code that talks to Prisma

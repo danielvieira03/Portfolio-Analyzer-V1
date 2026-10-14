@@ -17,7 +17,7 @@ Live market prices (prices are entered manually), daily change figures, AI/Claud
 performance, multiple portfolios, login, and deployment.
 
 ## Direction
-Future tabs, each added as a new sidebar item:
+Future tabs, each added as a new top-bar tab:
 - **Portfolio Health** — diversification and concentration checks.
 - **Crash Simulator** — estimated portfolio impact under historical or custom shocks.
 - **Risk** — volatility, drawdown and exposure measures.

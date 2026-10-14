@@ -6,7 +6,7 @@ export interface NavItem {
   icon: LucideIcon;
 }
 
-// Add future tabs here — the sidebar renders whatever is in this list.
+// Add future tabs here — the top-bar tabs render whatever is in this list.
 export const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Holdings", href: "/holdings", icon: Table2 },

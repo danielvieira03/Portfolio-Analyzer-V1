@@ -5,25 +5,27 @@ import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/config/nav";
 import { cn } from "@/lib/utils";
 
-export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+/** Horizontal tab buttons. Scrolls sideways on narrow screens if tabs ever overflow. */
+export function NavLinks() {
   const pathname = usePathname();
   return (
-    <nav className="flex flex-col gap-0.5 p-2">
-      <p className="label-caps px-2 pb-1.5 pt-1">Analyze</p>
+    <nav
+      aria-label="Main"
+      className="-mb-px flex h-full items-stretch gap-1 overflow-x-auto [scrollbar-width:none]"
+    >
       {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
         const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
         return (
           <Link
             key={href}
             href={href}
-            onClick={onNavigate}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex items-center gap-2.5 rounded-md border-l-2 border-transparent px-2 py-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground",
-              active && "border-primary bg-sidebar-accent text-foreground",
+              "flex shrink-0 items-center gap-2 border-b-2 border-transparent px-3 text-[12px] font-medium uppercase tracking-[0.08em] text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground",
+              active && "border-primary bg-accent/40 text-foreground",
             )}
           >
-            <Icon className={cn("size-4", active && "text-primary")} />
+            <Icon className={cn("size-3.5", active && "text-primary")} />
             {label}
           </Link>
         );

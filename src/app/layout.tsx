@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Sidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { APP_NAME } from "@/config/nav";
@@ -20,8 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full">
         <TooltipProvider>
           <TopBar />
-          <Sidebar />
-          <main className="min-h-screen px-4 pb-8 pt-15 md:pl-56 md:pr-6">
+          <main className="min-h-screen px-4 pb-8 pt-15 md:px-6">
             <div className="mx-auto max-w-[1400px]">{children}</div>
           </main>
         </TooltipProvider>
