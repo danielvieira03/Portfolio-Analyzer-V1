@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full">
         <TooltipProvider>
           <TopBar />
-          <main className="min-h-screen px-4 pb-8 pt-15 md:px-6">
+          <main className="min-h-screen px-4 pb-8 pt-24 md:px-6">
             <div className="mx-auto max-w-[1400px]">{children}</div>
           </main>
         </TooltipProvider>
