@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPrice, formatShares } from "@/lib/format";
@@ -7,7 +8,14 @@ import { FIELD_LABELS, IMPORT_FIELDS } from "@/lib/import/columns";
 import type { ParsedImport, ParsedRow } from "@/lib/import/normalize";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { HOLDING_CLASSES, type HoldingClass } from "@/lib/portfolio/types";
+import type { Review } from "@/lib/ai/schema";
 import { cn } from "@/lib/utils";
+
+export type ReviewState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | ({ status: "done" } & Review)
+  | { status: "error"; message: string };
 
 export type Mode = "add" | "replace";
 export type Dup = "skip" | "merge" | "replace";
@@ -53,6 +61,10 @@ export function ImportPreview({
   showColumnsUsed,
   defaultClass,
   setDefaultClass,
+  readByClaude,
+  aiIssues,
+  review,
+  onReview,
 }: {
   parsed: ParsedImport;
   fileName: string;
@@ -68,6 +80,11 @@ export function ImportPreview({
   showColumnsUsed: boolean;
   defaultClass: HoldingClass;
   setDefaultClass: (c: HoldingClass) => void;
+  /** True when the rows came from a screenshot/PDF that Claude read. */
+  readByClaude: boolean;
+  aiIssues: string[];
+  review: ReviewState;
+  onReview: () => void;
 }) {
   const { isDuplicate, counts, cashAmount } = view;
   const dupLabel = dup === "skip" ? "Skipped" : dup === "merge" ? "Will be averaged" : "Will replace";
@@ -79,7 +96,16 @@ export function ImportPreview({
         {counts.warning > 0 && <Badge variant="outline" className="border-primary/50 text-primary">{counts.warning} with warnings</Badge>}
         {counts.error > 0 && <Badge variant="outline" className="border-destructive/50 text-destructive">{counts.error} will be skipped (errors)</Badge>}
         {counts.duplicates > 0 && <Badge variant="outline">{counts.duplicates} already in your holdings</Badge>}
+        {readByClaude && (
+          <Badge variant="outline" className="border-primary/50 bg-primary/10 text-primary">
+            <Sparkles /> Read by Claude
+          </Badge>
+        )}
         <span className="ml-auto flex items-center gap-1">
+          <Button variant="outline" size="sm" onClick={onReview} disabled={review.status === "loading" || parsed.rows.every((r) => !r.holding)}>
+            {review.status === "loading" ? <Loader2 className="animate-spin" /> : <Sparkles />}
+            {review.status === "done" ? "Double-check again" : "Double-check with Claude"}
+          </Button>
           {onAdjustColumns && <Button variant="link" size="sm" onClick={onAdjustColumns}>Adjust columns</Button>}
           <Button variant="link" size="sm" onClick={onChooseAnother}>Choose a different file</Button>
         </span>
@@ -89,6 +115,37 @@ export function ImportPreview({
           Read from <span className="text-foreground">{fileName}</span>:{" "}
           {IMPORT_FIELDS.filter((f) => parsed.columns[f]).map((f) => `${FIELD_LABELS[f]} ← ${parsed.columns[f]}`).join(" · ")}
         </p>
+      )}
+
+      {readByClaude && aiIssues.length > 0 && (
+        <div className="rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-[12px]">
+          <p className="label-caps mb-1 text-primary">Claude flagged on the document</p>
+          <ul className="list-disc space-y-0.5 pl-4">{aiIssues.map((i) => <li key={i}>{i}</li>)}</ul>
+        </div>
+      )}
+      {review.status === "error" && (
+        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive">{review.message}</p>
+      )}
+      {review.status === "done" && (
+        <div className="rounded-md border bg-muted/40 px-3 py-2 text-[12px]">
+          <p className="label-caps mb-1 flex items-center gap-1.5 text-primary"><Sparkles className="size-3" /> Claude’s double-check</p>
+          <p>{review.summary}</p>
+          {review.flags.length > 0 && (
+            <ul className="mt-1.5 space-y-1">
+              {review.flags.map((f, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className={cn("label-caps w-16 shrink-0", f.severity === "warning" ? "text-primary" : "text-muted-foreground")}>
+                    {f.severity === "warning" ? "Check" : "Note"}
+                  </span>
+                  <span><span className="font-medium text-primary">{f.ticker}</span> — {f.message}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            Advice only, based on general knowledge — Claude has no live prices. Nothing was changed; you decide what to import.
+          </p>
+        </div>
       )}
 
       {(!parsed.columns.assetClass || !parsed.columns.name) && (

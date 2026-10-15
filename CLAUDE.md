@@ -15,7 +15,7 @@ It is both a real tool for Daniel and a portfolio showpiece, so quality and visu
 
 ## Stack
 Next.js (App Router) + TypeScript · Tailwind CSS v4 + shadcn/ui (base-ui) · Recharts · Prisma 7 + SQLite
-(better-sqlite3 adapter) · SheetJS `xlsx` (CSV/Excel) · Vitest · npm.
+(better-sqlite3 adapter) · SheetJS `xlsx` (Excel) · Anthropic SDK (screenshot/PDF import, optional review) · Vitest · npm.
 
 ## Commands
 - `npm install` — installs and generates the Prisma client
@@ -29,6 +29,9 @@ Next.js (App Router) + TypeScript · Tailwind CSS v4 + shadcn/ui (base-ui) · Re
 - `src/lib/portfolio/` — ALL portfolio math as pure, tested functions (value, cost, gain/loss, weights)
 - `src/lib/holdings/` — validation (zod) shared by the form and server actions
 - `src/lib/import/` — CSV/Excel parsing, flexible column matching, row cleanup + warnings
+- `src/lib/ai/` — Claude calls: `claude.ts` is SERVER ONLY (reads the API key); `to-rows.ts` feeds AI output into the same importer; `client.ts` is the browser-side fetch helper
+- `src/app/api/import/` — route handlers `extract` (screenshot/PDF) and `review` (double-check)
+- `src/config/ai.ts` — the Claude model and upload limits (change the model here)
 - `src/components/holdings/` — tables, add/edit/remove dialogs, cash card, import dialog
 - `src/lib/format.ts` — the only place numbers are formatted (currency, percent, dates)
 - `src/data/` — data layer; the only code that talks to Prisma
@@ -44,4 +47,6 @@ Next.js (App Router) + TypeScript · Tailwind CSS v4 + shadcn/ui (base-ui) · Re
 - Numbers: use `<Num>` / `.num` (monospace, tabular, right-aligned) and `format.ts`.
 - Charts use `--chart-1..6` (no green/red) and always have hover tooltips.
 - Prices are manual (no live data, no daily change figures).
+- AI: `ANTHROPIC_API_KEY` stays server-side (never `NEXT_PUBLIC_`, never in the browser). Claude output goes through the
+  same importer checks and preview as CSV/Excel; the user always confirms before anything is saved.
 - Secrets go in `.env.local` (git-ignored); keep `.env.example` current.

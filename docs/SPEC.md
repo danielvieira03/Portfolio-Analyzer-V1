@@ -9,16 +9,18 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
 - **Dashboard** — total value, cost basis, unrealized gain/loss, cash and holding count; allocation by asset
   class; equity sector weights versus the S&P 500; top 5 holdings.
 - **Holdings** — one sortable table per asset class (Equities, Fixed Income, Alternatives), a separate
-  cash card, add/edit/remove, and CSV/Excel import with a preview.
+  cash card, add/edit/remove (adding an existing ticker offers to average it in or replace it), and import
+  with a preview.
+- **Import** — CSV/Excel (read locally, tolerant of different column names, with manual column matching)
+  and Screenshot/PDF (read by Claude). An optional "Double-check with Claude" reviews any preview.
 - A demo portfolio (~$500K) loaded on first run, clearly badged and removable.
 
 ## What it deliberately lacks
-Live market prices (prices are entered manually), daily change figures, AI/Claude features, historical
-performance, multiple portfolios, login, and deployment.
+Live market prices (prices are entered manually), daily change figures, AI features beyond import,
+historical performance, multiple portfolios, login, and deployment.
 
 ## Direction
 Future tabs, each added as a new top-bar tab:
 - **Portfolio Health** — diversification and concentration checks.
 - **Crash Simulator** — estimated portfolio impact under historical or custom shocks.
 - **Risk** — volatility, drawdown and exposure measures.
-- **AI-assisted import** — Screenshot and PDF import (shown as "Coming soon" in the import dialog).

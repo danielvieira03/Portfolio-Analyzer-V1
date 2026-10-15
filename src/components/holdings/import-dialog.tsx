@@ -1,9 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
-import { FileImage, FileSpreadsheet, FileText, Upload } from "lucide-react";
+import { FileImage, FileSpreadsheet, FileText, Loader2, Sparkles, Upload } from "lucide-react";
 import { importHoldingsAction } from "@/app/holdings/actions";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,13 +12,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { AI_ACCEPT_ATTR, IMAGE_TYPES, MAX_UPLOAD_BYTES } from "@/config/ai";
+import { readWithClaude, reviewWithClaude } from "@/lib/ai/client";
 import { matchColumns, missingRequired, type ColumnMap } from "@/lib/import/columns";
 import { parseImportRows } from "@/lib/import/normalize";
 import { ACCEPT_ATTR, ACCEPTED_EXTENSIONS, readSpreadsheet } from "@/lib/import/parse-file";
 import type { Table } from "@/lib/import/table";
 import { ColumnMapper } from "./column-mapper";
 import type { HoldingClass } from "@/lib/portfolio/types";
-import { classify, ImportPreview, type Dup, type Mode } from "./import-preview";
+import { classify, ImportPreview, type Dup, type Mode, type ReviewState } from "./import-preview";
 
 export function ImportDialog({
   existing,
@@ -62,6 +63,12 @@ function ImportBody({
   const [defaultClass, setDefaultClass] = useState<HoldingClass>("Equities");
   const [pending, startTransition] = useTransition();
   const [done, setDone] = useState<string | null>(null);
+  // Screenshot / PDF read by Claude
+  const aiRef = useRef<HTMLInputElement>(null);
+  const [reading, setReading] = useState<string | null>(null); // name of the file Claude is reading
+  const [readByClaude, setReadByClaude] = useState(false);
+  const [aiIssues, setAiIssues] = useState<string[]>([]);
+  const [review, setReview] = useState<ReviewState>({ status: "idle" });
 
   const existingKeys = useMemo(() => new Set(existing.map((e) => `${e.assetClass}:${e.ticker}`)), [existing]);
   const parsed = useMemo(
@@ -75,7 +82,66 @@ function ImportBody({
     setTable(null);
     setMap(null);
     setError(null);
+    setReadByClaude(false);
+    setAiIssues([]);
+    setReview({ status: "idle" });
     if (fileRef.current) fileRef.current.value = "";
+    if (aiRef.current) aiRef.current.value = "";
+  };
+
+  const onAiFile = async (file: File | undefined) => {
+    if (!file) return;
+    setError(null);
+    const isImage = (IMAGE_TYPES as readonly string[]).includes(file.type) || /\.(png|jpe?g|webp|gif)$/i.test(file.name);
+    const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    if (!isImage && !isPdf) {
+      setError("Please choose a PNG, JPEG, WebP or GIF screenshot, or a PDF.");
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setError(`That file is larger than ${MAX_UPLOAD_BYTES / 1024 / 1024} MB. Try a smaller screenshot or fewer pages.`);
+      return;
+    }
+    setReading(file.name);
+    try {
+      const result = await readWithClaude(file);
+      if (result.rows.length === 0) {
+        setError(result.issues.length ? `Claude didn’t find any holdings: ${result.issues.join(" ")}` : "Claude didn’t find any holdings in that file.");
+        return;
+      }
+      const m = matchColumns(result.headers);
+      setFileName(file.name);
+      setTable({ headers: result.headers, rows: result.rows, headerRow: 1 });
+      setMap(m);
+      setReadByClaude(true);
+      setAiIssues(result.issues);
+      setReview({ status: "idle" });
+      setStep(missingRequired(m.columns).length ? "map" : "preview");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Claude couldn’t read that file.");
+    } finally {
+      setReading(null);
+      if (aiRef.current) aiRef.current.value = "";
+    }
+  };
+
+  const onReview = async () => {
+    if (!parsed) return;
+    const rows = parsed.rows.filter((r) => r.holding).map((r) => ({
+      ticker: r.holding!.ticker,
+      name: r.holding!.name,
+      assetClass: r.holding!.assetClass,
+      sector: r.holding!.sector,
+      shares: r.holding!.shares,
+      costBasisPerShare: r.holding!.costBasisPerShare,
+      currentPrice: r.holding!.currentPrice,
+    }));
+    setReview({ status: "loading" });
+    try {
+      setReview({ status: "done", ...(await reviewWithClaude(rows)) });
+    } catch (e) {
+      setReview({ status: "error", message: e instanceof Error ? e.message : "The double-check failed." });
+    }
   };
 
   const onFile = async (file: File | undefined) => {
@@ -156,22 +222,36 @@ function ImportBody({
               <span className="text-[11px] text-muted-foreground">.csv, .xlsx, .xls — click to choose a file</span>
             </button>
             {[
-              { icon: FileImage, label: "Screenshot" },
-              { icon: FileText, label: "PDF" },
-            ].map(({ icon: Icon, label }) => (
-              <div
+              { icon: FileImage, label: "Screenshot", hint: "PNG, JPEG, WebP — a photo or screenshot of your positions" },
+              { icon: FileText, label: "PDF", hint: "A brokerage statement or positions report" },
+            ].map(({ icon: Icon, label, hint }) => (
+              <button
                 key={label}
-                aria-disabled="true"
-                className="flex cursor-not-allowed flex-col items-start gap-1.5 rounded-md border border-dashed p-3 opacity-60"
+                type="button"
+                disabled={reading !== null}
+                onClick={() => {
+                  if (aiRef.current) {
+                    aiRef.current.accept = label === "PDF" ? "application/pdf,.pdf" : "image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif";
+                    aiRef.current.click();
+                  }
+                }}
+                className="flex flex-col items-start gap-1.5 rounded-md border p-3 text-left transition-colors hover:bg-muted/50 disabled:opacity-50"
               >
-                <Icon className="size-5 text-muted-foreground" />
+                <Icon className="size-5 text-primary" />
                 <span className="flex items-center gap-2 font-medium">
-                  {label} <Badge variant="outline" className="h-4 text-[10px]">Coming soon</Badge>
+                  {label} <Sparkles className="size-3 text-primary" />
                 </span>
-                <span className="text-[11px] text-muted-foreground">AI-assisted import arrives later</span>
-              </div>
+                <span className="text-[11px] text-muted-foreground">{hint}</span>
+              </button>
             ))}
           </div>
+          {reading && (
+            <p className="flex items-center gap-2 rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-[12px]">
+              <Loader2 className="size-4 animate-spin text-primary" />
+              Claude is reading {reading}… this usually takes 5–15 seconds.
+            </p>
+          )}
+          <input ref={aiRef} type="file" accept={AI_ACCEPT_ATTR} className="hidden" onChange={(e) => onAiFile(e.target.files?.[0])} />
           <input
             ref={fileRef}
             type="file"
@@ -183,6 +263,12 @@ function ImportBody({
             The first row (or the first row with recognizable names) should be headers. Recognized
             names include Ticker/Symbol, Shares/Qty, Cost/Avg Cost, Price, Value, Asset Class and
             Sector. If your columns can’t be matched, you’ll be able to match them by hand.
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            <Sparkles className="mr-1 inline size-3 text-primary" />
+            Screenshots and PDFs are sent to Claude (Anthropic’s API) to be read — this app doesn’t keep the
+            file. CSV and Excel files are read locally and never leave your computer. Each screenshot or PDF
+            costs roughly a cent or two of API credit.
           </p>
           {error && <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive">{error}</p>}
         </div>
@@ -210,6 +296,10 @@ function ImportBody({
           view={view}
           onAdjustColumns={() => setStep("map")}
           onChooseAnother={reset}
+          readByClaude={readByClaude}
+          aiIssues={aiIssues}
+          review={review}
+          onReview={onReview}
           error={error}
           showColumnsUsed
           defaultClass={defaultClass}
@@ -222,7 +312,7 @@ function ImportBody({
         {step === "preview" && view && (
           <Button
             onClick={save}
-            disabled={pending || nothingToImport}
+            disabled={pending || nothingToImport || review.status === "loading"}
             variant={mode === "replace" ? "destructive" : "default"}
           >
             {pending ? "Importing…" : `${mode === "replace" ? "Replace with" : "Import"} ${view.holdings.length} ${view.holdings.length === 1 ? "holding" : "holdings"}`}
