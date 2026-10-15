@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate, formatPrice, formatShares } from "@/lib/format";
 import { fieldErrors, holdingSchema, SECTOR_OPTIONS, type HoldingInput } from "@/lib/holdings/schema";
-import { mergePositions } from "@/lib/portfolio/calc";
+import { mergePositions, type Lot } from "@/lib/portfolio/calc";
 import type { DuplicateChoice } from "@/data/holdings.repo";
 import type { HoldingClass, Position } from "@/lib/portfolio/types";
 
@@ -154,10 +154,17 @@ function FormBody({
   if (duplicate) {
     const { current, incoming } = duplicate;
     const merged = mergePositions(current, incoming);
-    const rows = [
-      { label: "Existing", shares: current.shares, cost: current.costBasisPerShare, price: current.currentPrice, date: current.priceAsOf },
-      { label: "New entry", shares: incoming.shares, cost: incoming.costBasisPerShare, price: incoming.currentPrice, date: incoming.priceAsOf },
-      { label: "If you add them", shares: merged.shares, cost: merged.costBasisPerShare, price: merged.currentPrice, date: merged.priceAsOf },
+    // Columns: how the position looks now, if averaged, and if replaced.
+    const columns = [
+      { label: "Current", lot: current, highlight: false },
+      { label: "If averaged", lot: merged, highlight: true },
+      { label: "If replaced", lot: incoming, highlight: true },
+    ];
+    const fields = [
+      { label: "Shares", value: (l: Lot) => formatShares(l.shares) },
+      { label: "Cost / Share", value: (l: Lot) => formatPrice(l.costBasisPerShare) },
+      { label: "Price", value: (l: Lot) => formatPrice(l.currentPrice) },
+      { label: "As of", value: (l: Lot) => formatDate(l.priceAsOf) },
     ];
     return (
       <div className="space-y-3">
@@ -171,20 +178,20 @@ function FormBody({
           <thead>
             <tr className="label-caps border-b">
               <th className="py-1.5 text-left font-medium" />
-              <th className="py-1.5 text-right font-medium">Shares</th>
-              <th className="py-1.5 text-right font-medium">Cost / Sh</th>
-              <th className="py-1.5 text-right font-medium">Price</th>
-              <th className="py-1.5 text-right font-medium">As of</th>
+              {columns.map((c) => (
+                <th key={c.label} className={"py-1.5 text-right font-medium" + (c.highlight ? " text-primary" : "")}>
+                  {c.label}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, i) => (
-              <tr key={r.label} className={i === 2 ? "border-t font-medium text-primary" : "border-b border-border/50"}>
-                <td className="py-1.5">{r.label}</td>
-                <td className="num py-1.5">{formatShares(r.shares)}</td>
-                <td className="num py-1.5">{formatPrice(r.cost)}</td>
-                <td className="num py-1.5">{formatPrice(r.price)}</td>
-                <td className="num py-1.5">{formatDate(r.date)}</td>
+            {fields.map((f) => (
+              <tr key={f.label} className="border-b border-border/50 last:border-0">
+                <td className="py-1.5 text-muted-foreground">{f.label}</td>
+                {columns.map((c) => (
+                  <td key={c.label} className="num py-1.5">{f.value(c.lot)}</td>
+                ))}
               </tr>
             ))}
           </tbody>
