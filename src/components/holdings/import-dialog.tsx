@@ -35,7 +35,7 @@ export function ImportDialog({
         <Upload /> Import
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-4xl">
+        <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-4xl">
           {open && <ImportBody existing={existing} close={() => setOpen(false)} />}
         </DialogContent>
       </Dialog>
@@ -204,11 +204,13 @@ function ImportBody({
 
   return (
     <>
-      <DialogHeader>
+      <DialogHeader className="shrink-0">
         <DialogTitle>Import holdings</DialogTitle>
         <DialogDescription>{description}</DialogDescription>
       </DialogHeader>
 
+      {/* Only this middle part scrolls; the header and the buttons stay in view. */}
+      <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
       {step === "choose" && (
         <div className="space-y-3">
           <div className="grid gap-2 sm:grid-cols-3">
@@ -287,7 +289,6 @@ function ImportBody({
       {step === "preview" && parsed && view && (
         <ImportPreview
           parsed={parsed}
-          fileName={fileName}
           existingCount={existing.length}
           mode={mode}
           setMode={setMode}
@@ -301,13 +302,13 @@ function ImportBody({
           review={review}
           onReview={onReview}
           error={error}
-          showColumnsUsed
           defaultClass={defaultClass}
           setDefaultClass={setDefaultClass}
         />
       )}
+      </div>
 
-      <DialogFooter>
+      <DialogFooter className="shrink-0">
         <Button variant="ghost" onClick={close}>Cancel</Button>
         {step === "preview" && view && (
           <Button

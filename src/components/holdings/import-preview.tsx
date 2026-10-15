@@ -4,7 +4,6 @@ import { Loader2, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPrice, formatShares } from "@/lib/format";
-import { FIELD_LABELS, IMPORT_FIELDS } from "@/lib/import/columns";
 import type { ParsedImport, ParsedRow } from "@/lib/import/normalize";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { HOLDING_CLASSES, type HoldingClass } from "@/lib/portfolio/types";
@@ -48,7 +47,6 @@ export function classify(parsed: ParsedImport, existingKeys: Set<string>, mode: 
 
 export function ImportPreview({
   parsed,
-  fileName,
   existingCount,
   mode,
   setMode,
@@ -58,7 +56,6 @@ export function ImportPreview({
   onAdjustColumns,
   onChooseAnother,
   error,
-  showColumnsUsed,
   defaultClass,
   setDefaultClass,
   readByClaude,
@@ -67,7 +64,6 @@ export function ImportPreview({
   onReview,
 }: {
   parsed: ParsedImport;
-  fileName: string;
   existingCount: number;
   mode: Mode;
   setMode: (m: Mode) => void;
@@ -77,7 +73,6 @@ export function ImportPreview({
   onAdjustColumns?: () => void;
   onChooseAnother: () => void;
   error: string | null;
-  showColumnsUsed: boolean;
   defaultClass: HoldingClass;
   setDefaultClass: (c: HoldingClass) => void;
   /** True when the rows came from a screenshot/PDF that Claude read. */
@@ -92,7 +87,6 @@ export function ImportPreview({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2 text-[12px]">
-        <Badge variant="outline">{counts.ok} ready</Badge>
         {counts.warning > 0 && <Badge variant="outline" className="border-primary/50 text-primary">{counts.warning} with warnings</Badge>}
         {counts.error > 0 && <Badge variant="outline" className="border-destructive/50 text-destructive">{counts.error} will be skipped (errors)</Badge>}
         {counts.duplicates > 0 && <Badge variant="outline">{counts.duplicates} already in your holdings</Badge>}
@@ -110,13 +104,6 @@ export function ImportPreview({
           <Button variant="link" size="sm" onClick={onChooseAnother}>Choose a different file</Button>
         </span>
       </div>
-      {showColumnsUsed && (
-        <p className="text-[11px] text-muted-foreground">
-          Read from <span className="text-foreground">{fileName}</span>:{" "}
-          {IMPORT_FIELDS.filter((f) => parsed.columns[f]).map((f) => `${FIELD_LABELS[f]} ← ${parsed.columns[f]}`).join(" · ")}
-        </p>
-      )}
-
       {readByClaude && aiIssues.length > 0 && (
         <div className="rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-[12px]">
           <p className="label-caps mb-1 text-primary">Claude flagged on the document</p>
@@ -165,12 +152,21 @@ export function ImportPreview({
         </div>
       )}
 
-      <div className="max-h-72 overflow-auto rounded-md border">
+      <div className="max-h-[min(24rem,45dvh)] overflow-auto rounded-md border">
         <table className="w-full text-[12px]">
-          <thead className="sticky top-0 bg-popover">
-            <tr className="label-caps border-b">
-              {["Row", "Ticker", "Name", "Class", "Shares", "Cost", "Price", "Status"].map((h, i) => (
-                <th key={h} className={cn("px-2 py-1.5 font-medium", i >= 4 && i <= 6 ? "text-right" : "text-left")}>{h}</th>
+          <thead>
+            <tr className="label-caps">
+              {["Row", "Ticker", "Name", "Class", "Shares", "Cost", "Price"].map((h, i) => (
+                <th
+                  key={h}
+                  className={cn(
+                    // Opaque and above the rows so scrolling rows never show through or overlap it.
+                    "sticky top-0 z-10 bg-popover px-2 py-1.5 font-medium shadow-[inset_0_-1px_0_var(--border)]",
+                    i >= 4 ? "text-right" : "text-left",
+                  )}
+                >
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
@@ -182,20 +178,23 @@ export function ImportPreview({
                 <tr key={r.line} className={cn("border-b border-border/50 align-top", (r.status === "error" || (duplicate && dup === "skip")) && "opacity-60")}>
                   <td className="num px-2 py-1.5 text-muted-foreground">{r.line}</td>
                   <td className="px-2 py-1.5 font-medium text-primary">{r.label}</td>
-                  <td className="max-w-48 truncate px-2 py-1.5">{h?.name ?? "—"}</td>
+                  <td className="min-w-40 max-w-72 px-2 py-1.5">
+                    <div className="truncate">{h?.name ?? "—"}</div>
+                    {duplicate && (
+                      <p className="text-[11px] text-primary">
+                        {dupLabel} <span className="text-muted-foreground">· already in your holdings</span>
+                      </p>
+                    )}
+                    {r.messages.map((m) => (
+                      <p key={m} className={cn("text-[11px]", r.status === "error" ? "text-destructive" : r.status === "warning" ? "text-primary" : "text-muted-foreground")}>
+                        {m}
+                      </p>
+                    ))}
+                  </td>
                   <td className="px-2 py-1.5">{h?.assetClass ?? (r.cashAmount !== undefined ? "Cash" : "—")}</td>
                   <td className="num px-2 py-1.5">{h ? formatShares(h.shares) : "—"}</td>
                   <td className="num px-2 py-1.5">{h ? formatPrice(h.costBasisPerShare) : "—"}</td>
                   <td className="num px-2 py-1.5">{h ? formatPrice(h.currentPrice) : r.cashAmount !== undefined ? formatPrice(r.cashAmount) : "—"}</td>
-                  <td className="px-2 py-1.5">
-                    <span className={cn("label-caps", r.status === "error" && "text-destructive", r.status === "warning" && "text-primary")}>
-                      {duplicate ? dupLabel : r.status === "ok" ? "OK" : r.status === "warning" ? "Warning" : "Error"}
-                    </span>
-                    {duplicate && <p className="text-[11px] text-muted-foreground">Already in your holdings</p>}
-                    {r.messages.map((m) => (
-                      <p key={m} className="text-[11px] text-muted-foreground">{m}</p>
-                    ))}
-                  </td>
                 </tr>
               );
             })}
