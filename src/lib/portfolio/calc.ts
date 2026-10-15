@@ -115,3 +115,32 @@ export function topHoldings(positions: Position[], cash: number, n = 5): RankedH
 
 /** Total market value of a group of positions. */
 export const totalValue = (positions: Position[]) => sum(positions.map(marketValue));
+
+/** The editable fields of a position (everything except its id and class). */
+export interface Lot {
+  name: string;
+  sector: string | null;
+  shares: number;
+  costBasisPerShare: number;
+  currentPrice: number;
+  priceAsOf: Date;
+}
+
+/**
+ * Combine a new purchase into an existing position of the same ticker.
+ * Shares add up, cost per share becomes the share-weighted average, and the
+ * price/date come from the newer entry. Name and sector keep the existing
+ * values unless those are blank.
+ */
+export function mergePositions(existing: Lot, incoming: Lot): Lot {
+  const shares = existing.shares + incoming.shares;
+  const totalCost = existing.shares * existing.costBasisPerShare + incoming.shares * incoming.costBasisPerShare;
+  return {
+    name: existing.name || incoming.name,
+    sector: existing.sector ?? incoming.sector,
+    shares,
+    costBasisPerShare: shares === 0 ? 0 : totalCost / shares,
+    currentPrice: incoming.currentPrice,
+    priceAsOf: incoming.priceAsOf,
+  };
+}

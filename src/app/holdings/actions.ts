@@ -1,28 +1,35 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { deleteHolding, importHoldings, saveHolding, setCash, type ImportResult } from "@/data/holdings.repo";
+import { addHolding, deleteHolding, importHoldings, saveHolding, setCash, type DuplicateChoice, type ImportResult } from "@/data/holdings.repo";
 import { cashSchema, fieldErrors, holdingSchema } from "@/lib/holdings/schema";
 
 export type ActionResult<T = unknown> =
   | ({ ok: true } & T)
-  | { ok: false; errors: Record<string, string> };
+  | { ok: false; errors: Record<string, string>; /** Adding a ticker that already exists — ask the user what to do. */ duplicate?: true };
 
 const refresh = () => revalidatePath("/", "layout");
 
-/** Create (id = null) or update a holding. Rejects duplicate tickers within an asset class. */
-export async function saveHoldingAction(id: string | null, values: unknown): Promise<ActionResult> {
+/**
+ * Create (id = null) or update a holding. When creating a ticker that already exists in the
+ * class, returns { duplicate: true } until the caller picks "merge" or "replace".
+ */
+export async function saveHoldingAction(
+  id: string | null,
+  values: unknown,
+  onDuplicate?: DuplicateChoice,
+): Promise<ActionResult> {
   const parsed = holdingSchema.safeParse(values);
   if (!parsed.success) return { ok: false, errors: fieldErrors(parsed.error) };
+  const exists = {
+    ok: false as const,
+    errors: { ticker: `${parsed.data.ticker} already exists in ${parsed.data.assetClass}` },
+  };
   try {
-    await saveHolding(id, parsed.data);
+    if (id) await saveHolding(id, parsed.data);
+    else if ((await addHolding(parsed.data, onDuplicate)) === "duplicate") return { ...exists, duplicate: true };
   } catch (e) {
-    if ((e as { code?: string }).code === "P2002") {
-      return {
-        ok: false,
-        errors: { ticker: `${parsed.data.ticker} already exists in ${parsed.data.assetClass}` },
-      };
-    }
+    if ((e as { code?: string }).code === "P2002") return exists; // edited into a colliding ticker
     throw e;
   }
   refresh();

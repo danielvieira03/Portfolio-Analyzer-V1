@@ -6,6 +6,7 @@ import {
   gainLoss,
   gainLossPct,
   marketValue,
+  mergePositions,
   summarize,
   topHoldings,
   weight,
@@ -106,5 +107,26 @@ describe("topHoldings", () => {
     const top = topHoldings([B, A, ETF], 800, 2); // total = 500 + 1500 + 1200 + 800 = 4000
     expect(top.map((t) => t.position.ticker)).toEqual(["A", "ETF"]);
     expect(top[0].weight).toBeCloseTo(0.375);
+  });
+});
+
+describe("mergePositions", () => {
+  const old = { name: "Apple", sector: "Information Technology", shares: 10, costBasisPerShare: 100, currentPrice: 150, priceAsOf: new Date("2026-01-01") };
+  const fresh = { name: "Apple Inc.", sector: null, shares: 30, costBasisPerShare: 200, currentPrice: 210, priceAsOf: new Date("2026-06-01") };
+  it("adds shares and averages the cost by share count", () => {
+    const m = mergePositions(old, fresh);
+    expect(m.shares).toBe(40);
+    expect(m.costBasisPerShare).toBeCloseTo(175); // (10*100 + 30*200) / 40
+  });
+  it("takes the newer price and date, keeps existing name and sector", () => {
+    const m = mergePositions(old, fresh);
+    expect(m.currentPrice).toBe(210);
+    expect(m.priceAsOf).toEqual(fresh.priceAsOf);
+    expect(m.name).toBe("Apple");
+    expect(m.sector).toBe("Information Technology");
+  });
+  it("keeps total cost unchanged by merging (value in = value out)", () => {
+    const m = mergePositions(old, fresh);
+    expect(m.shares * m.costBasisPerShare).toBeCloseTo(10 * 100 + 30 * 200);
   });
 });

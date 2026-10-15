@@ -76,6 +76,7 @@ export function AssetClassSection({
         onOpenChange={setFormOpen}
         assetClass={assetClass}
         position={editing}
+        existing={positions}
       />
       <RemoveHoldingDialog position={removing} onClose={() => setRemoving(null)} />
     </section>

@@ -14,7 +14,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { holdingSchema, fieldErrors, SECTOR_OPTIONS } from "@/lib/holdings/schema";
+import { formatDate, formatPrice, formatShares } from "@/lib/format";
+import { fieldErrors, holdingSchema, SECTOR_OPTIONS, type HoldingInput } from "@/lib/holdings/schema";
+import { mergePositions } from "@/lib/portfolio/calc";
+import type { DuplicateChoice } from "@/data/holdings.repo";
 import type { HoldingClass, Position } from "@/lib/portfolio/types";
 
 const NO_SECTOR = "__none";
@@ -47,11 +50,14 @@ export function HoldingFormDialog({
   onOpenChange,
   assetClass,
   position,
+  existing,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   assetClass: HoldingClass;
   position: Position | null;
+  /** Positions already in this asset class, used to spot duplicate tickers. */
+  existing: Position[];
 }) {
   // Reset the form each time the dialog opens, by remounting the body.
   return (
@@ -62,6 +68,7 @@ export function HoldingFormDialog({
             key={position?.id ?? "new"}
             assetClass={assetClass}
             position={position}
+            existing={existing}
             close={() => onOpenChange(false)}
           />
         )}
@@ -73,17 +80,22 @@ export function HoldingFormDialog({
 function FormBody({
   assetClass,
   position,
+  existing,
   close,
 }: {
   assetClass: HoldingClass;
   position: Position | null;
+  existing: Position[];
   close: () => void;
 }) {
   const [form, setForm] = useState<FormState>(position ? fromPosition(position) : blank());
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
+  // Set when the ticker already exists: shows the "add to existing or replace" step.
+  const [duplicate, setDuplicate] = useState<{ current: Position; incoming: HoldingInput } | null>(null);
   const set = (k: keyof FormState) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
   const isEquity = assetClass === "Equities";
+  const valuesFor = (h: HoldingInput) => ({ ...h });
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,10 +118,22 @@ function FormBody({
       return;
     }
     setErrors({});
+    const clash = position ? undefined : existing.find((p) => p.ticker === parsed.data.ticker);
+    if (clash) {
+      setDuplicate({ current: clash, incoming: parsed.data });
+      return;
+    }
+    save(values);
+  };
+
+  const save = (values: Record<string, unknown>, onDuplicate?: DuplicateChoice) => {
     startTransition(async () => {
-      const res = await saveHoldingAction(position?.id ?? null, values);
+      const res = await saveHoldingAction(position?.id ?? null, values, onDuplicate);
       if (res.ok) close();
-      else setErrors({ ...res.errors, cost: res.errors.costBasisPerShare, price: res.errors.currentPrice });
+      else {
+        setDuplicate(null);
+        setErrors({ ...res.errors, cost: res.errors.costBasisPerShare, price: res.errors.currentPrice });
+      }
     });
   };
 
@@ -126,6 +150,66 @@ function FormBody({
       {errors[id] && <p className="text-[11px] text-destructive">{errors[id]}</p>}
     </div>
   );
+
+  if (duplicate) {
+    const { current, incoming } = duplicate;
+    const merged = mergePositions(current, incoming);
+    const rows = [
+      { label: "Existing", shares: current.shares, cost: current.costBasisPerShare, price: current.currentPrice, date: current.priceAsOf },
+      { label: "New entry", shares: incoming.shares, cost: incoming.costBasisPerShare, price: incoming.currentPrice, date: incoming.priceAsOf },
+      { label: "If you add them", shares: merged.shares, cost: merged.costBasisPerShare, price: merged.currentPrice, date: merged.priceAsOf },
+    ];
+    return (
+      <div className="space-y-3">
+        <DialogHeader>
+          <DialogTitle>{current.ticker} is already in {assetClass}</DialogTitle>
+          <DialogDescription>
+            Do you want to add this as an addition to your existing investment, or replace it with the new data?
+          </DialogDescription>
+        </DialogHeader>
+        <table className="w-full text-[12px]">
+          <thead>
+            <tr className="label-caps border-b">
+              <th className="py-1.5 text-left font-medium" />
+              <th className="py-1.5 text-right font-medium">Shares</th>
+              <th className="py-1.5 text-right font-medium">Cost / Sh</th>
+              <th className="py-1.5 text-right font-medium">Price</th>
+              <th className="py-1.5 text-right font-medium">As of</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={r.label} className={i === 2 ? "border-t font-medium text-primary" : "border-b border-border/50"}>
+                <td className="py-1.5">{r.label}</td>
+                <td className="num py-1.5">{formatShares(r.shares)}</td>
+                <td className="num py-1.5">{formatPrice(r.cost)}</td>
+                <td className="num py-1.5">{formatPrice(r.price)}</td>
+                <td className="num py-1.5">{formatDate(r.date)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="text-[11px] text-muted-foreground">
+          Adding combines the shares and averages the cost per share (weighted by shares); the price
+          and date come from the new entry. Replacing overwrites the existing position with the new data.
+        </p>
+        <DialogFooter className="sm:flex-wrap">
+          <Button type="button" variant="ghost" disabled={pending} onClick={() => setDuplicate(null)}>Back</Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending}
+            onClick={() => save(valuesFor(incoming), "replace")}
+          >
+            Replace with new data
+          </Button>
+          <Button type="button" disabled={pending} onClick={() => save(valuesFor(incoming), "merge")}>
+            {pending ? "Saving…" : "Add to existing (average cost)"}
+          </Button>
+        </DialogFooter>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={submit} noValidate className="space-y-3">

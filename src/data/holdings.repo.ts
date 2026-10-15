@@ -1,6 +1,7 @@
 // Data layer: the only place that talks to the database.
 
 import { prisma } from "@/lib/db";
+import { mergePositions } from "@/lib/portfolio/calc";
 import type { HoldingClass, Position } from "@/lib/portfolio/types";
 import type { HoldingInput } from "@/lib/holdings/schema";
 import { DEMO_CASH, DEMO_HOLDINGS } from "./seed-demo";
@@ -105,6 +106,37 @@ export async function saveHolding(id: string | null, input: HoldingInput) {
   if (id) await prisma.holding.update({ where: { id }, data: toRow(input) });
   else await prisma.holding.create({ data: toRow(input) });
   await leaveDemoMode();
+}
+
+export type DuplicateChoice = "merge" | "replace";
+export type AddOutcome = "added" | "merged" | "replaced" | "duplicate";
+
+/**
+ * Add a new holding. If the ticker already exists in that class, do nothing
+ * ("duplicate") unless the caller says whether to merge (average into the existing
+ * position) or replace it with the new data.
+ */
+export async function addHolding(input: HoldingInput, onDuplicate?: DuplicateChoice): Promise<AddOutcome> {
+  const existing = await prisma.holding.findUnique({
+    where: { assetClass_ticker: { assetClass: input.assetClass, ticker: input.ticker } },
+  });
+  if (!existing) {
+    await prisma.holding.create({ data: toRow(input) });
+    await leaveDemoMode();
+    return "added";
+  }
+  if (!onDuplicate) return "duplicate";
+  if (onDuplicate === "replace") {
+    await prisma.holding.update({ where: { id: existing.id }, data: toRow(input) });
+  } else {
+    const merged = mergePositions(existing, input);
+    await prisma.holding.update({
+      where: { id: existing.id },
+      data: { ...merged },
+    });
+  }
+  await leaveDemoMode();
+  return onDuplicate === "replace" ? "replaced" : "merged";
 }
 
 export async function deleteHolding(id: string) {
