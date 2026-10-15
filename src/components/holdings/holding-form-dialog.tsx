@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatDate, formatPrice, formatShares } from "@/lib/format";
+import { formatCurrency, formatPrice, formatShares } from "@/lib/format";
 import { fieldErrors, holdingSchema, SECTOR_OPTIONS, type HoldingInput } from "@/lib/holdings/schema";
 import { mergePositions, type Lot } from "@/lib/portfolio/calc";
 import type { DuplicateChoice } from "@/data/holdings.repo";
@@ -164,7 +164,7 @@ function FormBody({
       { label: "Shares", value: (l: Lot) => formatShares(l.shares) },
       { label: "Cost / Share", value: (l: Lot) => formatPrice(l.costBasisPerShare) },
       { label: "Price", value: (l: Lot) => formatPrice(l.currentPrice) },
-      { label: "As of", value: (l: Lot) => formatDate(l.priceAsOf) },
+      { label: "Value", value: (l: Lot) => formatCurrency(l.shares * l.currentPrice) },
     ];
     return (
       <div className="space-y-3">
