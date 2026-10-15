@@ -3,6 +3,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { Agent, fetch as undiciFetch } from "undici";
 import { AI_MODEL, IMAGE_TYPES, PDF_TYPE } from "@/config/ai";
 import { EXTRACT_SYSTEM, EXTRACT_USER, REVIEW_SYSTEM } from "./prompts";
 import { extractionSchema, reviewSchema, type Extraction, type Review } from "./schema";
@@ -22,12 +23,19 @@ export interface AiUsage {
   outputTokens: number;
 }
 
+// Node's built-in fetch can keep reusing a dead HTTP/2 connection after it has sat idle
+// (error ERR_HTTP2_INVALID_SESSION), which made every request fail until the app restarted.
+// Using our own HTTP/1.1 connection pool avoids that.
+const dispatcher = new Agent({ allowH2: false, keepAliveTimeout: 5_000 });
+const resilientFetch = ((url: Parameters<typeof undiciFetch>[0], init?: Parameters<typeof undiciFetch>[1]) =>
+  undiciFetch(url, { ...init, dispatcher })) as unknown as typeof fetch;
+
 function getClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new AiError("no_key", "No Anthropic API key is set. Add ANTHROPIC_API_KEY to .env.local and restart the app.");
   }
-  return new Anthropic({ apiKey });
+  return new Anthropic({ apiKey, fetch: resilientFetch });
 }
 
 function toAiError(e: unknown): AiError {
@@ -45,6 +53,7 @@ function toAiError(e: unknown): AiError {
     return new AiError("bad_file", "Claude couldn’t process that file. Try a clearer, smaller screenshot or a different PDF.");
   }
   if (e instanceof Anthropic.APIConnectionError) {
+    console.error("Claude connection error:", e.message, "| cause:", (e as { cause?: unknown }).cause);
     return new AiError("connection", "Couldn’t reach Claude. Check your internet connection and try again.");
   }
   console.error("Claude API error:", e);
