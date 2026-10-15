@@ -233,7 +233,11 @@ function FormBody({
       {isEquity && (
         <div className="space-y-1">
           <Label className="label-caps">Sector (optional)</Label>
-          <Select value={form.sector} onValueChange={(v) => v && set("sector")(v)}>
+          <Select
+            value={form.sector}
+            onValueChange={(v) => v && set("sector")(v)}
+            items={{ [NO_SECTOR]: "None", ...Object.fromEntries(SECTOR_OPTIONS.map((x) => [x, x])) }}
+          >
             <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value={NO_SECTOR}>None</SelectItem>

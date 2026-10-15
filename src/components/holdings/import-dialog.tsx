@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { FileImage, FileSpreadsheet, FileText, Upload } from "lucide-react";
 import { importHoldingsAction } from "@/app/holdings/actions";
 import { Badge } from "@/components/ui/badge";
@@ -13,12 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { formatPrice, formatShares } from "@/lib/format";
-import { ACCEPTED_EXTENSIONS, readSpreadsheet } from "@/lib/import/parse-file";
-import { parseImportRows, type ParsedImport, type ParsedRow } from "@/lib/import/normalize";
-import { cn } from "@/lib/utils";
-
-type Mode = "add" | "replace";
+import { matchColumns, missingRequired, type ColumnMap } from "@/lib/import/columns";
+import { parseImportRows } from "@/lib/import/normalize";
+import { ACCEPT_ATTR, ACCEPTED_EXTENSIONS, readSpreadsheet } from "@/lib/import/parse-file";
+import type { Table } from "@/lib/import/table";
+import { ColumnMapper } from "./column-mapper";
+import type { HoldingClass } from "@/lib/portfolio/types";
+import { classify, ImportPreview, type Dup, type Mode } from "./import-preview";
 
 export function ImportDialog({
   existing,
@@ -41,6 +42,8 @@ export function ImportDialog({
   );
 }
 
+type Step = "choose" | "map" | "preview";
+
 function ImportBody({
   existing,
   close,
@@ -49,14 +52,31 @@ function ImportBody({
   close: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [step, setStep] = useState<Step>("choose");
   const [fileName, setFileName] = useState("");
-  const [parsed, setParsed] = useState<ParsedImport | null>(null);
+  const [table, setTable] = useState<Table | null>(null);
+  const [map, setMap] = useState<ColumnMap | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("add");
+  const [dup, setDup] = useState<Dup>("skip");
+  const [defaultClass, setDefaultClass] = useState<HoldingClass>("Equities");
   const [pending, startTransition] = useTransition();
   const [done, setDone] = useState<string | null>(null);
 
-  const existingKeys = new Set(existing.map((e) => `${e.assetClass}:${e.ticker}`));
+  const existingKeys = useMemo(() => new Set(existing.map((e) => `${e.assetClass}:${e.ticker}`)), [existing]);
+  const parsed = useMemo(
+    () => (table && map ? parseImportRows(table.rows, table.headers, { columns: map, headerRow: table.headerRow, defaultAssetClass: defaultClass }) : null),
+    [table, map, defaultClass],
+  );
+  const view = parsed ? classify(parsed, existingKeys, mode, dup) : null;
+
+  const reset = () => {
+    setStep("choose");
+    setTable(null);
+    setMap(null);
+    setError(null);
+    if (fileRef.current) fileRef.current.value = "";
+  };
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
@@ -66,43 +86,36 @@ function ImportBody({
       return;
     }
     try {
-      const { rows, headers } = await readSpreadsheet(file);
-      const result = parseImportRows(rows, headers);
-      if (result.missingRequired.length) {
-        setError(`Couldn't find these columns: ${result.missingRequired.join(", ")}. Check the header row of your file.`);
+      const t = await readSpreadsheet(file);
+      if (t.rows.length === 0) {
+        setError("No rows were found in that file. The first sheet should have a header row followed by your holdings.");
         return;
       }
-      if (result.rows.length === 0) {
-        setError("No rows found in the file.");
-        return;
-      }
+      const m = matchColumns(t.headers);
       setFileName(file.name);
-      setParsed(result);
+      setTable(t);
+      setMap(m);
+      setStep(missingRequired(m.columns).length ? "map" : "preview");
     } catch {
-      setError("That file couldn't be read. Is it a valid CSV or Excel file?");
+      setError("That file couldn’t be read. Is it a valid CSV or Excel file?");
     }
   };
 
-  // Rows that will actually be saved with the current mode.
-  const isDuplicate = (r: ParsedRow) =>
-    mode === "add" && !!r.holding && existingKeys.has(`${r.holding.assetClass}:${r.holding.ticker}`);
-  const importable = (parsed?.rows ?? []).filter((r) => r.status !== "error" && !isDuplicate(r));
-  const holdings = importable.filter((r) => r.holding).map((r) => r.holding!);
-  const cashRows = importable.filter((r) => r.cashAmount !== undefined);
-  const cashAmount = cashRows.length ? cashRows.reduce((t, r) => t + r.cashAmount!, 0) : undefined;
-  const counts = {
-    ok: parsed?.rows.filter((r) => r.status === "ok").length ?? 0,
-    warning: parsed?.rows.filter((r) => r.status === "warning").length ?? 0,
-    error: parsed?.rows.filter((r) => r.status === "error").length ?? 0,
-    skipped: parsed?.rows.filter(isDuplicate).length ?? 0,
-  };
-
-  const save = () =>
+  const save = () => {
+    if (!view) return;
     startTransition(async () => {
-      const res = await importHoldingsAction(mode, holdings, cashAmount);
-      if (res.ok) setDone(`${res.added} imported${res.skipped ? `, ${res.skipped} skipped` : ""}.`);
-      else setError(res.errors.form ?? "Import failed.");
+      const res = await importHoldingsAction(mode, view.holdings, view.cashAmount, dup);
+      if (res.ok) {
+        const parts = [
+          `${res.added} added`,
+          res.merged ? `${res.merged} averaged into existing` : "",
+          res.replaced ? `${res.replaced} replaced` : "",
+          res.skipped ? `${res.skipped} skipped` : "",
+        ].filter(Boolean);
+        setDone(parts.join(", ") + ".");
+      } else setError(res.errors.form ?? "Import failed.");
     });
+  };
 
   if (done) {
     return (
@@ -116,18 +129,21 @@ function ImportBody({
     );
   }
 
+  const description =
+    step === "choose" ? "Choose where your holdings are coming from."
+    : step === "map" ? `Match the columns in ${fileName}.`
+    : `Review ${fileName} before anything is saved.`;
+
+  const nothingToImport = !view || (view.holdings.length === 0 && view.cashAmount === undefined);
+
   return (
     <>
       <DialogHeader>
         <DialogTitle>Import holdings</DialogTitle>
-        <DialogDescription>
-          {parsed
-            ? `Review ${fileName} before anything is saved.`
-            : "Choose where your holdings are coming from."}
-        </DialogDescription>
+        <DialogDescription>{description}</DialogDescription>
       </DialogHeader>
 
-      {!parsed ? (
+      {step === "choose" && (
         <div className="space-y-3">
           <div className="grid gap-2 sm:grid-cols-3">
             <button
@@ -159,119 +175,57 @@ function ImportBody({
           <input
             ref={fileRef}
             type="file"
-            accept={ACCEPTED_EXTENSIONS.join(",")}
+            accept={ACCEPT_ATTR}
             className="hidden"
             onChange={(e) => onFile(e.target.files?.[0])}
           />
           <p className="text-[11px] text-muted-foreground">
-            The first row should be headers. Recognized names include Ticker/Symbol, Shares/Qty,
-            Cost/Avg Cost, Price, Asset Class and Sector. Only Ticker, Shares and a Cost or Price
-            are required.
+            The first row (or the first row with recognizable names) should be headers. Recognized
+            names include Ticker/Symbol, Shares/Qty, Cost/Avg Cost, Price, Value, Asset Class and
+            Sector. If your columns can’t be matched, you’ll be able to match them by hand.
           </p>
-          {error && <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive">{error}</p>}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2 text-[12px]">
-            <Badge variant="outline">{counts.ok} ready</Badge>
-            {counts.warning > 0 && <Badge variant="outline" className="border-primary/50 text-primary">{counts.warning} with warnings</Badge>}
-            {counts.error > 0 && <Badge variant="outline" className="border-destructive/50 text-destructive">{counts.error} will be skipped (errors)</Badge>}
-            {counts.skipped > 0 && <Badge variant="outline">{counts.skipped} already exist — skipped</Badge>}
-            <Button variant="link" size="sm" className="ml-auto" onClick={() => { setParsed(null); setError(null); }}>
-              Choose a different file
-            </Button>
-          </div>
-
-          <div className="max-h-72 overflow-auto rounded-md border">
-            <table className="w-full text-[12px]">
-              <thead className="sticky top-0 bg-popover">
-                <tr className="label-caps border-b">
-                  {["Row", "Ticker", "Name", "Class", "Shares", "Cost", "Price", "Status"].map((h, i) => (
-                    <th key={h} className={cn("px-2 py-1.5 font-medium", i >= 4 && i <= 6 ? "text-right" : "text-left")}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {parsed.rows.map((r) => {
-                  const dup = isDuplicate(r);
-                  const h = r.holding;
-                  return (
-                    <tr key={r.line} className={cn("border-b border-border/50 align-top", (r.status === "error" || dup) && "opacity-60")}>
-                      <td className="num px-2 py-1.5 text-muted-foreground">{r.line}</td>
-                      <td className="px-2 py-1.5 font-medium text-primary">{r.label}</td>
-                      <td className="max-w-48 truncate px-2 py-1.5">{h?.name ?? "—"}</td>
-                      <td className="px-2 py-1.5">{h?.assetClass ?? (r.cashAmount !== undefined ? "Cash" : "—")}</td>
-                      <td className="num px-2 py-1.5">{h ? formatShares(h.shares) : "—"}</td>
-                      <td className="num px-2 py-1.5">{h ? formatPrice(h.costBasisPerShare) : "—"}</td>
-                      <td className="num px-2 py-1.5">{h ? formatPrice(h.currentPrice) : r.cashAmount !== undefined ? formatPrice(r.cashAmount) : "—"}</td>
-                      <td className="px-2 py-1.5">
-                        <span className={cn(
-                          "label-caps",
-                          r.status === "error" && "text-destructive",
-                          r.status === "warning" && "text-primary",
-                        )}>
-                          {dup ? "Skipped" : r.status === "ok" ? "OK" : r.status === "warning" ? "Warning" : "Error"}
-                        </span>
-                        {dup && <p className="text-[11px] text-muted-foreground">Already in your holdings</p>}
-                        {r.messages.map((m) => (
-                          <p key={m} className="text-[11px] text-muted-foreground">{m}</p>
-                        ))}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <fieldset className="grid gap-2 sm:grid-cols-2">
-            <legend className="label-caps mb-1.5">What should happen to your current holdings?</legend>
-            {(
-              [
-                { value: "add", title: "Add to current", text: "Keep what you have. Tickers already in the same asset class are skipped." },
-                { value: "replace", title: "Replace", text: `Delete all ${existing.length} current holdings first, then import this file.` },
-              ] as const
-            ).map((o) => (
-              <label
-                key={o.value}
-                className={cn(
-                  "flex cursor-pointer gap-2.5 rounded-md border p-2.5",
-                  mode === o.value && "border-primary/70 bg-primary/5",
-                )}
-              >
-                <input
-                  type="radio"
-                  name="import-mode"
-                  value={o.value}
-                  checked={mode === o.value}
-                  onChange={() => setMode(o.value)}
-                  className="mt-0.5 accent-[var(--primary)]"
-                />
-                <span>
-                  <span className="block font-medium">{o.title}</span>
-                  <span className="block text-[11px] text-muted-foreground">{o.text}</span>
-                </span>
-              </label>
-            ))}
-          </fieldset>
-          {cashAmount !== undefined && (
-            <p className="text-[11px] text-muted-foreground">
-              Cash rows total {formatPrice(cashAmount)} — {mode === "add" ? "added to" : "set as"} your cash balance.
-            </p>
-          )}
           {error && <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive">{error}</p>}
         </div>
       )}
 
+      {step === "map" && table && map && (
+        <ColumnMapper
+          headers={table.headers}
+          map={map}
+          onChange={setMap}
+          onContinue={() => setStep("preview")}
+          onBack={reset}
+        />
+      )}
+
+      {step === "preview" && parsed && view && (
+        <ImportPreview
+          parsed={parsed}
+          fileName={fileName}
+          existingCount={existing.length}
+          mode={mode}
+          setMode={setMode}
+          dup={dup}
+          setDup={setDup}
+          view={view}
+          onAdjustColumns={() => setStep("map")}
+          onChooseAnother={reset}
+          error={error}
+          showColumnsUsed
+          defaultClass={defaultClass}
+          setDefaultClass={setDefaultClass}
+        />
+      )}
+
       <DialogFooter>
         <Button variant="ghost" onClick={close}>Cancel</Button>
-        {parsed && (
+        {step === "preview" && view && (
           <Button
             onClick={save}
-            disabled={pending || (holdings.length === 0 && cashAmount === undefined)}
+            disabled={pending || nothingToImport}
             variant={mode === "replace" ? "destructive" : "default"}
           >
-            {pending ? "Importing…" : `${mode === "replace" ? "Replace with" : "Import"} ${holdings.length} ${holdings.length === 1 ? "holding" : "holdings"}`}
+            {pending ? "Importing…" : `${mode === "replace" ? "Replace with" : "Import"} ${view.holdings.length} ${view.holdings.length === 1 ? "holding" : "holdings"}`}
           </Button>
         )}
       </DialogFooter>

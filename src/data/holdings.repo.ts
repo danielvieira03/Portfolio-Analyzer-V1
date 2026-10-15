@@ -155,24 +155,49 @@ export async function setCash(amount: number) {
 
 export interface ImportResult {
   added: number;
+  merged: number;
+  replaced: number;
   skipped: number;
 }
 
+export type ImportDuplicateChoice = "skip" | DuplicateChoice;
+
 /**
- * Save imported holdings. "add" keeps everything and skips tickers that already exist
- * in the same class; "replace" wipes current holdings first. Cash rows from the file
- * are added to (add) or replace (replace) the cash balance.
+ * Save imported holdings. "add" keeps everything already there; for tickers that already exist
+ * in the same class, `onDuplicate` decides: skip them, average them into the existing position
+ * (merge), or overwrite the position (replace). "replace" wipes current holdings first.
+ * Cash rows from the file are added to (add) or replace (replace) the cash balance.
  */
 export async function importHoldings(
   mode: "add" | "replace",
   holdings: HoldingInput[],
   cashAmount?: number,
+  onDuplicate: ImportDuplicateChoice = "skip",
 ): Promise<ImportResult> {
-  const existing =
+  const result: ImportResult = { added: 0, merged: 0, replaced: 0, skipped: 0 };
+  const existing = new Map(
     mode === "add"
-      ? new Set((await prisma.holding.findMany({ select: { assetClass: true, ticker: true } })).map((h) => `${h.assetClass}:${h.ticker}`))
-      : new Set<string>();
-  const toCreate = holdings.filter((h) => !existing.has(`${h.assetClass}:${h.ticker}`));
+      ? (await prisma.holding.findMany()).map((h) => [`${h.assetClass}:${h.ticker}`, h] as const)
+      : [],
+  );
+
+  const toCreate: HoldingInput[] = [];
+  const updates = [];
+  for (const h of holdings) {
+    const current = existing.get(`${h.assetClass}:${h.ticker}`);
+    if (!current) {
+      toCreate.push(h);
+      result.added++;
+    } else if (onDuplicate === "skip") {
+      result.skipped++;
+    } else if (onDuplicate === "replace") {
+      updates.push(prisma.holding.update({ where: { id: current.id }, data: toRow(h) }));
+      result.replaced++;
+    } else {
+      updates.push(prisma.holding.update({ where: { id: current.id }, data: { ...mergePositions(current, h) } }));
+      result.merged++;
+    }
+  }
 
   const currentCash = (await prisma.cashBalance.findUnique({ where: { id: 1 } }))?.amount ?? 0;
   const newCash =
@@ -181,10 +206,11 @@ export async function importHoldings(
   await prisma.$transaction([
     ...(mode === "replace" ? [prisma.holding.deleteMany()] : []),
     prisma.holding.createMany({ data: toCreate.map(toRow) }),
+    ...updates,
     ...(newCash !== undefined
       ? [prisma.cashBalance.upsert({ where: { id: 1 }, update: { amount: newCash }, create: { id: 1, amount: newCash } })]
       : []),
   ]);
   await leaveDemoMode();
-  return { added: toCreate.length, skipped: holdings.length - toCreate.length };
+  return result;
 }

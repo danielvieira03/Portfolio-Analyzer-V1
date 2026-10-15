@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { addHolding, deleteHolding, importHoldings, saveHolding, setCash, type DuplicateChoice, type ImportResult } from "@/data/holdings.repo";
+import { addHolding, deleteHolding, importHoldings, saveHolding, setCash, type DuplicateChoice, type ImportDuplicateChoice, type ImportResult } from "@/data/holdings.repo";
 import { cashSchema, fieldErrors, holdingSchema } from "@/lib/holdings/schema";
 
 export type ActionResult<T = unknown> =
@@ -54,6 +54,7 @@ export async function importHoldingsAction(
   mode: "add" | "replace",
   holdings: unknown[],
   cashAmount?: number,
+  onDuplicate: ImportDuplicateChoice = "skip",
 ): Promise<ActionResult<ImportResult>> {
   const valid = [];
   for (const h of holdings) {
@@ -61,7 +62,7 @@ export async function importHoldingsAction(
     if (!parsed.success) return { ok: false, errors: { form: "Some rows are invalid — please re-check the file." } };
     valid.push(parsed.data);
   }
-  const result = await importHoldings(mode, valid, cashAmount);
+  const result = await importHoldings(mode, valid, cashAmount, onDuplicate);
   refresh();
   return { ok: true, ...result };
 }
