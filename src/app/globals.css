@@ -111,6 +111,11 @@
   body {
     @apply bg-background text-foreground text-[13px] leading-snug antialiased;
   }
+  /* Tailwind resets buttons to the arrow cursor; show the hand on anything clickable. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
 }
 
 /* Small-caps section label used on panels, cards and table headers. */
