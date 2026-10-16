@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { Briefcase } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { ImportDialog } from "@/components/holdings/import-dialog";
 
 export function EmptyState() {
   return (
@@ -10,12 +9,10 @@ export function EmptyState() {
       </div>
       <h2 className="text-base font-semibold">No holdings yet</h2>
       <p className="mt-1 max-w-sm text-muted-foreground">
-        Add your positions on the Holdings tab and this dashboard will fill in with your allocation,
-        sector mix and largest positions.
+        Upload your positions and this dashboard will fill in with your allocation, sector mix and
+        largest positions.
       </p>
-      <Link href="/holdings" className={buttonVariants({ className: "mt-4" })}>
-        Go to Holdings
-      </Link>
+      <ImportDialog existing={[]} buttonLabel="Upload Your Portfolio" prominent buttonClassName="mt-4" />
     </div>
   );
 }

@@ -25,15 +25,28 @@ import { cn } from "@/lib/utils";
 
 export function ImportDialog({
   existing,
+  buttonLabel = "Import",
+  prominent = false,
+  buttonClassName,
 }: {
   /** Current holdings, used to flag repeated tickers, show the averaged result and warn before replacing. */
   existing: ExistingLot[];
+  /** Text on the button that opens the dialog. */
+  buttonLabel?: string;
+  /** Filled amber button (for the empty dashboard) instead of the small outline one. */
+  prominent?: boolean;
+  buttonClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <Upload /> Import
+      <Button
+        variant={prominent ? "default" : "outline"}
+        size={prominent ? "default" : "sm"}
+        className={buttonClassName}
+        onClick={() => setOpen(true)}
+      >
+        <Upload /> {buttonLabel}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-4xl">
