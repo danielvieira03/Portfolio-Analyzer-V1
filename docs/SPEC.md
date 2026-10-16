@@ -11,10 +11,10 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
 - **Holdings** — one sortable table per asset class (Equities, Fixed Income, Alternatives), a separate
   cash card, add/edit/remove (adding an existing ticker offers to average it in or replace it), and import
   with a preview.
-- **Import** — CSV/Excel (read locally, tolerant of different column names, with manual column matching)
-  and Screenshot/PDF (read by Claude). The user first picks "Add additional holdings" or "New portfolio". The
+- **Import** — CSV/Excel (parsed locally, tolerant of different column names, with manual column matching)
+  and Screenshot/PDF (read by Claude). The first step of Import is choosing "Add additional holdings" or "New portfolio". The
   preview looks like the Holdings table; in Add mode repeated tickers are flagged, averaged by default, and can be
-  unticked. An optional "Double-check with Claude" flags data mistakes only.
+  unticked. CSV/Excel files get an automatic "Claude check" (parsed rows only, text, no file) that flags data mistakes only; it never blocks the import.
 - A demo portfolio (~$500K) loaded on first run, clearly badged and removable.
 
 ## What it deliberately lacks

@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
-import { FileImage, FileSpreadsheet, FileText, Loader2, Sparkles, Upload } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { FileImage, FileSpreadsheet, FileText, Loader2, Upload } from "lucide-react";
 import { importHoldingsAction } from "@/app/holdings/actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,7 +44,7 @@ export function ImportDialog({
   );
 }
 
-type Step = "choose" | "map" | "preview";
+type Step = "mode" | "choose" | "map" | "preview";
 
 function ImportBody({
   existing,
@@ -54,7 +54,7 @@ function ImportBody({
   close: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const [step, setStep] = useState<Step>("choose");
+  const [step, setStep] = useState<Step>("mode");
   const [fileName, setFileName] = useState("");
   const [table, setTable] = useState<Table | null>(null);
   const [map, setMap] = useState<ColumnMap | null>(null);
@@ -71,6 +71,8 @@ function ImportBody({
   const [readByClaude, setReadByClaude] = useState(false);
   const [aiIssues, setAiIssues] = useState<string[]>([]);
   const [review, setReview] = useState<ReviewState>({ status: "idle" });
+  // The automatic Claude check runs once per loaded CSV/Excel file.
+  const autoChecked = useRef(false);
 
   const existingMap = useMemo(() => new Map(existing.map((e) => [lotKey(e.assetClass, e.ticker), e])), [existing]);
   const parsed = useMemo(
@@ -88,6 +90,7 @@ function ImportBody({
     setReadByClaude(false);
     setAiIssues([]);
     setReview({ status: "idle" });
+    autoChecked.current = false;
     if (fileRef.current) fileRef.current.value = "";
     if (aiRef.current) aiRef.current.value = "";
   };
@@ -147,6 +150,13 @@ function ImportBody({
     }
   };
 
+  // CSV/Excel get a quiet automatic Claude check as soon as the preview appears.
+  useEffect(() => {
+    if (step !== "preview" || readByClaude || autoChecked.current || !parsed?.rows.some((r) => r.holding)) return;
+    autoChecked.current = true;
+    void onReview();
+  });
+
   const onFile = async (file: File | undefined) => {
     if (!file) return;
     setError(null);
@@ -198,7 +208,8 @@ function ImportBody({
   }
 
   const description =
-    step === "choose" ? "Choose where your holdings are coming from."
+    step === "mode" ? "What would you like to do?"
+    : step === "choose" ? "Choose where your holdings are coming from."
     : step === "map" ? `Match the columns in ${fileName}.`
     : `Review ${fileName} before anything is saved.`;
 
@@ -213,26 +224,36 @@ function ImportBody({
 
       {/* Only this middle part scrolls; the header and the buttons stay in view. */}
       <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+      {step === "mode" && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {(
+            [
+              { value: "add", title: "Add additional holdings", text: "Keep what you have and add these holdings. Repeated tickers are flagged and averaged." },
+              { value: "replace", title: "New portfolio", text: `Replace all ${existing.length} current holdings with this file.` },
+            ] as const
+          ).map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => { setMode(o.value); setStep("choose"); }}
+              className={cn(
+                "flex flex-col items-start gap-1.5 rounded-md border p-4 text-left transition-colors hover:bg-muted/50",
+                o.value === "add" && "border-primary/60 bg-primary/5 hover:bg-primary/10",
+              )}
+            >
+              <span className="font-medium">{o.title}</span>
+              <span className="text-[12px] text-muted-foreground">{o.text}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {step === "choose" && (
         <div className="space-y-3">
-          <fieldset className="grid gap-2 sm:grid-cols-2">
-            <legend className="label-caps mb-1.5">What are you importing?</legend>
-            {(
-              [
-                { value: "add", title: "Add additional holdings", text: "Keep what you have and add these. Repeated tickers are flagged and averaged." },
-                { value: "replace", title: "New portfolio", text: `Replace all ${existing.length} current holdings with this file.` },
-              ] as const
-            ).map((o) => (
-              <label key={o.value} className={cn("flex cursor-pointer gap-2.5 rounded-md border p-2.5", mode === o.value && "border-primary/70 bg-primary/5")}>
-                <input type="radio" name="import-mode" value={o.value} checked={mode === o.value} onChange={() => setMode(o.value)} className="mt-0.5 accent-[var(--primary)]" />
-                <span>
-                  <span className="block font-medium">{o.title}</span>
-                  <span className="block text-[11px] text-muted-foreground">{o.text}</span>
-                </span>
-              </label>
-            ))}
-          </fieldset>
-          <p className="label-caps">Where are they coming from?</p>
+          <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
+            <span className="label-caps text-primary">{mode === "add" ? "Adding to your portfolio" : "Replacing your portfolio"}</span>
+            <Button variant="link" size="sm" onClick={() => setStep("mode")}>Back</Button>
+          </p>
           <div className="grid gap-2 sm:grid-cols-3">
             <button
               type="button"
@@ -261,7 +282,7 @@ function ImportBody({
               >
                 <Icon className="size-5 text-primary" />
                 <span className="flex items-center gap-2 font-medium">
-                  {label} <Sparkles className="size-3 text-primary" />
+                  {label}
                 </span>
                 <span className="text-[11px] text-muted-foreground">{hint}</span>
               </button>
@@ -282,15 +303,8 @@ function ImportBody({
             onChange={(e) => onFile(e.target.files?.[0])}
           />
           <p className="text-[11px] text-muted-foreground">
-            The first row (or the first row with recognizable names) should be headers. Recognized
-            names include Ticker/Symbol, Shares/Qty, Cost/Avg Cost, Price, Value, Asset Class and
-            Sector. If your columns can’t be matched, you’ll be able to match them by hand.
-          </p>
-          <p className="text-[11px] text-muted-foreground">
-            <Sparkles className="mr-1 inline size-3 text-primary" />
-            Screenshots and PDFs are sent to Claude (Anthropic’s API) to be read — this app doesn’t keep the
-            file. CSV and Excel files are read locally and never leave your computer. Each screenshot or PDF
-            costs roughly a cent or two of API credit.
+            Your file needs a header row with at least a ticker, the number of shares, and a cost or price. Column
+            names don’t have to match exactly; if we can’t tell, you’ll match them yourself.
           </p>
           {error && <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive">{error}</p>}
         </div>
@@ -331,7 +345,7 @@ function ImportBody({
         {step === "preview" && view && (
           <Button
             onClick={save}
-            disabled={pending || nothingToImport || review.status === "loading"}
+            disabled={pending || nothingToImport}
             variant={mode === "replace" ? "destructive" : "default"}
           >
             {pending ? "Importing…" : `${mode === "replace" ? "Replace with" : "Import"} ${view.holdings.length} ${view.holdings.length === 1 ? "holding" : "holdings"}`}

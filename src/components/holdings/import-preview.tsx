@@ -109,10 +109,11 @@ export function ImportPreview({
           </Badge>
         )}
         <span className="ml-auto flex items-center gap-1">
-          <Button variant="outline" size="sm" onClick={onReview} disabled={review.status === "loading" || parsed.rows.every((r) => !r.holding)}>
-            {review.status === "loading" ? <Loader2 className="animate-spin" /> : <Sparkles />}
-            {review.status === "done" ? "Double-check again" : "Double-check with Claude"}
-          </Button>
+          {review.status === "done" && (
+            <Button variant="outline" size="sm" onClick={onReview}>
+              <Sparkles /> Double-check again
+            </Button>
+          )}
           {onAdjustColumns && <Button variant="link" size="sm" onClick={onAdjustColumns}>Adjust columns</Button>}
           <Button variant="link" size="sm" onClick={onChooseAnother}>Choose a different file</Button>
         </span>
@@ -123,9 +124,12 @@ export function ImportPreview({
           <ul className="list-disc space-y-0.5 pl-4">{aiIssues.map((i) => <li key={i}>{i}</li>)}</ul>
         </div>
       )}
-      {review.status === "error" && (
-        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive">{review.message}</p>
+      {review.status === "loading" && (
+        <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
+          <Loader2 className="size-3.5 animate-spin" /> Claude is checking your file…
+        </p>
       )}
+      {review.status === "error" && <p className="text-[12px] text-muted-foreground">Claude check unavailable.</p>}
       {review.status === "done" && (
         <div className="rounded-md border bg-muted/40 px-3 py-2 text-[12px]">
           <p className="label-caps mb-1 flex items-center gap-1.5 text-primary"><Sparkles className="size-3" /> Claude’s double-check</p>
