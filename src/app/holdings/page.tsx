@@ -1,6 +1,7 @@
 import { DemoBadge } from "@/components/dashboard/demo-badge";
 import { AssetClassSection } from "@/components/holdings/asset-class-section";
 import { CashCard } from "@/components/holdings/cash-card";
+import { toExistingLots } from "@/components/holdings/existing-lots";
 import { ImportDialog } from "@/components/holdings/import-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { getPortfolio } from "@/data/holdings.repo";
@@ -22,7 +23,7 @@ export default async function HoldingsPage() {
         actions={
           <>
             {isDemoData && <DemoBadge />}
-            <ImportDialog existing={positions.map((p) => ({ assetClass: p.assetClass, ticker: p.ticker, name: p.name, sector: p.sector, shares: p.shares, costBasisPerShare: p.costBasisPerShare }))} />
+            <ImportDialog existing={toExistingLots(positions)} />
           </>
         }
       />

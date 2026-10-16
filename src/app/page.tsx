@@ -2,6 +2,8 @@ import { AllocationDonut } from "@/components/dashboard/allocation-donut";
 import { DemoBadge } from "@/components/dashboard/demo-badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { SectorVsSp500 } from "@/components/dashboard/sector-vs-sp500";
+import { toExistingLots } from "@/components/holdings/existing-lots";
+import { ImportDialog } from "@/components/holdings/import-dialog";
 import { StatCards } from "@/components/dashboard/stat-cards";
 import { TopHoldings } from "@/components/dashboard/top-holdings";
 import { PageHeader } from "@/components/shared/page-header";
@@ -23,7 +25,12 @@ export default async function DashboardPage() {
     <PageHeader
       title="Dashboard"
       subtitle="Portfolio overview"
-      actions={isDemoData ? <DemoBadge /> : undefined}
+      actions={
+        <>
+          {isDemoData && <DemoBadge />}
+          <ImportDialog existing={toExistingLots(positions)} />
+        </>
+      }
     />
   );
 
