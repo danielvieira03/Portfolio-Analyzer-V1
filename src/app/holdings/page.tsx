@@ -22,7 +22,7 @@ export default async function HoldingsPage() {
         actions={
           <>
             {isDemoData && <DemoBadge />}
-            <ImportDialog existing={positions.map((p) => ({ assetClass: p.assetClass, ticker: p.ticker }))} />
+            <ImportDialog existing={positions.map((p) => ({ assetClass: p.assetClass, ticker: p.ticker, name: p.name, sector: p.sector, shares: p.shares, costBasisPerShare: p.costBasisPerShare }))} />
           </>
         }
       />

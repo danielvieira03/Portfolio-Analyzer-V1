@@ -20,13 +20,14 @@ import { ACCEPT_ATTR, ACCEPTED_EXTENSIONS, readSpreadsheet } from "@/lib/import/
 import type { Table } from "@/lib/import/table";
 import { ColumnMapper } from "./column-mapper";
 import type { HoldingClass } from "@/lib/portfolio/types";
-import { classify, ImportPreview, type Dup, type Mode, type ReviewState } from "./import-preview";
+import { classify, ImportPreview, lotKey, type ExistingLot, type Mode, type ReviewState } from "./import-preview";
+import { cn } from "@/lib/utils";
 
 export function ImportDialog({
   existing,
 }: {
-  /** Current holdings, used to flag duplicates and to warn before replacing. */
-  existing: { assetClass: string; ticker: string }[];
+  /** Current holdings, used to flag repeated tickers, show the averaged result and warn before replacing. */
+  existing: ExistingLot[];
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -49,7 +50,7 @@ function ImportBody({
   existing,
   close,
 }: {
-  existing: { assetClass: string; ticker: string }[];
+  existing: ExistingLot[];
   close: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -59,7 +60,8 @@ function ImportBody({
   const [map, setMap] = useState<ColumnMap | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("add");
-  const [dup, setDup] = useState<Dup>("skip");
+  // Repeated tickers the user unticked (kept out of the import).
+  const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [defaultClass, setDefaultClass] = useState<HoldingClass>("Equities");
   const [pending, startTransition] = useTransition();
   const [done, setDone] = useState<string | null>(null);
@@ -70,15 +72,16 @@ function ImportBody({
   const [aiIssues, setAiIssues] = useState<string[]>([]);
   const [review, setReview] = useState<ReviewState>({ status: "idle" });
 
-  const existingKeys = useMemo(() => new Set(existing.map((e) => `${e.assetClass}:${e.ticker}`)), [existing]);
+  const existingMap = useMemo(() => new Map(existing.map((e) => [lotKey(e.assetClass, e.ticker), e])), [existing]);
   const parsed = useMemo(
     () => (table && map ? parseImportRows(table.rows, table.headers, { columns: map, headerRow: table.headerRow, defaultAssetClass: defaultClass }) : null),
     [table, map, defaultClass],
   );
-  const view = parsed ? classify(parsed, existingKeys, mode, dup) : null;
+  const view = parsed ? classify(parsed, existingMap, mode, excluded) : null;
 
   const reset = () => {
     setStep("choose");
+    setExcluded(new Set());
     setTable(null);
     setMap(null);
     setError(null);
@@ -170,13 +173,12 @@ function ImportBody({
   const save = () => {
     if (!view) return;
     startTransition(async () => {
-      const res = await importHoldingsAction(mode, view.holdings, view.cashAmount, dup);
+      const res = await importHoldingsAction(mode, view.holdings, view.cashAmount, "merge");
       if (res.ok) {
         const parts = [
           `${res.added} added`,
           res.merged ? `${res.merged} averaged into existing` : "",
-          res.replaced ? `${res.replaced} replaced` : "",
-          res.skipped ? `${res.skipped} skipped` : "",
+          view.counts.leftOut ? `${view.counts.leftOut} left out` : "",
         ].filter(Boolean);
         setDone(parts.join(", ") + ".");
       } else setError(res.errors.form ?? "Import failed.");
@@ -213,6 +215,24 @@ function ImportBody({
       <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
       {step === "choose" && (
         <div className="space-y-3">
+          <fieldset className="grid gap-2 sm:grid-cols-2">
+            <legend className="label-caps mb-1.5">What are you importing?</legend>
+            {(
+              [
+                { value: "add", title: "Add additional holdings", text: "Keep what you have and add these. Repeated tickers are flagged and averaged." },
+                { value: "replace", title: "New portfolio", text: `Replace all ${existing.length} current holdings with this file.` },
+              ] as const
+            ).map((o) => (
+              <label key={o.value} className={cn("flex cursor-pointer gap-2.5 rounded-md border p-2.5", mode === o.value && "border-primary/70 bg-primary/5")}>
+                <input type="radio" name="import-mode" value={o.value} checked={mode === o.value} onChange={() => setMode(o.value)} className="mt-0.5 accent-[var(--primary)]" />
+                <span>
+                  <span className="block font-medium">{o.title}</span>
+                  <span className="block text-[11px] text-muted-foreground">{o.text}</span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+          <p className="label-caps">Where are they coming from?</p>
           <div className="grid gap-2 sm:grid-cols-3">
             <button
               type="button"
@@ -289,11 +309,9 @@ function ImportBody({
       {step === "preview" && parsed && view && (
         <ImportPreview
           parsed={parsed}
-          existingCount={existing.length}
+          existing={existingMap}
           mode={mode}
-          setMode={setMode}
-          dup={dup}
-          setDup={setDup}
+          onToggle={(key) => setExcluded((prev) => { const n = new Set(prev); if (!n.delete(key)) n.add(key); return n; })}
           view={view}
           onAdjustColumns={() => setStep("map")}
           onChooseAnother={reset}
