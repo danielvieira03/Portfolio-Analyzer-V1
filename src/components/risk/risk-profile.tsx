@@ -23,14 +23,14 @@ export function RiskProfile({ score, allocation }: { score: number; allocation: 
 
   return (
     <Panel title="Risk Profile">
-      <div className="mx-auto max-w-2xl py-2">
+      <div className="mx-auto max-w-4xl py-4">
         <p className="flex flex-wrap items-baseline justify-center gap-x-3 text-center">
-          <span className="font-mono text-4xl font-semibold tabular-nums text-primary">{shown.toFixed(1)}</span>
-          <span className="text-lg text-muted-foreground">·</span>
-          <span className="text-lg font-medium">{label}</span>
+          <span className="font-mono text-3xl font-semibold tabular-nums text-primary">{shown.toFixed(1)}</span>
+          <span className="hidden text-2xl text-muted-foreground sm:inline">·</span>
+          <span className="text-2xl font-semibold">{label}</span>
         </p>
 
-        <div className="mt-7 px-4">
+        <div className="mt-9 px-4">
           <div className="relative">
             {/* Track: light warm orange on the left to the app's amber on the right, no other hues. */}
             <div
@@ -65,7 +65,7 @@ export function RiskProfile({ score, allocation }: { score: number; allocation: 
           </div>
         </div>
 
-        <p className="mt-6 text-center text-[12px] text-muted-foreground">
+        <p className="mt-8 text-center text-[13px] text-muted-foreground">
           {allocation.map((s, i) => (
             <span key={s.assetClass}>
               {i > 0 && " · "}
