@@ -36,7 +36,7 @@ Next.js (App Router) + TypeScript · Tailwind CSS v4 + shadcn/ui (base-ui) · Re
 - `src/lib/format.ts` — the only place numbers are formatted (currency, percent, dates)
 - `src/data/` — data layer; the only code that talks to Prisma
 - `src/config/` — nav items and editable settings (S&P 500 sector weights + as-of date, risk weights and labels in `risk.ts`)
-- `src/components/risk/` — Risk Analysis cards (Risk Profile meter, sector weights vs the S&P 500); score math is `src/lib/portfolio/risk.ts`
+- `src/components/risk/` — Risk Analysis cards (Risk Profile meter, sector weights vs the S&P 500, over/underweight summary); score math is `src/lib/portfolio/risk.ts`
 - `prisma/` — schema and migrations; DB file `prisma/portfolio.db` is git-ignored
 - `src/generated/` — generated Prisma client (git-ignored)
 

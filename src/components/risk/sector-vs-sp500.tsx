@@ -54,7 +54,7 @@ export function SectorVsSp500({
             </span>
             <span className="ml-auto">Right column: over / underweight vs S&amp;P</span>
           </div>
-          <div className="h-[420px]">
+          <div className="h-[420px] xl:h-[530px]">
             <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 600, height: 420 }}>
               <BarChart
                 data={data}
