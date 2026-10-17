@@ -58,10 +58,13 @@ export function AllocationDonut({
           </div>
           {hovered && (
             <div className="pointer-events-none absolute left-1/2 top-[calc(12rem+0.5rem)] z-50 -translate-x-1/2">
-              <ChartTooltipBox title={hovered.assetClass}>
-                <ChartTooltipRow color={CLASS_COLORS[hovered.assetClass]} label="Value" value={formatCurrency(hovered.value)} />
-                <ChartTooltipRow label="Weight" value={formatPercent(hovered.weight)} />
-              </ChartTooltipBox>
+              {/* Fades in while drifting down a few pixels; skipped for people who prefer less motion. */}
+              <div className="animate-in fade-in-0 slide-in-from-top-1 duration-200 motion-reduce:animate-none">
+                <ChartTooltipBox title={hovered.assetClass}>
+                  <ChartTooltipRow color={CLASS_COLORS[hovered.assetClass]} label="Value" value={formatCurrency(hovered.value)} />
+                  <ChartTooltipRow label="Weight" value={formatPercent(hovered.weight)} />
+                </ChartTooltipBox>
+              </div>
             </div>
           )}
         </div>
