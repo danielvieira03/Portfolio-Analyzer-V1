@@ -9,6 +9,8 @@ interface DemoHolding {
   name: string;
   assetClass: HoldingClass;
   sector: string | null;
+  /** Fixed Income: maturity; Alternatives: type. */
+  subtype?: string;
   shares: number;
   cost: number;
   price: number;
@@ -35,9 +37,9 @@ export const DEMO_HOLDINGS: DemoHolding[] = [
   { ticker: "QQQ", name: "Invesco QQQ Trust", assetClass: "Equities", sector: "Diversified", shares: 60, cost: 380.0, price: 500.0 },
   { ticker: "VXUS", name: "Vanguard Total International Stock ETF", assetClass: "Equities", sector: "Diversified", shares: 250, cost: 59.0, price: 64.0 },
   // Bond funds
-  { ticker: "BND", name: "Vanguard Total Bond Market ETF", assetClass: "Fixed Income", sector: null, shares: 800, cost: 76.5, price: 73.4 },
-  { ticker: "VCSH", name: "Vanguard Short-Term Corporate Bond ETF", assetClass: "Fixed Income", sector: null, shares: 300, cost: 79.8, price: 78.2 },
+  { ticker: "BND", name: "Vanguard Total Bond Market ETF", assetClass: "Fixed Income", sector: null, subtype: "Medium-term", shares: 800, cost: 76.5, price: 73.4 },
+  { ticker: "VCSH", name: "Vanguard Short-Term Corporate Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Short-term", shares: 300, cost: 79.8, price: 78.2 },
   // Gold / silver
-  { ticker: "GLD", name: "SPDR Gold Shares", assetClass: "Alternatives", sector: null, shares: 120, cost: 185.0, price: 310.0 },
-  { ticker: "SLV", name: "iShares Silver Trust", assetClass: "Alternatives", sector: null, shares: 400, cost: 22.0, price: 32.0 },
+  { ticker: "GLD", name: "SPDR Gold Shares", assetClass: "Alternatives", sector: null, subtype: "Commodities", shares: 120, cost: 185.0, price: 310.0 },
+  { ticker: "SLV", name: "iShares Silver Trust", assetClass: "Alternatives", sector: null, subtype: "Commodities", shares: 400, cost: 22.0, price: 32.0 },
 ];

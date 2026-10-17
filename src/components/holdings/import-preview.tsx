@@ -54,8 +54,9 @@ export function classify(parsed: ParsedImport, existing: Map<string, ExistingLot
 
 /** Old and new position for a repeated ticker once the file's shares are averaged in. */
 function averaged(old: ExistingLot, h: NonNullable<ParsedRow["holding"]>) {
-  const lot = (l: { name: string; sector: string | null; shares: number; costBasisPerShare: number; currentPrice?: number }) => ({
+  const lot = (l: { name: string; sector: string | null; subtype?: string | null; shares: number; costBasisPerShare: number; currentPrice?: number }) => ({
     ...l,
+    subtype: l.subtype ?? null,
     currentPrice: l.currentPrice ?? 0,
     priceAsOf: new Date(0),
   });

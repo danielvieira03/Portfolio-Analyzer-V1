@@ -12,6 +12,8 @@ export interface Position {
   name: string;
   assetClass: HoldingClass;
   sector: string | null;
+  /** Fixed Income: maturity bucket; Alternatives: type. Null = not set yet; empty for equities. */
+  subtype: string | null;
   shares: number;
   costBasisPerShare: number;
   currentPrice: number;

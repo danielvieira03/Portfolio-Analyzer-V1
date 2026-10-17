@@ -25,6 +25,22 @@ describe("holdingSchema", () => {
     expect(holdingSchema.safeParse({ ...valid, sector: null }).success).toBe(true);
     expect(holdingSchema.safeParse({ ...valid, assetClass: "Fixed Income", sector: null }).success).toBe(true);
   });
+  it("accepts a maturity on bonds and a type on alternatives, and treats blank as not set", () => {
+    const bond = { ...valid, assetClass: "Fixed Income", sector: null };
+    expect(holdingSchema.safeParse({ ...bond, subtype: "Long-term" }).success).toBe(true);
+    expect(holdingSchema.safeParse({ ...bond, subtype: "Not specified" }).success).toBe(true);
+    expect(holdingSchema.safeParse({ ...bond, assetClass: "Alternatives", subtype: "REITs" }).success).toBe(true);
+    const blank = holdingSchema.safeParse({ ...bond, subtype: "" });
+    expect(blank.success && blank.data.subtype).toBe(null);
+    const missing = holdingSchema.safeParse(bond);
+    expect(missing.success && missing.data.subtype).toBe(null);
+  });
+  it("rejects a maturity that is not on the list, a bond maturity on an alternative, or any value on equities", () => {
+    const bond = { ...valid, assetClass: "Fixed Income", sector: null };
+    expect(holdingSchema.safeParse({ ...bond, subtype: "Forever" }).success).toBe(false);
+    expect(holdingSchema.safeParse({ ...bond, assetClass: "Alternatives", subtype: "Long-term" }).success).toBe(false);
+    expect(holdingSchema.safeParse({ ...valid, subtype: "Long-term" }).success).toBe(false);
+  });
   it("rejects a missing ticker or bad characters", () => {
     expect(holdingSchema.safeParse({ ...valid, ticker: "" }).success).toBe(false);
     expect(holdingSchema.safeParse({ ...valid, ticker: "A B" }).success).toBe(false);

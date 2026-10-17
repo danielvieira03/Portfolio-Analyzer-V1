@@ -120,6 +120,7 @@ export const totalValue = (positions: Position[]) => sum(positions.map(marketVal
 export interface Lot {
   name: string;
   sector: string | null;
+  subtype: string | null;
   shares: number;
   costBasisPerShare: number;
   currentPrice: number;
@@ -138,6 +139,7 @@ export function mergePositions(existing: Lot, incoming: Lot): Lot {
   return {
     name: existing.name || incoming.name,
     sector: existing.sector ?? incoming.sector,
+    subtype: existing.subtype ?? incoming.subtype,
     shares,
     costBasisPerShare: shares === 0 ? 0 : totalCost / shares,
     currentPrice: incoming.currentPrice,

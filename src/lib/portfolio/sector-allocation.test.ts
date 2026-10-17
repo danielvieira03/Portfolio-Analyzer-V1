@@ -8,6 +8,7 @@ const pos = (ticker: string, sector: string | null, value: number, assetClass: P
   name: ticker,
   assetClass,
   sector,
+  subtype: null,
   shares: 1,
   costBasisPerShare: value,
   currentPrice: value,

@@ -1,3 +1,4 @@
+import { SUBTYPE_OPTIONS, hasSubtype } from "@/config/subtypes";
 import { gainLoss, gainLossPct, marketValue } from "./calc";
 import type { Position } from "./types";
 
@@ -5,6 +6,7 @@ export type SortKey =
   | "ticker"
   | "name"
   | "sector"
+  | "subtype"
   | "shares"
   | "costBasisPerShare"
   | "currentPrice"
@@ -19,6 +21,11 @@ function valueFor(p: Position, key: SortKey): string | number {
     case "ticker": return p.ticker;
     case "name": return p.name;
     case "sector": return p.sector ?? "";
+    // Maturity sorts short to long; type sorts in its list order; holdings with no value come last.
+    case "subtype": {
+      const i = hasSubtype(p.assetClass) && p.subtype ? (SUBTYPE_OPTIONS[p.assetClass] as readonly string[]).indexOf(p.subtype) : -1;
+      return i === -1 ? 99 : i;
+    }
     case "shares": return p.shares;
     case "costBasisPerShare": return p.costBasisPerShare;
     case "currentPrice": return p.currentPrice;

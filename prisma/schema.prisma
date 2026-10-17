@@ -16,6 +16,7 @@ model Holding {
   name             String
   assetClass       String // "Equities" | "Fixed Income" | "Alternatives" (validated in code)
   sector           String? // equities only
+  subtype          String? // Fixed Income: maturity bucket; Alternatives: type (validated in code); empty for equities
   shares           Float
   costBasisPerShare Float
   currentPrice     Float // entered manually

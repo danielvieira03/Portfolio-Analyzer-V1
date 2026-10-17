@@ -18,6 +18,7 @@ const pos = (o: Partial<Position> & Pick<Position, "ticker">): Position => ({
   name: o.ticker,
   assetClass: "Equities",
   sector: "Information Technology",
+  subtype: null,
   shares: 10,
   costBasisPerShare: 100,
   currentPrice: 150,
@@ -111,8 +112,8 @@ describe("topHoldings", () => {
 });
 
 describe("mergePositions", () => {
-  const old = { name: "Apple", sector: "Information Technology", shares: 10, costBasisPerShare: 100, currentPrice: 150, priceAsOf: new Date("2026-01-01") };
-  const fresh = { name: "Apple Inc.", sector: null, shares: 30, costBasisPerShare: 200, currentPrice: 210, priceAsOf: new Date("2026-06-01") };
+  const old = { name: "Apple", sector: "Information Technology", subtype: null, shares: 10, costBasisPerShare: 100, currentPrice: 150, priceAsOf: new Date("2026-01-01") };
+  const fresh = { name: "Apple Inc.", sector: null, subtype: null, shares: 30, costBasisPerShare: 200, currentPrice: 210, priceAsOf: new Date("2026-06-01") };
   it("adds shares and averages the cost by share count", () => {
     const m = mergePositions(old, fresh);
     expect(m.shares).toBe(40);
@@ -124,6 +125,10 @@ describe("mergePositions", () => {
     expect(m.priceAsOf).toEqual(fresh.priceAsOf);
     expect(m.name).toBe("Apple");
     expect(m.sector).toBe("Information Technology");
+  });
+  it("keeps an existing maturity/type, or takes the new one when there was none", () => {
+    expect(mergePositions({ ...old, subtype: "Short-term" }, { ...fresh, subtype: "Long-term" }).subtype).toBe("Short-term");
+    expect(mergePositions(old, { ...fresh, subtype: "Long-term" }).subtype).toBe("Long-term");
   });
   it("keeps total cost unchanged by merging (value in = value out)", () => {
     const m = mergePositions(old, fresh);

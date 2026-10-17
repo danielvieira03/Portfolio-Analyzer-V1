@@ -1,6 +1,7 @@
 // Validation for a holding, shared by the form (browser) and the server actions.
 
 import { z } from "zod";
+import { isValidSubtype, SUBTYPE_LABEL } from "@/config/subtypes";
 import { DIVERSIFIED, SECTORS } from "@/lib/portfolio/sectors";
 import { HOLDING_CLASSES } from "@/lib/portfolio/types";
 
@@ -23,6 +24,7 @@ export const holdingSchema = z
     name: z.string().trim().min(1, "Name is required").max(100, "Name is too long"),
     assetClass: z.enum(HOLDING_CLASSES, { error: "Choose an asset class" }),
     sector: z.string().nullable(),
+    subtype: z.string().nullish().transform((v) => v || null),
     shares: positiveNumber("Shares"),
     costBasisPerShare: nonNegativeNumber("Cost basis"),
     currentPrice: nonNegativeNumber("Price"),
@@ -31,6 +33,13 @@ export const holdingSchema = z
   .superRefine((v, ctx) => {
     if (v.assetClass !== "Equities" && v.sector) {
       ctx.addIssue({ code: "custom", path: ["sector"], message: "Sector applies to equities only" });
+    }
+    if (v.subtype) {
+      if (v.assetClass === "Equities") {
+        ctx.addIssue({ code: "custom", path: ["subtype"], message: "Maturity and type apply to bonds and alternatives only" });
+      } else if (!isValidSubtype(v.assetClass, v.subtype)) {
+        ctx.addIssue({ code: "custom", path: ["subtype"], message: `Unknown ${SUBTYPE_LABEL[v.assetClass].toLowerCase()}` });
+      }
     }
     if (v.sector && !(SECTOR_OPTIONS as readonly string[]).includes(v.sector)) {
       ctx.addIssue({ code: "custom", path: ["sector"], message: "Unknown sector" });
