@@ -24,7 +24,7 @@ Next.js (App Router) + TypeScript · Tailwind CSS v4 + shadcn/ui (base-ui) · Re
 - `npm test` — unit tests · `npm run typecheck` · `npm run lint` · `npm run build`
 
 ## Folder map
-- `src/app/` — routes (Dashboard `/`, Holdings `/holdings`) and layout shell
+- `src/app/` — routes (Dashboard `/`, Holdings `/holdings`, Risk Analysis `/risk`) and layout shell
 - `src/components/layout/` top bar with horizontal tabs · `shared/` Panel, Num, PageHeader · `ui/` shadcn primitives
 - `src/lib/portfolio/` — ALL portfolio math as pure, tested functions (value, cost, gain/loss, weights)
 - `src/lib/holdings/` — validation (zod) shared by the form and server actions
@@ -35,7 +35,8 @@ Next.js (App Router) + TypeScript · Tailwind CSS v4 + shadcn/ui (base-ui) · Re
 - `src/components/holdings/` — tables, add/edit/remove dialogs, cash card, import dialog
 - `src/lib/format.ts` — the only place numbers are formatted (currency, percent, dates)
 - `src/data/` — data layer; the only code that talks to Prisma
-- `src/config/` — nav items and editable settings (e.g. S&P 500 sector weights + as-of date)
+- `src/config/` — nav items and editable settings (S&P 500 sector weights + as-of date, risk weights and labels in `risk.ts`)
+- `src/components/risk/` — Risk Analysis cards (Risk Profile meter); score math is `src/lib/portfolio/risk.ts`
 - `prisma/` — schema and migrations; DB file `prisma/portfolio.db` is git-ignored
 - `src/generated/` — generated Prisma client (git-ignored)
 

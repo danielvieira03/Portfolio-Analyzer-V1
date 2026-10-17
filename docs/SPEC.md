@@ -11,6 +11,9 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
 - **Holdings** — one sortable table per asset class (Equities, Fixed Income, Alternatives), a separate
   cash card, add/edit/remove (adding an existing ticker offers to average it in or replace it), and import
   with a preview.
+- **Risk Analysis** — a Risk Profile meter (1 Conservative to 5 Aggressive) scored from the asset-class mix only:
+  each class's share of the portfolio times its risk weight (Equities 5, Alternatives 3.5, Fixed Income 2, Cash 1,
+  editable in `src/config/risk.ts`). Known limitation: it ignores how volatile the holdings inside a class are.
 - **Import** (button on both Dashboard and Holdings) — CSV/Excel (parsed locally, tolerant of different column names, with manual column matching)
   and Screenshot/PDF (read by Claude). The first step of Import is choosing "Add additional holdings" or "New portfolio". The
   preview looks like the Holdings table; in Add mode repeated tickers are flagged, averaged by default, and can be
