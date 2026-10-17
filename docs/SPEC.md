@@ -8,13 +8,18 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
 ## What it has now
 - **Dashboard** — total value, cost basis, unrealized gain/loss, cash and holding count; allocation by asset
   class and by equity sector (top 7 sectors, broad funds as "Diversified", the rest grouped as "Other" with a hover
-  card listing them); top 5 holdings.
+  card listing them), by fixed-income maturity and by alternatives type; top 5 holdings.
 - **Holdings** — one sortable table per asset class (Equities, Fixed Income, Alternatives), a separate
   cash card, add/edit/remove (adding an existing ticker offers to average it in or replace it), and import
   with a preview.
 - **Risk Analysis** — equity sector weights versus the S&P 500 (with a plain-English over/underweight summary beside it), plus a Risk Profile meter (1 Conservative to 5 Aggressive) scored from the asset-class mix only:
   each class's share of the portfolio times its risk weight (Equities 5, Alternatives 3.5, Fixed Income 2, Cash 1,
   editable in `src/config/risk.ts`). Known limitation: it ignores how volatile the holdings inside a class are.
+- **Maturity and Type** — Fixed Income holdings have a Maturity (short / medium / long-term / not specified) and
+  Alternatives a Type (commodities, REITs, crypto, infrastructure, other), as sortable columns and form fields.
+  Missing values are filled by Claude with web search: automatically in the import preview, or with the "Look up
+  with Claude" button on the Holdings page (about 3 cents per fund). Values you set yourself are never overwritten.
+  The allowed values live in `src/config/subtypes.ts`.
 - **Import** (button on both Dashboard and Holdings) — CSV/Excel (parsed locally, tolerant of different column names, with manual column matching)
   and Screenshot/PDF (read by Claude). The first step of Import is choosing "Add additional holdings" or "New portfolio". The
   preview looks like the Holdings table; in Add mode repeated tickers are flagged, averaged by default, and can be

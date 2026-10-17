@@ -32,6 +32,7 @@ Next.js (App Router) + TypeScript · Tailwind CSS v4 + shadcn/ui (base-ui) · Re
 - `src/lib/ai/` — Claude calls: `claude.ts` is SERVER ONLY (reads the API key); `to-rows.ts` feeds AI output into the same importer; `client.ts` is the browser-side fetch helper
 - `src/app/api/import/` — route handlers `extract` (screenshot/PDF) and `review` (double-check)
 - `src/config/ai.ts` — the Claude model and upload limits (change the model here)
+- `src/config/subtypes.ts` — allowed Maturity (Fixed Income) / Type (Alternatives) values; `src/lib/ai/classify.ts` looks them up with Claude + web search (route `src/app/api/holdings/classify`)
 - `src/components/holdings/` — tables, add/edit/remove dialogs, cash card, import dialog
 - `src/lib/format.ts` — the only place numbers are formatted (currency, percent, dates)
 - `src/data/` — data layer; the only code that talks to Prisma

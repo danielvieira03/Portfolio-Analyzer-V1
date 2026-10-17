@@ -3,6 +3,7 @@ import { DemoBadge } from "@/components/dashboard/demo-badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { toExistingLots } from "@/components/holdings/existing-lots";
 import { ImportDialog } from "@/components/holdings/import-dialog";
+import { AlternativesDonut, FixedIncomeDonut } from "@/components/dashboard/subtype-donuts";
 import { SectorDonut } from "@/components/dashboard/sector-donut";
 import { StatCards } from "@/components/dashboard/stat-cards";
 import { TopHoldings } from "@/components/dashboard/top-holdings";
@@ -14,6 +15,7 @@ import {
   topHoldings,
 } from "@/lib/portfolio/calc";
 import { equitySectorAllocation } from "@/lib/portfolio/sector-allocation";
+import { subtypeAllocation } from "@/lib/portfolio/subtype-allocation";
 
 // Always read the latest data from the database.
 export const dynamic = "force-dynamic";
@@ -57,6 +59,14 @@ export default async function DashboardPage() {
         </div>
         <div className="min-w-0">
           <SectorDonut allocation={equitySectorAllocation(positions)} />
+        </div>
+      </div>
+      <div className="grid gap-3 xl:grid-cols-2">
+        <div className="min-w-0">
+          <FixedIncomeDonut allocation={subtypeAllocation(positions, "Fixed Income")} />
+        </div>
+        <div className="min-w-0">
+          <AlternativesDonut allocation={subtypeAllocation(positions, "Alternatives", true)} />
         </div>
       </div>
       <TopHoldings holdings={topHoldings(positions, cash, 5)} />
