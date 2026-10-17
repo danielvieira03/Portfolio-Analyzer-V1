@@ -58,10 +58,9 @@ describe("summarize", () => {
     expect(s.totalValue).toBe(3000);
     expect(s.totalCost).toBe(3000);
     expect(s.gainLoss).toBe(0);
-    expect(s.holdingCount).toBe(2);
   });
   it("handles an empty portfolio", () => {
-    expect(summarize([], 0)).toMatchObject({ totalValue: 0, gainLossPct: 0, holdingCount: 0 });
+    expect(summarize([], 0)).toMatchObject({ totalValue: 0, gainLossPct: 0 });
   });
 });
 

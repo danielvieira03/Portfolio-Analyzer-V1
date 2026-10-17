@@ -32,7 +32,6 @@ export interface PortfolioSummary {
   gainLoss: number;
   gainLossPct: number;
   cash: number;
-  holdingCount: number;
 }
 
 /** Headline numbers. Value and cost both include cash, so value - cost = gain/loss. */
@@ -46,7 +45,6 @@ export function summarize(positions: Position[], cash: number): PortfolioSummary
     gainLoss: gl,
     gainLossPct: totalCost === 0 ? 0 : gl / totalCost,
     cash,
-    holdingCount: positions.length,
   };
 }
 

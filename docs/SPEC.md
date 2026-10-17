@@ -6,7 +6,7 @@ from CSV/Excel, stored in a local database, and shown in a dark, dense, terminal
 It is a rebuild of an earlier plain HTML/JS version, with the emphasis on quality, structure and visuals.
 
 ## What it has now
-- **Dashboard** — total value, cost basis, unrealized gain/loss, cash and holding count; allocation by asset
+- **Dashboard** — total value, cost basis, unrealized gain/loss and cash; allocation by asset
   class and by equity sector (top 7 sectors, broad funds as "Diversified", the rest grouped as "Other" with a hover
   card listing them), by fixed-income maturity and by alternatives type; top 5 holdings.
 - **Holdings** — one sortable table per asset class (Equities, Fixed Income, Alternatives), a separate

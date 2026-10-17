@@ -27,7 +27,6 @@ export function FixedIncomeDonut({ allocation }: { allocation: SubtypeAllocation
       centreLabel="Fixed Income"
       centreValue={allocation.total}
       columnLabel="Maturity"
-      footnote="From the Maturity column in Holdings. Funds with no value yet count as Not specified."
       empty="No fixed income yet."
     />
   );
@@ -41,7 +40,6 @@ export function AlternativesDonut({ allocation }: { allocation: SubtypeAllocatio
       centreLabel="Alternatives"
       centreValue={allocation.total}
       columnLabel="Type"
-      footnote="From the Type column in Holdings. Holdings with no value yet count as Other."
       empty="No alternatives yet."
     />
   );

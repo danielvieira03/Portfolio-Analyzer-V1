@@ -16,17 +16,17 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="panel px-3 py-2.5">
+    <div className="panel px-4 py-4">
       <p className="label-caps">{label}</p>
-      <div className="mt-1.5 text-xl font-semibold leading-none">{children}</div>
-      <p className="mt-1.5 h-4 text-[11px] text-muted-foreground">{hint}</p>
+      <div className="mt-3 text-2xl font-semibold leading-none lg:text-3xl">{children}</div>
+      <p className="mt-3 h-4 text-[12px] text-muted-foreground">{hint}</p>
     </div>
   );
 }
 
 export function StatCards({ summary }: { summary: PortfolioSummary }) {
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <Card label="Total Portfolio Value" hint="Positions + cash">
         <Num className="text-primary">{formatCurrency(summary.totalValue)}</Num>
       </Card>
@@ -38,16 +38,13 @@ export function StatCards({ summary }: { summary: PortfolioSummary }) {
           <Num value={summary.gainLoss} tone="auto">
             {formatSignedCurrency(summary.gainLoss)}
           </Num>
-          <Num value={summary.gainLoss} tone="auto" className="text-[13px] font-medium">
+          <Num value={summary.gainLoss} tone="auto" className="text-base font-medium">
             {formatSignedPercent(summary.gainLossPct)}
           </Num>
         </div>
       </Card>
       <Card label="Cash" hint="Uninvested balance">
         <Num>{formatCurrency(summary.cash)}</Num>
-      </Card>
-      <Card label="Holdings" hint="Positions excl. cash">
-        <Num>{summary.holdingCount}</Num>
       </Card>
     </div>
   );

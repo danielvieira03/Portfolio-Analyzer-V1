@@ -31,7 +31,6 @@ export function DonutPanel({
   columnLabel,
   reserveClass = "pb-20",
   empty,
-  footnote,
 }: {
   title: string;
   slices: DonutSlice[];
@@ -43,8 +42,6 @@ export function DonutPanel({
   reserveClass?: string;
   /** Message shown instead of the chart when there are no slices. */
   empty: string;
-  /** Small grey line under the chart and table. */
-  footnote?: string;
 }) {
   const [hovered, setHovered] = useState<DonutSlice | null>(null);
 
@@ -141,7 +138,6 @@ export function DonutPanel({
           </table>
         </div>
       </div>
-      {footnote && <p className="mt-1 text-[11px] text-muted-foreground">{footnote}</p>}
     </Panel>
   );
 }
