@@ -39,7 +39,7 @@ ${MATURITY_HELP} Use the fund's average maturity or duration. Use "Not specified
 Alternatives holdings get a type: ${ALT_TYPES.join(", ")}.
 Commodities = gold, silver, oil, metals, agriculture or broad commodity funds. REITs = real estate funds. Crypto = bitcoin/ether and other crypto trusts or ETFs. Infrastructure = infrastructure funds. Other = anything else (hedge-fund style, managed futures, private equity...).
 
-Return one result per holding, using the exact ticker and asset class you were given and one of the allowed values. Never invent facts: if a search finds nothing, answer "${SUBTYPE_FALLBACK["Fixed Income"]}" (Fixed Income) or "${SUBTYPE_FALLBACK.Alternatives}" (Alternatives).`;
+Return one result per holding, using the exact ticker and asset class you were given and one of the allowed values. If a search fails or you cannot read any result for a holding, leave that holding OUT of the results (it will be retried later) instead of guessing. Never invent facts: if you read the fund's page but it does not say, answer "${SUBTYPE_FALLBACK["Fixed Income"]}" (Fixed Income) or "${SUBTYPE_FALLBACK.Alternatives}" (Alternatives).`;
 
 const BATCH_SIZE = 5;
 const MAX_BATCHES_PER_CALL = 4;
@@ -64,7 +64,7 @@ async function lookupBatch(items: ClassifyItem[]): Promise<{ results: ClassifyRe
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
       system: SYSTEM,
-      tools: [{ type: "web_search_20260209", name: "web_search", max_uses: items.length }],
+      tools: [{ type: "web_search_20260209", name: "web_search", max_uses: Math.max(4, items.length * 3) }],
       output_config: { effort: "low", format: zodOutputFormat(resultSchema) },
       messages,
     });
@@ -103,6 +103,7 @@ export async function lookupSubtypes(
       usage.inputTokens += out.usage.inputTokens;
       usage.outputTokens += out.usage.outputTokens;
       searches += out.searches;
+      for (const r of out.results) console.log(`[classify] ${r.assetClass}:${r.ticker} -> ${r.subtype} (${r.basis})`);
       for (const item of batch) {
         const r = out.results.find((x) => x.ticker.toUpperCase() === item.ticker.toUpperCase() && x.assetClass === item.assetClass);
         if (!r) continue;
