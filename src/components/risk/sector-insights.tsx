@@ -3,7 +3,7 @@ import { sectorInsights, type InsightKind, type SectorInsight } from "@/lib/port
 import type { SectorComparison } from "@/lib/portfolio/calc";
 
 const pct = (v: number) => `${v.toFixed(1)}%`;
-const pp = (v: number) => `${Math.abs(v).toFixed(1)} pp`;
+const gap = (v: number) => `${Math.abs(v).toFixed(1)}%`;
 
 // Same colours as the chart's right-hand column: amber = over, blue = under, grey = none / in line.
 const MARKER: Record<InsightKind, string> = {
@@ -24,9 +24,9 @@ function Sentence({ i }: { i: SectorInsight }) {
   const sector = <strong className="font-semibold text-foreground">{i.sector}</strong>;
   switch (i.kind) {
     case "over":
-      return <>Overweight in {sector} by <strong className="num font-semibold text-foreground">{pp(i.diffPp)}</strong></>;
+      return <>Overweight in {sector} by <strong className="num font-semibold text-foreground">{gap(i.diffPp)}</strong></>;
     case "under":
-      return <>Underweight in {sector} by <strong className="num font-semibold text-foreground">{pp(i.diffPp)}</strong></>;
+      return <>Underweight in {sector} by <strong className="num font-semibold text-foreground">{gap(i.diffPp)}</strong></>;
     case "none":
       return <>No holdings in {sector}</>;
     case "inline":
@@ -40,7 +40,7 @@ function Detail({ i }: { i: SectorInsight }) {
     case "under":
       return <>{pct(i.portfolioPct)} of your stocks vs {pct(i.benchmarkPct)} in the S&amp;P 500</>;
     case "none":
-      return <>S&amp;P 500 weight {pct(i.benchmarkPct)}, so you’re underweight by {pp(i.diffPp)}</>;
+      return <>S&amp;P 500 weight {pct(i.benchmarkPct)}, so you’re underweight by {gap(i.diffPp)}</>;
     case "inline":
       return <>Same weight as the S&amp;P 500</>;
   }
@@ -77,7 +77,7 @@ export function SectorInsights({ rows }: { rows: SectorComparison[] }) {
         ))}
       </div>
       <p className="mt-3 text-[11px] text-muted-foreground">
-        Individual stocks only — broad funds are excluded. pp = percentage points.
+        Individual stocks only — broad funds are excluded.
       </p>
     </Panel>
   );

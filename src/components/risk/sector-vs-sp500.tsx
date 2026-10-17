@@ -15,7 +15,7 @@ interface Row extends SectorComparison {
 }
 
 const pct = (v: number) => `${v.toFixed(1)}%`;
-const signedPp = (v: number) => `${v > 0 ? "+" : ""}${v.toFixed(1)} pp`;
+const signedPct = (v: number) => `${v > 0 ? "+" : ""}${v.toFixed(1)}%`;
 
 export function SectorVsSp500({
   rows,
@@ -98,7 +98,7 @@ export function SectorVsSp500({
                         fontFamily="var(--font-geist-mono)"
                         fill={Math.abs(d) < 0.05 ? "var(--muted-foreground)" : d > 0 ? "var(--chart-1)" : "var(--chart-2)"}
                       >
-                        {signedPp(d)}
+                        {signedPct(d)}
                       </text>
                     );
                   }}
@@ -115,7 +115,7 @@ export function SectorVsSp500({
                         <ChartTooltipRow color={BENCHMARK_COLOR} label="S&P 500" value={pct(r.benchmarkPct)} />
                         <ChartTooltipRow
                           label={d >= 0 ? "Overweight" : "Underweight"}
-                          value={signedPp(d)}
+                          value={signedPct(d)}
                         />
                       </ChartTooltipBox>
                     );
@@ -128,7 +128,7 @@ export function SectorVsSp500({
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
             Individual stocks only — broad funds are excluded. Portfolio weights are shares of
-            sector-tagged equities. pp = percentage points.
+            sector-tagged equities.
           </p>
         </>
       )}
