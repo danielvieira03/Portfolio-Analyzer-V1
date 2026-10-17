@@ -1,6 +1,7 @@
 "use client";
 
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { useState } from "react";
+import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { ChartTooltipBox, ChartTooltipRow } from "@/components/charts/chart-tooltip";
 import { Num } from "@/components/shared/num";
 import { Panel } from "@/components/shared/panel";
@@ -22,44 +23,47 @@ export function AllocationDonut({
   slices: AllocationSlice[];
   totalValue: number;
 }) {
+  // The hover card sits below the donut, so it can never cover the ring or the total in the middle.
+  const [hovered, setHovered] = useState<AllocationSlice | null>(null);
   return (
     <Panel title="Allocation by Asset Class" className="h-full">
       <div className="flex flex-col items-center gap-4 sm:flex-row">
-        <div className="relative size-48 shrink-0">
-          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 192, height: 192 }}>
-            <PieChart>
-              <Pie
-                data={slices}
-                dataKey="value"
-                nameKey="assetClass"
-                innerRadius="64%"
-                outerRadius="100%"
-                paddingAngle={1.5}
-                stroke="none"
-                isAnimationActive={false}
-              >
-                {slices.map((s) => (
-                  <Cell key={s.assetClass} fill={CLASS_COLORS[s.assetClass]} />
-                ))}
-              </Pie>
-              <Tooltip
-                content={({ active, payload }) => {
-                  const s = active ? (payload?.[0]?.payload as AllocationSlice | undefined) : undefined;
-                  if (!s) return null;
-                  return (
-                    <ChartTooltipBox title={s.assetClass}>
-                      <ChartTooltipRow color={CLASS_COLORS[s.assetClass]} label="Value" value={formatCurrency(s.value)} />
-                      <ChartTooltipRow label="Weight" value={formatPercent(s.weight)} />
-                    </ChartTooltipBox>
-                  );
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-            <span className="label-caps">Total</span>
-            <Num className="text-base font-semibold">{formatCurrency(totalValue)}</Num>
+        {/* Bottom padding reserves room for the hover card so the layout never jumps. */}
+        <div className="relative shrink-0 pb-20">
+          <div className="relative size-48">
+            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 192, height: 192 }}>
+              <PieChart>
+                <Pie
+                  data={slices}
+                  dataKey="value"
+                  nameKey="assetClass"
+                  innerRadius="64%"
+                  outerRadius="100%"
+                  paddingAngle={1.5}
+                  stroke="none"
+                  isAnimationActive={false}
+                  onMouseEnter={(_, i) => setHovered(slices[i] ?? null)}
+                  onMouseLeave={() => setHovered(null)}
+                >
+                  {slices.map((s) => (
+                    <Cell key={s.assetClass} fill={CLASS_COLORS[s.assetClass]} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <span className="label-caps">Total</span>
+              <Num className="text-base font-semibold">{formatCurrency(totalValue)}</Num>
+            </div>
           </div>
+          {hovered && (
+            <div className="pointer-events-none absolute left-1/2 top-[calc(12rem+0.5rem)] z-50 -translate-x-1/2">
+              <ChartTooltipBox title={hovered.assetClass}>
+                <ChartTooltipRow color={CLASS_COLORS[hovered.assetClass]} label="Value" value={formatCurrency(hovered.value)} />
+                <ChartTooltipRow label="Weight" value={formatPercent(hovered.weight)} />
+              </ChartTooltipBox>
+            </div>
+          )}
         </div>
 
         <table className="w-full text-[12px]">
