@@ -45,3 +45,18 @@ export async function reviewWithClaude(rows: ReviewInputRow[]): Promise<Review> 
     body: JSON.stringify({ rows }),
   });
 }
+
+export interface ClassifyInput {
+  ticker: string;
+  name: string;
+  assetClass: "Fixed Income" | "Alternatives";
+}
+
+/** Ask Claude (with web search) for the maturity / type of holdings. Returns values keyed by "Asset Class:TICKER". */
+export async function lookupSubtypesWithClaude(items: ClassifyInput[]): Promise<Record<string, string>> {
+  const res = await postAndParse<{ found: Record<string, string> }>("/api/holdings/classify", {
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+  return res.found;
+}

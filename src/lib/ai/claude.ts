@@ -30,7 +30,7 @@ const dispatcher = new Agent({ allowH2: false, keepAliveTimeout: 5_000 });
 const resilientFetch = ((url: Parameters<typeof undiciFetch>[0], init?: Parameters<typeof undiciFetch>[1]) =>
   undiciFetch(url, { ...init, dispatcher })) as unknown as typeof fetch;
 
-function getClient() {
+export function getClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new AiError("no_key", "No Anthropic API key is set. Add ANTHROPIC_API_KEY to .env.local and restart the app.");
@@ -38,7 +38,7 @@ function getClient() {
   return new Anthropic({ apiKey, fetch: resilientFetch });
 }
 
-function toAiError(e: unknown): AiError {
+export function toAiError(e: unknown): AiError {
   if (e instanceof AiError) return e;
   if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) {
     return new AiError("auth", "Anthropic rejected the API key. Check ANTHROPIC_API_KEY in .env.local.");
