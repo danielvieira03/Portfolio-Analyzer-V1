@@ -27,7 +27,7 @@ export function AllocationDonut({
   const [hovered, setHovered] = useState<AllocationSlice | null>(null);
   return (
     <Panel title="Allocation by Asset Class" className="h-full">
-      <div className="flex flex-col items-center gap-4 sm:flex-row">
+      <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
         {/* Bottom padding reserves room for the hover card so the layout never jumps. */}
         <div className="relative shrink-0 pb-20">
           <div className="relative size-48">
@@ -69,29 +69,32 @@ export function AllocationDonut({
           )}
         </div>
 
-        <table className="w-full text-[12px]">
-          <thead>
-            <tr className="label-caps border-b">
-              <th className="py-1.5 text-left font-medium">Class</th>
-              <th className="py-1.5 text-right font-medium">Value</th>
-              <th className="py-1.5 text-right font-medium">Weight</th>
-            </tr>
-          </thead>
-          <tbody>
-            {slices.map((s) => (
-              <tr key={s.assetClass} className="border-b border-border/50 last:border-0">
-                <td className="py-1.5">
-                  <span className="flex items-center gap-2">
-                    <span className="size-2.5 rounded-[2px]" style={{ background: CLASS_COLORS[s.assetClass] }} />
-                    {s.assetClass}
-                  </span>
-                </td>
-                <td className="py-1.5"><Num className="block">{formatCurrency(s.value)}</Num></td>
-                <td className="py-1.5"><Num className="block">{formatPercent(s.weight, 1)}</Num></td>
+        {/* Same height as the donut, so the table lines up with it and not with the hover-card space below. */}
+        <div className="w-full sm:flex sm:h-48 sm:items-center">
+          <table className="w-full text-[12px]">
+            <thead>
+              <tr className="label-caps border-b">
+                <th className="py-1.5 text-left font-medium">Class</th>
+                <th className="py-1.5 text-right font-medium">Value</th>
+                <th className="py-1.5 text-right font-medium">Weight</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {slices.map((s) => (
+                <tr key={s.assetClass} className="border-b border-border/50 last:border-0">
+                  <td className="py-1.5">
+                    <span className="flex items-center gap-2">
+                      <span className="size-2.5 rounded-[2px]" style={{ background: CLASS_COLORS[s.assetClass] }} />
+                      {s.assetClass}
+                    </span>
+                  </td>
+                  <td className="py-1.5"><Num className="block">{formatCurrency(s.value)}</Num></td>
+                  <td className="py-1.5"><Num className="block">{formatPercent(s.weight, 1)}</Num></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </Panel>
   );
