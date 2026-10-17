@@ -23,13 +23,18 @@ export function RiskProfile({ score, allocation }: { score: number; allocation: 
 
   return (
     <Panel title="Risk Profile">
-      <div className="mx-auto max-w-4xl py-4">
-        <p className="flex flex-wrap items-baseline justify-center gap-x-3 text-center">
-          <span className="font-mono text-3xl font-semibold tabular-nums text-primary">{shown.toFixed(1)}</span>
-          <span className="hidden text-2xl text-muted-foreground sm:inline">·</span>
-          <span className="text-2xl font-semibold">{label}</span>
-        </p>
+      <div className="py-2">
+        {/* "Risk Level" sits at the card's left edge; the score and type stay centred over the meter. */}
+        <div className="grid items-center gap-y-2 sm:grid-cols-[1fr_auto_1fr]">
+          <h3 className="text-xl font-semibold">Risk Level</h3>
+          <p className="flex flex-wrap items-baseline justify-center gap-x-3 text-center">
+            <span className="font-mono text-2xl font-semibold tabular-nums text-primary">{shown.toFixed(1)}</span>
+            <span className="hidden text-xl text-muted-foreground sm:inline">·</span>
+            <span className="text-xl font-semibold">{label}</span>
+          </p>
+        </div>
 
+        <div className="mx-auto max-w-5xl">
         <div className="mt-9 px-4">
           <div className="relative">
             {/* Track: light warm orange on the left to the app's amber on the right, no other hues. */}
@@ -75,6 +80,7 @@ export function RiskProfile({ score, allocation }: { score: number; allocation: 
         </p>
 
         <p className="mt-4 text-center text-[11px] text-muted-foreground">Risk based on asset-class mix only</p>
+        </div>
       </div>
     </Panel>
   );
