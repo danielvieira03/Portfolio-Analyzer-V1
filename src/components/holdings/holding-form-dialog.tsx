@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { hasSubtype, SUBTYPE_LABEL, SUBTYPE_OPTIONS } from "@/config/subtypes";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency, formatPrice, formatShares } from "@/lib/format";
 import { fieldErrors, holdingSchema, SECTOR_OPTIONS, type HoldingInput } from "@/lib/holdings/schema";
@@ -27,6 +28,7 @@ interface FormState {
   ticker: string;
   name: string;
   sector: string;
+  subtype: string;
   shares: string;
   cost: string;
   price: string;
@@ -34,12 +36,12 @@ interface FormState {
 }
 
 const blank = (): FormState => ({
-  ticker: "", name: "", sector: NO_SECTOR, shares: "", cost: "", price: "",
+  ticker: "", name: "", sector: NO_SECTOR, subtype: NO_SECTOR, shares: "", cost: "", price: "",
   priceAsOf: toDateInput(new Date()),
 });
 
 const fromPosition = (p: Position): FormState => ({
-  ticker: p.ticker, name: p.name, sector: p.sector ?? NO_SECTOR,
+  ticker: p.ticker, name: p.name, sector: p.sector ?? NO_SECTOR, subtype: p.subtype ?? NO_SECTOR,
   shares: String(p.shares), cost: String(p.costBasisPerShare), price: String(p.currentPrice),
   priceAsOf: toDateInput(p.priceAsOf),
 });
@@ -95,6 +97,7 @@ function FormBody({
   const [duplicate, setDuplicate] = useState<{ current: Position; incoming: HoldingInput } | null>(null);
   const set = (k: keyof FormState) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
   const isEquity = assetClass === "Equities";
+  const subtypeLabel = hasSubtype(assetClass) ? SUBTYPE_LABEL[assetClass] : null;
   const valuesFor = (h: HoldingInput) => ({ ...h });
 
   const submit = (e: React.FormEvent) => {
@@ -105,6 +108,7 @@ function FormBody({
       name: form.name,
       assetClass,
       sector: isEquity && form.sector !== NO_SECTOR ? form.sector : null,
+      subtype: !isEquity && form.subtype !== NO_SECTOR ? form.subtype : null,
       shares: num(form.shares),
       costBasisPerShare: num(form.cost),
       currentPrice: num(form.price),
@@ -249,6 +253,28 @@ function FormBody({
           {errors.sector && <p className="text-[11px] text-destructive">{errors.sector}</p>}
           <p className="text-[11px] text-muted-foreground">
             Use “Diversified” for broad funds so they stay out of the sector comparison.
+          </p>
+        </div>
+      )}
+      {hasSubtype(assetClass) && subtypeLabel && (
+        <div className="space-y-1">
+          <Label className="label-caps">{subtypeLabel} (optional)</Label>
+          <Select
+            value={form.subtype}
+            onValueChange={(v) => v && set("subtype")(v)}
+            items={{ [NO_SECTOR]: "Not set", ...Object.fromEntries(SUBTYPE_OPTIONS[assetClass].map((x) => [x, x])) }}
+          >
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_SECTOR}>Not set</SelectItem>
+              {SUBTYPE_OPTIONS[assetClass].map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.subtype && <p className="text-[11px] text-destructive">{errors.subtype}</p>}
+          <p className="text-[11px] text-muted-foreground">
+            Leave it unset and use “Look up with Claude” on the Holdings page to fill it in for you.
           </p>
         </div>
       )}

@@ -8,6 +8,7 @@ export const toExistingLots = (positions: Position[]): ExistingLot[] =>
     ticker: p.ticker,
     name: p.name,
     sector: p.sector,
+    subtype: p.subtype,
     shares: p.shares,
     costBasisPerShare: p.costBasisPerShare,
   }));

@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, Sparkles } from "lucide-react";
+import { hasSubtype, SUBTYPE_LABEL } from "@/config/subtypes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatPrice, formatShares } from "@/lib/format";
@@ -25,6 +26,7 @@ export interface ExistingLot {
   ticker: string;
   name: string;
   sector: string | null;
+  subtype: string | null;
   shares: number;
   costBasisPerShare: number;
 }
@@ -78,6 +80,8 @@ export function ImportPreview({
   aiIssues,
   review,
   onReview,
+  subtypes,
+  lookingUp,
 }: {
   parsed: ParsedImport;
   existing: Map<string, ExistingLot>;
@@ -94,6 +98,9 @@ export function ImportPreview({
   aiIssues: string[];
   review: ReviewState;
   onReview: () => void;
+  /** Maturities / types Claude looked up, keyed "Asset Class:TICKER". */
+  subtypes: Record<string, string>;
+  lookingUp: boolean;
 }) {
   const { isDuplicate, isLeftOut, counts, cashAmount } = view;
   const showCheck = counts.duplicates > 0;
@@ -124,6 +131,11 @@ export function ImportPreview({
           <p className="label-caps mb-1 text-primary">Claude flagged on the document</p>
           <ul className="list-disc space-y-0.5 pl-4">{aiIssues.map((i) => <li key={i}>{i}</li>)}</ul>
         </div>
+      )}
+      {lookingUp && (
+        <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
+          <Loader2 className="size-3.5 animate-spin" /> Claude is looking up maturities and types…
+        </p>
       )}
       {review.status === "loading" && (
         <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
@@ -231,6 +243,13 @@ export function ImportPreview({
                             ? ` · ${formatShares(old.shares)} → ${formatShares(merged.shares)} sh, avg cost ${formatPrice(old.costBasisPerShare)} → ${formatPrice(merged.costBasisPerShare)}`
                             : " · left out, your position stays as it is"}
                         </span>
+                      </p>
+                    )}
+                    {h && hasSubtype(h.assetClass) && (h.subtype || subtypes[key] || lookingUp) && (
+                      <p className="text-[11px] text-muted-foreground">
+                        {SUBTYPE_LABEL[h.assetClass]}:{" "}
+                        {h.subtype ?? subtypes[key] ?? "looking up…"}
+                        {!h.subtype && subtypes[key] ? " · found by Claude" : ""}
                       </p>
                     )}
                     {r.messages.map((m) => (

@@ -9,7 +9,7 @@ const rows = [
   { Ticker: "MSFT", Name: "Microsoft", "Asset Class": "Equities", Shares: "5", Cost: "200", Price: "250" },
 ];
 const parsed = parseImportRows(rows, headers, { columns: matchColumns(headers), headerRow: 1 });
-const aapl: ExistingLot = { assetClass: "Equities", ticker: "AAPL", name: "Apple", sector: null, shares: 10, costBasisPerShare: 80 };
+const aapl: ExistingLot = { assetClass: "Equities", ticker: "AAPL", name: "Apple", sector: null, subtype: null, shares: 10, costBasisPerShare: 80 };
 const existing = new Map([[lotKey("Equities", "AAPL"), aapl]]);
 
 describe("classify repeated tickers", () => {

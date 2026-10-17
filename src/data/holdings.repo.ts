@@ -142,6 +142,22 @@ export async function addHolding(input: HoldingInput, onDuplicate?: DuplicateCho
   return onDuplicate === "replace" ? "replaced" : "merged";
 }
 
+/**
+ * Fill in maturity/type for holdings that have none yet. `found` is keyed "Asset Class:TICKER".
+ * Values you already set are never overwritten. Returns how many holdings were updated.
+ */
+export async function fillSubtypes(found: Record<string, string>): Promise<number> {
+  let updated = 0;
+  for (const [key, subtype] of Object.entries(found)) {
+    const i = key.indexOf(":");
+    const assetClass = key.slice(0, i);
+    const ticker = key.slice(i + 1);
+    const res = await prisma.holding.updateMany({ where: { assetClass, ticker, subtype: null }, data: { subtype } });
+    updated += res.count;
+  }
+  return updated;
+}
+
 export async function deleteHolding(id: string) {
   await prisma.holding.delete({ where: { id } });
   await leaveDemoMode();

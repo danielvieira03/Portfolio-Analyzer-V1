@@ -15,20 +15,23 @@ import {
 } from "@/lib/format";
 import { gainLoss, gainLossPct, marketValue, weight } from "@/lib/portfolio/calc";
 import { sortPositions, type SortDir, type SortKey } from "@/lib/portfolio/sort";
-import type { Position } from "@/lib/portfolio/types";
+import type { HoldingClass, Position } from "@/lib/portfolio/types";
 import { cn } from "@/lib/utils";
 
 interface Column {
   key: SortKey;
   label: string;
   numeric: boolean;
-  equitiesOnly?: boolean;
+  /** Only shown in the table of this asset class. */
+  only?: HoldingClass;
 }
 
 const COLUMNS: Column[] = [
   { key: "ticker", label: "Ticker", numeric: false },
   { key: "name", label: "Name", numeric: false },
-  { key: "sector", label: "Sector", numeric: false, equitiesOnly: true },
+  { key: "sector", label: "Sector", numeric: false, only: "Equities" },
+  { key: "subtype", label: "Maturity", numeric: false, only: "Fixed Income" },
+  { key: "subtype", label: "Type", numeric: false, only: "Alternatives" },
   { key: "shares", label: "Shares", numeric: true },
   { key: "costBasisPerShare", label: "Cost / Sh", numeric: true },
   { key: "currentPrice", label: "Price", numeric: true },
@@ -41,26 +44,26 @@ const COLUMNS: Column[] = [
 export function HoldingsTable({
   positions,
   portfolioTotal,
-  showSector,
+  assetClass,
   onEdit,
   onRemove,
 }: {
   positions: Position[];
   /** Whole-portfolio value (cash included); row weights are measured against it. */
   portfolioTotal: number;
-  showSector: boolean;
+  assetClass: HoldingClass;
   onEdit: (p: Position) => void;
   onRemove: (p: Position) => void;
 }) {
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: "marketValue", dir: "desc" });
   const rows = sortPositions(positions, sort.key, sort.dir);
-  const columns = COLUMNS.filter((c) => showSector || !c.equitiesOnly);
+  const columns = COLUMNS.filter((c) => !c.only || c.only === assetClass);
 
   const toggle = (key: SortKey) =>
     setSort((s) =>
       s.key === key
         ? { key, dir: s.dir === "asc" ? "desc" : "asc" }
-        : { key, dir: key === "ticker" || key === "name" || key === "sector" ? "asc" : "desc" },
+        : { key, dir: key === "ticker" || key === "name" || key === "sector" || key === "subtype" ? "asc" : "desc" },
     );
 
   return (
@@ -72,7 +75,7 @@ export function HoldingsTable({
             const Icon = !active ? ArrowUpDown : sort.dir === "asc" ? ArrowUp : ArrowDown;
             return (
               <TableHead
-                key={c.key}
+                key={c.label}
                 className={cn("h-8 px-2", c.numeric && "text-right")}
                 aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}
               >
@@ -100,8 +103,11 @@ export function HoldingsTable({
             <TableRow key={p.id}>
               <TableCell className="px-2 py-1.5 font-medium text-primary">{p.ticker}</TableCell>
               <TableCell className="max-w-[16rem] truncate px-2 py-1.5">{p.name}</TableCell>
-              {showSector && (
+              {assetClass === "Equities" && (
                 <TableCell className="px-2 py-1.5 text-muted-foreground">{p.sector ?? "—"}</TableCell>
+              )}
+              {assetClass !== "Equities" && (
+                <TableCell className="px-2 py-1.5 text-muted-foreground">{p.subtype ?? "—"}</TableCell>
               )}
               <TableCell className="px-2 py-1.5"><Num className="block">{formatShares(p.shares)}</Num></TableCell>
               <TableCell className="px-2 py-1.5"><Num className="block">{formatPrice(p.costBasisPerShare)}</Num></TableCell>

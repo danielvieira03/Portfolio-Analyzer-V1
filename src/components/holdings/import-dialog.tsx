@@ -13,7 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AI_ACCEPT_ATTR, IMAGE_TYPES, MAX_UPLOAD_BYTES } from "@/config/ai";
-import { readWithClaude, reviewWithClaude } from "@/lib/ai/client";
+import { hasSubtype } from "@/config/subtypes";
+import { lookupSubtypesWithClaude, readWithClaude, reviewWithClaude } from "@/lib/ai/client";
 import { matchColumns, missingRequired, type ColumnMap } from "@/lib/import/columns";
 import { parseImportRows } from "@/lib/import/normalize";
 import { ACCEPT_ATTR, ACCEPTED_EXTENSIONS, readSpreadsheet } from "@/lib/import/parse-file";
@@ -86,6 +87,10 @@ function ImportBody({
   const [review, setReview] = useState<ReviewState>({ status: "idle" });
   // The automatic Claude check runs once per loaded CSV/Excel file.
   const autoChecked = useRef(false);
+  // Maturities / types Claude looked up for bond and alternatives rows, keyed "Asset Class:TICKER".
+  const autoLookedUp = useRef(false);
+  const [subtypes, setSubtypes] = useState<Record<string, string>>({});
+  const [lookingUp, setLookingUp] = useState(false);
 
   const existingMap = useMemo(() => new Map(existing.map((e) => [lotKey(e.assetClass, e.ticker), e])), [existing]);
   const parsed = useMemo(
@@ -104,6 +109,9 @@ function ImportBody({
     setAiIssues([]);
     setReview({ status: "idle" });
     autoChecked.current = false;
+    autoLookedUp.current = false;
+    setSubtypes({});
+    setLookingUp(false);
     if (fileRef.current) fileRef.current.value = "";
     if (aiRef.current) aiRef.current.value = "";
   };
@@ -170,6 +178,32 @@ function ImportBody({
     void onReview();
   });
 
+  // Bond and alternatives rows with no maturity/type get one looked up (quietly, once per file).
+  const lookUpSubtypes = async () => {
+    if (!parsed) return;
+    const items = parsed.rows
+      .filter((r) => r.status !== "error" && r.holding && hasSubtype(r.holding.assetClass) && !r.holding.subtype)
+      .map((r) => r.holding!)
+      .filter((h) => mode === "replace" || !existingMap.get(lotKey(h.assetClass, h.ticker))?.subtype)
+      .map((h) => ({ ticker: h.ticker, name: h.name, assetClass: h.assetClass as "Fixed Income" | "Alternatives" }));
+    if (items.length === 0) return;
+    setLookingUp(true);
+    const found: Record<string, string> = {};
+    try {
+      for (let i = 0; i < items.length; i += 20) Object.assign(found, await lookupSubtypesWithClaude(items.slice(i, i + 20)));
+    } catch {
+      // Quiet failure: the import still works, and values can be looked up later on the Holdings page.
+    }
+    setSubtypes(found);
+    setLookingUp(false);
+  };
+
+  useEffect(() => {
+    if (step !== "preview" || autoLookedUp.current || !parsed) return;
+    autoLookedUp.current = true;
+    void lookUpSubtypes();
+  });
+
   const onFile = async (file: File | undefined) => {
     if (!file) return;
     setError(null);
@@ -196,7 +230,12 @@ function ImportBody({
   const save = () => {
     if (!view) return;
     startTransition(async () => {
-      const res = await importHoldingsAction(mode, view.holdings, view.cashAmount, "merge");
+      const res = await importHoldingsAction(
+        mode,
+        view.holdings.map((h) => ({ ...h, subtype: h.subtype ?? subtypes[lotKey(h.assetClass, h.ticker)] ?? null })),
+        view.cashAmount,
+        "merge",
+      );
       if (res.ok) {
         const parts = [
           `${res.added} added`,
@@ -346,6 +385,8 @@ function ImportBody({
           aiIssues={aiIssues}
           review={review}
           onReview={onReview}
+          subtypes={subtypes}
+          lookingUp={lookingUp}
           error={error}
           defaultClass={defaultClass}
           setDefaultClass={setDefaultClass}

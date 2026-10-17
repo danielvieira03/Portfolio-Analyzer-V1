@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { addHolding, deleteHolding, importHoldings, saveHolding, setCash, type DuplicateChoice, type ImportDuplicateChoice, type ImportResult } from "@/data/holdings.repo";
+import { addHolding, deleteHolding, fillSubtypes, importHoldings, saveHolding, setCash, type DuplicateChoice, type ImportDuplicateChoice, type ImportResult } from "@/data/holdings.repo";
+import { isValidSubtype } from "@/config/subtypes";
 import { cashSchema, fieldErrors, holdingSchema } from "@/lib/holdings/schema";
 
 export type ActionResult<T = unknown> =
@@ -65,4 +66,16 @@ export async function importHoldingsAction(
   const result = await importHoldings(mode, valid, cashAmount, onDuplicate);
   refresh();
   return { ok: true, ...result };
+}
+
+/** Save maturities/types found by the Claude lookup (keyed "Asset Class:TICKER"). Only fills empty values. */
+export async function saveSubtypesAction(found: Record<string, string>): Promise<ActionResult<{ updated: number }>> {
+  const clean: Record<string, string> = {};
+  for (const [key, value] of Object.entries(found)) {
+    const assetClass = key.slice(0, key.indexOf(":"));
+    if (isValidSubtype(assetClass, value)) clean[key] = value;
+  }
+  const updated = await fillSubtypes(clean);
+  refresh();
+  return { ok: true, updated };
 }
