@@ -70,7 +70,7 @@ export function RiskProfile({ score, allocation }: { score: number; allocation: 
           </div>
         </div>
 
-        <p className="mt-8 text-center text-[13px] text-muted-foreground">
+        <p className="mt-8 text-center text-[15px] text-muted-foreground">
           {allocation.map((s, i) => (
             <span key={s.assetClass}>
               {i > 0 && " · "}
@@ -79,7 +79,7 @@ export function RiskProfile({ score, allocation }: { score: number; allocation: 
           ))}
         </p>
 
-        <p className="mt-4 text-center text-[11px] text-muted-foreground">Risk based on asset-class mix only</p>
+        <p className="mt-4 text-center text-[13px] text-muted-foreground">Risk based on asset-class mix only</p>
         </div>
       </div>
     </Panel>
