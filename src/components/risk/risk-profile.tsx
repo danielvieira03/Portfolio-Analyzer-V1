@@ -26,12 +26,12 @@ export function RiskProfile({ score, allocation }: { score: number; allocation: 
       <div className="py-2">
         {/* "Risk Level" at the card's left edge, the risk type at the right edge. */}
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h3 className="text-xl font-semibold">Risk Level</h3>
-          <p className="ml-auto text-xl font-semibold">{label}</p>
+          <h3 className="text-sm font-semibold tracking-tight">Risk Level</h3>
+          <p className="ml-auto text-sm font-semibold tracking-tight">{label}</p>
         </div>
 
         <div className="mx-auto max-w-5xl">
-        <div className="mt-16 px-4">
+        <div className="mt-12 px-4">
           <div className="relative">
             {/* Track: light warm orange on the left to the app's amber on the right, no other hues. */}
             <div
@@ -43,7 +43,7 @@ export function RiskProfile({ score, allocation }: { score: number; allocation: 
               style={{ left: `${placed ? position : 0}%` }}
             >
               {/* The score rides just above the pin and slides with it. */}
-              <span className="absolute bottom-full left-1/2 mb-3.5 -translate-x-1/2 font-mono text-2xl font-semibold tabular-nums text-primary">
+              <span className="absolute bottom-full left-1/2 mb-3.5 -translate-x-1/2 font-mono text-xl font-semibold tabular-nums text-primary">
                 {shown.toFixed(1)}
               </span>
               {/* Pin: a small triangle above the track and a thin line through it. */}
