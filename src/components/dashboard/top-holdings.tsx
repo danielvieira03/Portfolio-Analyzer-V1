@@ -6,7 +6,7 @@ import type { RankedHolding } from "@/lib/portfolio/calc";
 export function TopHoldings({ holdings }: { holdings: RankedHolding[] }) {
   const maxWeight = Math.max(...holdings.map((h) => h.weight), 0.0001);
   return (
-    <Panel title="Top 5 Holdings" className="h-full">
+    <Panel title="Top 5 Holdings">
       <ol className="divide-y divide-border/60">
         {holdings.map((h, i) => (
           <li key={h.position.id} className="py-2 first:pt-0 last:pb-0">

@@ -46,7 +46,7 @@ Next.js (App Router) + TypeScript · Tailwind CSS v4 + shadcn/ui (base-ui) · Re
 - Design tokens live in `src/app/globals.css` — change colours there only. Amber = accent.
   Green/red ONLY for gains/losses (`text-gain` / `text-loss`, or `<Num tone="auto">`).
 - Numbers: use `<Num>` / `.num` (monospace, tabular, right-aligned) and `format.ts`.
-- Charts use `--chart-1..6` (no green/red) and always have hover tooltips.
+- Charts use `--chart-1..9` (no green/red) and always have hover tooltips.
 - Prices are manual (no live data, no daily change figures).
 - AI: `ANTHROPIC_API_KEY` stays server-side (never `NEXT_PUBLIC_`, never in the browser). Claude output goes through the
   same importer checks and preview as CSV/Excel; the user always confirms before anything is saved.
