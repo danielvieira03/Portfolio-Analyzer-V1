@@ -1,9 +1,11 @@
 import { DemoBadge } from "@/components/dashboard/demo-badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { RiskProfile } from "@/components/risk/risk-profile";
+import { SectorVsSp500 } from "@/components/risk/sector-vs-sp500";
 import { PageHeader } from "@/components/shared/page-header";
+import { SP500_AS_OF, SP500_SECTOR_WEIGHTS } from "@/config/sp500-sectors";
 import { getPortfolio } from "@/data/holdings.repo";
-import { allocationByClass } from "@/lib/portfolio/calc";
+import { allocationByClass, compareSectors } from "@/lib/portfolio/calc";
 import { riskScore } from "@/lib/portfolio/risk";
 
 // Always read the latest data from the database.
@@ -13,6 +15,7 @@ export default async function RiskPage() {
   const { positions, cash, isDemoData } = await getPortfolio();
   const allocation = allocationByClass(positions, cash);
   const score = riskScore(allocation);
+  const sectorRows = compareSectors(positions, SP500_SECTOR_WEIGHTS);
 
   return (
     <div className="space-y-3">
@@ -20,7 +23,14 @@ export default async function RiskPage() {
       {score === null ? (
         <EmptyState title="No holdings yet" description="Upload your positions to see your Risk Profile." />
       ) : (
-        <RiskProfile score={score} allocation={allocation} />
+        <>
+          <RiskProfile score={score} allocation={allocation} />
+          <SectorVsSp500
+            rows={sectorRows}
+            asOf={SP500_AS_OF}
+            hasSectorData={sectorRows.some((r) => r.portfolio > 0)}
+          />
+        </>
       )}
     </div>
   );

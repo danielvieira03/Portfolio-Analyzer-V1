@@ -8,8 +8,9 @@ the S&P 500, and a full holdings ledger — with CSV/Excel import.
 > _Screenshot coming soon._
 
 ## Features
-- **Dashboard** — portfolio value, cost basis, unrealized gain/loss, allocation donut, sector vs. S&P 500, top holdings
+- **Dashboard** — portfolio value, cost basis, unrealized gain/loss, allocation donut, top holdings
 - **Holdings** — sortable tables per asset class, editable cash, add / edit / remove with validation
+- **Risk Analysis** — Risk Profile meter (1–5, from the asset-class mix) and equity sector weights vs. the S&P 500
 - **Import** — CSV and Excel (flexible column matching, manual mapping), plus screenshots and PDFs read by Claude, always with a preview before anything is saved
 - **Claude check** — CSV/Excel imports are automatically sanity-checked by Claude (data mistakes only; never blocks the import)
 - **Demo portfolio** — realistic ~$500K sample data on first run, removable in one click
