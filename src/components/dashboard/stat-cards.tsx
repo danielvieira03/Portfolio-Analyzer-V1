@@ -6,20 +6,11 @@ import {
 } from "@/lib/format";
 import type { PortfolioSummary } from "@/lib/portfolio/calc";
 
-function Card({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
+function Card({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="panel px-4 py-4">
+    <div className="panel px-4 pb-9 pt-4">
       <p className="label-caps">{label}</p>
       <div className="mt-3 text-2xl font-semibold leading-none lg:text-3xl">{children}</div>
-      <p className="mt-3 h-4 text-[12px] text-muted-foreground">{hint}</p>
     </div>
   );
 }
@@ -27,13 +18,13 @@ function Card({
 export function StatCards({ summary }: { summary: PortfolioSummary }) {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <Card label="Total Portfolio Value" hint="Positions + cash">
+      <Card label="Total Portfolio Value">
         <Num className="text-primary">{formatCurrency(summary.totalValue)}</Num>
       </Card>
-      <Card label="Total Cost Basis" hint="Positions + cash">
+      <Card label="Total Cost Basis">
         <Num>{formatCurrency(summary.totalCost)}</Num>
       </Card>
-      <Card label="Unrealized Gain / Loss" hint="Value minus cost basis">
+      <Card label="Unrealized Gain / Loss">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <Num value={summary.gainLoss} tone="auto">
             {formatSignedCurrency(summary.gainLoss)}
@@ -43,7 +34,7 @@ export function StatCards({ summary }: { summary: PortfolioSummary }) {
           </Num>
         </div>
       </Card>
-      <Card label="Cash" hint="Uninvested balance">
+      <Card label="Cash">
         <Num>{formatCurrency(summary.cash)}</Num>
       </Card>
     </div>
