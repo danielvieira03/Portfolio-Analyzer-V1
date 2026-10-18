@@ -1,5 +1,7 @@
 # Portfolio Analyzer — Spec (big picture)
 
+Current release: **v1.0** (live on Vercel).
+
 ## What it is
 A web app for analyzing an investment portfolio. Positions are entered by hand or imported
 from CSV/Excel, saved **in the visitor's own browser** (no accounts, no server database: each person who opens the
@@ -20,13 +22,14 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
 - **Maturity and Type** — Fixed Income holdings have a Maturity (short / medium / long-term / not specified) and
   Alternatives a Type (commodities, REITs, crypto, infrastructure, other), as sortable columns and form fields.
   Missing values are filled automatically in the import preview, or with the "Look up with Claude" button on the
-  Holdings page. A **fund library** in the database answers first, for free: it starts with 20 well-known bond funds
+  Holdings page. A **fund library** answers first, for free: it starts with 20 well-known bond funds
   and 20 alternatives funds (`src/config/fund-library.ts`; bond figures read from iShares and Vanguard pages, including
   each fund's duration in years, saved but not shown yet). Only funds the library doesn't know are searched by Claude
-  (about 3 to 5 cents per fund), and what Claude finds is saved to the library so that fund is never searched twice
+  (about 3 to 5 cents per fund), and what Claude finds is saved to the library **in that visitor's browser** (the built-in
+  list ships with the app; nothing is shared between visitors) so that fund is not searched again for them
   (a bond fund Claude can't pin down is not saved). Values you set yourself are never overwritten. The allowed values
   live in `src/config/subtypes.ts`.
-- **Market prices** — every holding's price comes from Financial Modeling Prep (profile lookup, one call per holding):
+- **Market prices** — every holding's price comes from Financial Modeling Prep (profile lookup, one call per holding; the browser sends its own tickers and saves the answers, the server stores nothing):
   refreshed automatically once an hour while the app is open (`PRICE_REFRESH_MINUTES` in `src/config/market.ts`), and on
   demand with the **Refresh** button on the Holdings tab, which also shows when prices were last updated. A ticker with no
   price available keeps the price you entered and shows a quiet "manual" tag. In the Add/Edit form, typing a ticker (as soon as the typing pauses for a moment, no need to leave the field)
@@ -41,8 +44,17 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
   later, or move it to another browser or device. Restoring replaces the current portfolio after a confirm step.
 - A demo portfolio (~$500K) shown to every new visitor, clearly badged and removable.
 
+## Hosting and data
+- **Hosting:** Vercel, connected to the GitHub repository. Every push to `main` builds and deploys the live site automatically;
+  a failed build leaves the previous version live. API keys (`ANTHROPIC_API_KEY`, `FINANCIAL_MODELING_API_KEY`) are Vercel
+  environment variables, never in the repo and never sent to the browser.
+- **Data:** each visitor's portfolio (holdings, cash, prices, learned funds) is saved in their own browser's `localStorage` in a
+  versioned format. The server has no database and stores nothing about any portfolio; its actions and routes are stateless lookups.
+  A change to the saved format needs an upgrade step for existing visitors (see `CLAUDE.md`).
+- **Cost model:** the owner's keys pay for every visitor's price and Claude lookups; the link is shared only with family and friends.
+
 ## What it deliberately lacks
-Live (second-by-second) prices, daily change figures, AI features beyond import,
+Live (second-by-second) prices, daily change figures, AI features beyond import and fund lookups,
 historical performance, multiple portfolios per person, login, syncing between devices (use Backup), and any
 limit on how much a visitor can use the price and Claude lookups (the owner's API keys pay for them).
 
