@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { lookupTickerAction } from "@/app/holdings/actions";
 
 interface AutofillFields {
@@ -13,9 +13,17 @@ interface AutofillFields {
 
 export type LookupState = "idle" | "looking" | "found" | "none";
 
+type Key = "name" | "price" | "sector" | "subtype";
+
+/** How long the ticker field must sit still before the lookup runs, so a lookup isn't made for every keystroke. */
+const TYPING_PAUSE_MS = 700;
+const LOOKS_LIKE_TICKER = /^[A-Z0-9.^=\-]{1,12}$/;
+
 /**
- * Fills name, price and (for stocks) sector from market data when the ticker field is left.
- * Only blank fields, or ones this hook filled earlier, are filled: typed values are never overwritten.
+ * Fills name, price, (for stocks) sector and (for funds) maturity / type as soon as a ticker has been typed
+ * and the typing pauses, or when the field is left. Only blank fields, or ones this hook filled earlier,
+ * are filled: typed values are never overwritten. If the ticker is then changed to something with no data,
+ * what this hook filled for the old ticker is cleared again.
  * `noSector` is the form's value for "nothing chosen" (used for both sector and maturity/type).
  */
 export function useTickerAutofill<F extends AutofillFields>(
@@ -26,13 +34,21 @@ export function useTickerAutofill<F extends AutofillFields>(
   noSector: string,
 ) {
   const [state, setState] = useState<LookupState>("idle");
-  const last = useRef(initialTicker);
-  const filled = useRef<{ name?: string; price?: string; sector?: string; subtype?: string }>({});
+  const last = useRef(initialTicker.trim().toUpperCase());
+  const filled = useRef<Partial<Record<Key, string>>>({});
 
-  const onBlur = async () => {
-    const t = form.ticker.trim().toUpperCase();
-    if (!t || t === last.current) return;
+  const run = async (raw: string) => {
+    const t = raw.trim().toUpperCase();
+    if (t === last.current) return;
     last.current = t;
+    if (!t) {
+      setState("idle");
+      return;
+    }
+    if (!LOOKS_LIKE_TICKER.test(t)) {
+      setState("idle");
+      return;
+    }
     setState("looking");
     let res;
     try {
@@ -42,13 +58,25 @@ export function useTickerAutofill<F extends AutofillFields>(
     }
     if (last.current !== t) return; // the ticker changed while we were looking
     if (!res.found) {
+      // Nothing for this ticker: take back what an earlier ticker filled in, unless it was edited since.
+      setForm((f) => {
+        const next = { ...f };
+        const undo = (key: Key, empty: string) => {
+          if (filled.current[key] !== undefined && f[key] === filled.current[key]) next[key] = empty as F[Key];
+        };
+        undo("name", "");
+        undo("price", "");
+        undo("sector", noSector);
+        undo("subtype", noSector);
+        return next;
+      });
+      filled.current = {};
       setState("none");
       return;
     }
     const price = res.price === undefined ? undefined : String(res.price);
     setForm((f) => {
-      const blank = (cur: string, key: "name" | "price" | "sector" | "subtype", none = "") =>
-        cur.trim() === none || cur === filled.current[key];
+      const blank = (cur: string, key: Key, none = "") => cur.trim() === none || cur === filled.current[key];
       const next = { ...f };
       if (res.name && blank(f.name, "name")) next.name = filled.current.name = res.name;
       if (price !== undefined && blank(f.price, "price")) next.price = filled.current.price = price;
@@ -59,5 +87,12 @@ export function useTickerAutofill<F extends AutofillFields>(
     setState("found");
   };
 
-  return { state, onBlur };
+  // Run the lookup once the typing pauses.
+  useEffect(() => {
+    const timer = setTimeout(() => void run(form.ticker), TYPING_PAUSE_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only a changed ticker should restart the timer
+  }, [form.ticker]);
+
+  return { state, onBlur: () => run(form.ticker) };
 }
