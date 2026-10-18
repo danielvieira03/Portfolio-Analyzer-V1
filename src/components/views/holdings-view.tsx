@@ -1,6 +1,7 @@
 "use client";
 
 import { DemoBadge } from "@/components/dashboard/demo-badge";
+import { BackupDialog } from "@/components/holdings/backup-dialog";
 import { AssetClassSection } from "@/components/holdings/asset-class-section";
 import { CashCard } from "@/components/holdings/cash-card";
 import { toExistingLots } from "@/components/holdings/existing-lots";
@@ -27,6 +28,7 @@ export function HoldingsView() {
           <>
             {isDemoData && <DemoBadge />}
             <PriceRefresh updatedAt={pricesUpdatedAt} />
+            <BackupDialog />
             <ImportDialog existing={toExistingLots(positions)} />
           </>
         }
