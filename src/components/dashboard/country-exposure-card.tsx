@@ -68,8 +68,8 @@ export function CountryExposureCard({ exposure }: { exposure: CountryExposure })
           No individual stocks with a country yet. Countries fill in after the next price refresh.
         </p>
       ) : (
-        <div className="grid gap-4 xl:grid-cols-5">
-          <div className="min-w-0 xl:col-span-3">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]">
+          <div className="min-w-0">
             <div ref={boxRef} className="relative">
               {world ? (
                 <svg
@@ -120,7 +120,7 @@ export function CountryExposureCard({ exposure }: { exposure: CountryExposure })
             </div>
           </div>
 
-          <div className="min-w-0 xl:col-span-2">
+          <div className="min-w-0">
             <div className="label-caps flex justify-between border-b pb-1.5">
               <span>Country</span>
               <span>Share of stocks</span>
