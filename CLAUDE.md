@@ -56,7 +56,7 @@ SheetJS `xlsx` (Excel) · Anthropic SDK (screenshot/PDF import, optional review)
   Green/red ONLY for gains/losses (`text-gain` / `text-loss`, or `<Num tone="auto">`).
 - Numbers: use `<Num>` / `.num` (monospace, tabular, right-aligned) and `format.ts`.
 - Charts use `--chart-1..9` (no green/red) and always have hover tooltips.
-- Prices come from Financial Modeling Prep (`src/lib/market/`, refreshed hourly and via the Holdings Refresh button; the interval is `PRICE_REFRESH_MINUTES` in `src/config/market.ts`). A ticker with no price keeps its manual price and is flagged quietly. No daily change figures. The free plan allows 250 calls a day.
+- Prices come from Financial Modeling Prep (`src/lib/market/`, refreshed every 2 minutes while the app is open and via the Holdings Refresh button; the interval is `PRICE_REFRESH_MINUTES` in `src/config/market.ts`). A ticker with no price keeps its manual price and is flagged quietly. No daily change figures. Daniel's plan is FMP Starter (300 calls a minute); the free plan (about 250 a day) cannot sustain this interval, so raise `PRICE_REFRESH_MINUTES` if the plan is ever downgraded.
 - Market data: `FINANCIAL_MODELING_API_KEY` stays server-side too (only `src/lib/market/fmp.ts` reads it; never `NEXT_PUBLIC_`, never logged or returned).
 - AI: `ANTHROPIC_API_KEY` stays server-side (never `NEXT_PUBLIC_`, never in the browser). Claude output goes through the
   same importer checks and preview as CSV/Excel; the user always confirms before anything is saved.

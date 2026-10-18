@@ -10,7 +10,7 @@ import { refreshPrices, type PriceRefreshResult } from "@/lib/storage/browser-re
 function noteFor(r: PriceRefreshResult): string | null {
   switch (r.status) {
     case "limit":
-      return "Daily limit reached, will retry later";
+      return "Limit hit. Try again in a few seconds.";
     case "no_key":
       return "No market data key set";
     case "unreachable":

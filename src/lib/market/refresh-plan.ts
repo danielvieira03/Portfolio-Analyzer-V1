@@ -17,7 +17,7 @@ export interface PricePlan {
 
 /**
  * `profiles` only holds tickers the provider actually answered for (null = answered, no data).
- * A ticker that is absent (daily limit, network trouble) is left completely alone.
+ * A ticker that is absent (usage limit, network trouble) is left completely alone.
  */
 export function planPriceUpdates(targets: PriceTarget[], profiles: Map<string, MarketProfile | null>): PricePlan {
   const plan: PricePlan = { found: [], missing: [] };
@@ -28,6 +28,15 @@ export function planPriceUpdates(targets: PriceTarget[], profiles: Map<string, M
     else plan.missing.push(t.id);
   }
   return plan;
+}
+
+/**
+ * How often a page should ask "are prices due?". Checking several times per interval makes refreshes land close
+ * to on time (a refresh is stamped when it FINISHES, so checking only once per interval would often miss by a
+ * moment and wait a whole extra interval). Between 15 and 60 seconds.
+ */
+export function checkEveryMs(minutes: number): number {
+  return Math.max(15_000, Math.min(60_000, (minutes * 60_000) / 4));
 }
 
 /** True when prices were never updated, or the last update is `minutes` old or older. */

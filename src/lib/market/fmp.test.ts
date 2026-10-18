@@ -37,7 +37,7 @@ describe("fetchProfiles", () => {
     expect(r.profiles.get("AAPL")?.price).toBe(300);
   });
 
-  it("stops and reports the daily limit on a 429", async () => {
+  it("stops and reports the usage limit on a 429", async () => {
     vi.stubEnv("FINANCIAL_MODELING_API_KEY", "secret-key");
     const spy = vi.fn(async () => new Response("limit", { status: 429 }));
     vi.stubGlobal("fetch", spy);

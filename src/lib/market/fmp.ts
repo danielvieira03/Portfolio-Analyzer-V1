@@ -11,7 +11,7 @@ const PARALLEL = 5;
 export type FetchStatus =
   | "ok"
   | "no_key" // no key in .env.local
-  | "limit" // the provider said the daily limit is used up
+  | "limit" // the provider said a usage limit was hit (HTTP 429)
   | "unreachable"; // every request failed (offline, provider down)
 
 export interface FetchResult {
@@ -35,7 +35,7 @@ async function fetchOne(ticker: string, key: string): Promise<MarketProfile | nu
   }
 }
 
-/** Look up many tickers, a few at a time. Stops early if the daily limit is hit. */
+/** Look up many tickers, a few at a time. Stops early if the usage limit is hit. */
 export async function fetchProfiles(tickers: string[]): Promise<FetchResult> {
   const key = process.env.FINANCIAL_MODELING_API_KEY?.trim();
   const profiles = new Map<string, MarketProfile | null>();

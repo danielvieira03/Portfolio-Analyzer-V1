@@ -30,12 +30,13 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
   (a bond fund Claude can't pin down is not saved). Values you set yourself are never overwritten. The allowed values
   live in `src/config/subtypes.ts`.
 - **Market prices** — every holding's price comes from Financial Modeling Prep (profile lookup, one call per holding; the browser sends its own tickers and saves the answers, the server stores nothing):
-  refreshed automatically once an hour while the app is open (`PRICE_REFRESH_MINUTES` in `src/config/market.ts`), and on
+  refreshed automatically every 2 minutes while the app is open (`PRICE_REFRESH_MINUTES` in `src/config/market.ts`), and on
   demand with the **Refresh** button on the Holdings tab, which also shows when prices were last updated. A ticker with no
   price available keeps the price you entered and shows a quiet "manual" tag. In the Add/Edit form, typing a ticker (as soon as the typing pauses for a moment, no need to leave the field)
   fills the name and price (and, in the Equities form, the sector: the stock's own sector, or "Diversified" for an ETF; bonds and alternatives get none), plus the Maturity / Type in the Fixed Income / Alternatives forms when the fund library knows the fund (free; unknown funds stay empty for the Look up button). The provider's sector names
-  are translated to the app's S&P 500 style names in `src/config/market.ts`. The free plan allows 250 calls a day; if that limit
-  is hit, the refresh stops quietly and old prices stay.
+  are translated to the app's S&P 500 style names in `src/config/market.ts`. The Starter plan allows 300 calls a minute (the free plan only about 250 a day, which a
+  2-minute refresh would use up quickly); if a limit is hit, the refresh stops quietly, old prices stay, and the Holdings tab says
+  "Limit hit. Try again in a few seconds."
 - **Import** (button on both Dashboard and Holdings) — CSV/Excel (parsed locally, tolerant of different column names, with manual column matching)
   and Screenshot/PDF (read by Claude). The first step of Import is choosing "Add additional holdings" or "New portfolio". The
   preview looks like the Holdings table; in Add mode repeated tickers are flagged, averaged by default, and can be

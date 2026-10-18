@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isStale, planPriceUpdates } from "./refresh-plan";
+import { checkEveryMs, isStale, planPriceUpdates } from "./refresh-plan";
 
 const holdings = [
   { id: "a", ticker: "AAPL", assetClass: "Equities" },
@@ -29,4 +29,13 @@ describe("isStale", () => {
     expect(isStale(new Date("2026-10-18T11:00:00Z"), now, 60)).toBe(true);
     expect(isStale(new Date("2026-10-18T09:00:00Z"), now, 60)).toBe(true);
   });
+});
+
+describe("checkEveryMs", () => {
+  it("checks every 30 seconds for a 2-minute interval", () => expect(checkEveryMs(2)).toBe(30_000));
+  it("checks at most once a minute for long intervals", () => {
+    expect(checkEveryMs(60)).toBe(60_000);
+    expect(checkEveryMs(4)).toBe(60_000);
+  });
+  it("never checks more often than every 15 seconds", () => expect(checkEveryMs(0.5)).toBe(15_000));
 });

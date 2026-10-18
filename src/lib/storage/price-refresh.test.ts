@@ -25,7 +25,7 @@ describe("runPriceRefresh", () => {
   it("fetches the tickers of THIS visitor's portfolio and saves the prices and the time", async () => {
     const store = setup();
     const fetchPrices = vi.fn(async () => answer(store, 111));
-    const r = await runPriceRefresh(false, { store, fetchPrices, now: () => now });
+    const r = await runPriceRefresh(false, { store, fetchPrices, now: () => now, minutes: 60 });
     expect(fetchPrices).toHaveBeenCalledWith(tickersOf(store));
     expect(r.status).toBe("updated");
     const doc = store.getSnapshot().doc;
@@ -37,7 +37,7 @@ describe("runPriceRefresh", () => {
   it("does nothing when prices are fresh (unless forced)", async () => {
     const store = setup({ updatedAt: "2026-10-18T11:30:00.000Z" });
     const fetchPrices = vi.fn(async () => answer(store));
-    expect((await runPriceRefresh(false, { store, fetchPrices, now: () => now })).status).toBe("fresh");
+    expect((await runPriceRefresh(false, { store, fetchPrices, now: () => now, minutes: 60 })).status).toBe("fresh");
     expect(fetchPrices).not.toHaveBeenCalled();
     expect((await runPriceRefresh(true, { store, fetchPrices, now: () => now })).status).toBe("updated");
     expect(fetchPrices).toHaveBeenCalledOnce();
@@ -46,7 +46,7 @@ describe("runPriceRefresh", () => {
   it("refreshes when the last refresh is an hour old", async () => {
     const store = setup({ updatedAt: "2026-10-18T11:00:00.000Z" });
     const fetchPrices = vi.fn(async () => answer(store));
-    expect((await runPriceRefresh(false, { store, fetchPrices, now: () => now })).status).toBe("updated");
+    expect((await runPriceRefresh(false, { store, fetchPrices, now: () => now, minutes: 60 })).status).toBe("updated");
   });
 
   it("does not call the server when there is nothing to refresh", async () => {
@@ -68,7 +68,7 @@ describe("runPriceRefresh", () => {
     expect(store.getSnapshot().doc.holdings[0]).toMatchObject({ currentPrice: before, noLivePrice: true });
   });
 
-  it("on the daily limit it keeps old prices and says so (nothing answered)", async () => {
+  it("on a usage limit it keeps old prices and says so (nothing answered)", async () => {
     const store = setup();
     const before = JSON.stringify(store.getSnapshot().doc.holdings);
     const r = await runPriceRefresh(true, { store, fetchPrices: async () => ({ status: "limit", profiles: {} }), now: () => now });
