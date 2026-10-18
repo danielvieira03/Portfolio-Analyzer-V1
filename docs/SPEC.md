@@ -20,6 +20,13 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
   Missing values are filled by Claude with web search: automatically in the import preview, or with the "Look up
   with Claude" button on the Holdings page (about 3 to 5 cents per fund). Values you set yourself are never overwritten.
   The allowed values live in `src/config/subtypes.ts`.
+- **Market prices** — every holding's price comes from Financial Modeling Prep (profile lookup, one call per holding):
+  refreshed automatically once an hour while the app is open (`PRICE_REFRESH_MINUTES` in `src/config/market.ts`), and on
+  demand with the **Refresh** button on the Holdings tab, which also shows when prices were last updated. A ticker with no
+  price available keeps the price you entered and shows a quiet "manual" tag. In the Add/Edit form, leaving the ticker field
+  fills the name and price (and the sector for stocks only; ETFs, bonds and alternatives get none). The provider's sector names
+  are translated to the app's S&P 500 style names in `src/config/market.ts`. The free plan allows 250 calls a day; if that limit
+  is hit, the refresh stops quietly and old prices stay.
 - **Import** (button on both Dashboard and Holdings) — CSV/Excel (parsed locally, tolerant of different column names, with manual column matching)
   and Screenshot/PDF (read by Claude). The first step of Import is choosing "Add additional holdings" or "New portfolio". The
   preview looks like the Holdings table; in Add mode repeated tickers are flagged, averaged by default, and can be
@@ -27,7 +34,7 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
 - A demo portfolio (~$500K) loaded on first run, clearly badged and removable.
 
 ## What it deliberately lacks
-Live market prices (prices are entered manually), daily change figures, AI features beyond import,
+Live (second-by-second) prices, daily change figures, AI features beyond import,
 historical performance, multiple portfolios, login, and deployment.
 
 ## Direction

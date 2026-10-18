@@ -1,9 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { addHolding, deleteHolding, fillSubtypes, importHoldings, saveHolding, setCash, type DuplicateChoice, type ImportDuplicateChoice, type ImportResult } from "@/data/holdings.repo";
+import { addHolding, applyPrices, deleteHolding, fillSubtypes, getPriceTargets, getPricesUpdatedAt, importHoldings, saveHolding, setCash, type DuplicateChoice, type ImportDuplicateChoice, type ImportResult } from "@/data/holdings.repo";
 import { isValidSubtype } from "@/config/subtypes";
+import { PRICE_REFRESH_MINUTES } from "@/config/market";
 import { cashSchema, fieldErrors, holdingSchema } from "@/lib/holdings/schema";
+import { fetchProfiles, type FetchStatus } from "@/lib/market/fmp";
+import { stockSector } from "@/lib/market/profile";
+import { isStale, planPriceUpdates } from "@/lib/market/refresh-plan";
 
 export type ActionResult<T = unknown> =
   | ({ ok: true } & T)
@@ -78,4 +82,64 @@ export async function saveSubtypesAction(found: Record<string, string>): Promise
   const updated = await fillSubtypes(clean);
   refresh();
   return { ok: true, updated };
+}
+
+// ---- Market data (prices and autofill) ----
+
+export interface PriceRefreshResult {
+  /** "fresh" = prices were recent enough, nothing was fetched. */
+  status: "fresh" | "updated" | FetchStatus;
+  updated: number;
+  /** Holdings the API had no price for (they keep their manual price). */
+  unavailable: number;
+}
+
+// Two tabs asking at once share one run instead of calling the API twice.
+let inFlight: Promise<PriceRefreshResult> | null = null;
+
+async function runPriceRefresh(force: boolean): Promise<PriceRefreshResult> {
+  if (!force && !isStale(await getPricesUpdatedAt(), new Date(), PRICE_REFRESH_MINUTES)) {
+    return { status: "fresh", updated: 0, unavailable: 0 };
+  }
+  const targets = await getPriceTargets();
+  if (targets.length === 0) return { status: "fresh", updated: 0, unavailable: 0 };
+
+  const result = await fetchProfiles(targets.map((t) => t.ticker));
+  const plan = planPriceUpdates(targets, result.profiles);
+  if (plan.found.length > 0 || plan.missing.length > 0) {
+    await applyPrices(plan, plan.found.length > 0);
+    refresh();
+  }
+  const status = result.status === "ok" ? "updated" : result.status;
+  return { status, updated: plan.found.length, unavailable: plan.missing.length };
+}
+
+/**
+ * Refresh every holding's price from the market data API. Without `force` it does nothing when
+ * the last refresh is newer than PRICE_REFRESH_MINUTES (so the automatic hourly check is cheap).
+ */
+export async function refreshPricesAction(force: boolean): Promise<PriceRefreshResult> {
+  inFlight ??= runPriceRefresh(force).finally(() => {
+    inFlight = null;
+  });
+  return inFlight;
+}
+
+export interface TickerLookup {
+  found: boolean;
+  name?: string;
+  price?: number;
+  /** Only for stocks in the Equities form; never for ETFs, bonds or alternatives. */
+  sector?: string;
+}
+
+/** One-ticker lookup for the Add/Edit form. Never throws: no data simply means "enter it by hand". */
+export async function lookupTickerAction(ticker: string, assetClass: string): Promise<TickerLookup> {
+  const t = ticker.trim().toUpperCase();
+  if (!/^[A-Z0-9.^=\-]{1,12}$/.test(t)) return { found: false };
+  const { profiles } = await fetchProfiles([t]);
+  const profile = profiles.get(t);
+  if (!profile) return { found: false };
+  const sector = assetClass === "Equities" ? stockSector(profile) : null;
+  return { found: true, name: profile.name, price: profile.price, ...(sector ? { sector } : {}) };
 }

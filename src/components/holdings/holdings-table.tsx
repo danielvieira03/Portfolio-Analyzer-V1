@@ -111,7 +111,16 @@ export function HoldingsTable({
               )}
               <TableCell className="px-2 py-1.5"><Num className="block">{formatShares(p.shares)}</Num></TableCell>
               <TableCell className="px-2 py-1.5"><Num className="block">{formatPrice(p.costBasisPerShare)}</Num></TableCell>
-              <TableCell className="px-2 py-1.5"><Num className="block">{formatPrice(p.currentPrice)}</Num></TableCell>
+              <TableCell className="px-2 py-1.5">
+                <div className="flex items-baseline justify-end gap-1.5">
+                  {p.noLivePrice && (
+                    <span className="text-[10px] text-muted-foreground" title="No live price available, using the price you entered">
+                      manual
+                    </span>
+                  )}
+                  <Num>{formatPrice(p.currentPrice)}</Num>
+                </div>
+              </TableCell>
               <TableCell className="px-2 py-1.5"><Num className="block">{formatCurrency(marketValue(p))}</Num></TableCell>
               <TableCell className="px-2 py-1.5">
                 <Num value={gl} tone="auto" className="block">{formatSignedCurrency(gl)}</Num>

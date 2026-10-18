@@ -19,7 +19,8 @@ model Holding {
   subtype          String? // Fixed Income: maturity bucket; Alternatives: type (validated in code); empty for equities
   shares           Float
   costBasisPerShare Float
-  currentPrice     Float // entered manually
+  currentPrice     Float // from the market data API; the manual value stays when no price is available
+  noLivePrice      Boolean  @default(false) // true when the API had no price at the last refresh
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -39,4 +40,5 @@ model AppState {
   id         Int     @id @default(1)
   isDemoData Boolean @default(false)
   seeded     Boolean @default(false)
+  pricesUpdatedAt DateTime? // last time prices were refreshed from the market data API
 }

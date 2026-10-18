@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatCurrency,
   formatPercent,
+  formatUpdated,
   formatSignedCurrency,
   formatSignedPercent,
 } from "./format";
@@ -18,5 +19,10 @@ describe("format", () => {
   });
   it("formats percents from fractions", () => {
     expect(formatPercent(0.25)).toBe("25.00%");
+  });
+  it("shows just the time for today and adds the date for earlier days", () => {
+    const now = new Date("2026-10-18T20:00:00Z");
+    expect(formatUpdated("2026-10-18T15:42:00Z", now, "UTC")).toBe("3:42 PM");
+    expect(formatUpdated("2026-10-17T15:42:00Z", now, "UTC")).toBe("Oct 17, 3:42 PM");
   });
 });

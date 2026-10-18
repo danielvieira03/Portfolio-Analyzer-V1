@@ -42,3 +42,12 @@ export const formatShares = (v: number) => number.format(v);
 
 /** Oct 13, 2026 */
 export const formatDate = (d: Date | string) => dateFmt.format(new Date(d));
+
+/** "3:42 PM" for today, "Oct 17, 3:42 PM" for an earlier day. Uses the viewer's time zone unless one is given. */
+export function formatUpdated(d: Date | string, now: Date = new Date(), timeZone?: string): string {
+  const date = new Date(d);
+  const day = (x: Date) => x.toLocaleDateString("en-US", { timeZone });
+  const time = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone });
+  if (day(date) === day(now)) return time;
+  return `${date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone })}, ${time}`;
+}

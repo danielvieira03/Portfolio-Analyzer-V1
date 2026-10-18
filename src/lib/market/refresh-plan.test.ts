@@ -1,0 +1,32 @@
+import { describe, expect, it } from "vitest";
+import { isStale, planPriceUpdates } from "./refresh-plan";
+
+const holdings = [
+  { id: "a", ticker: "AAPL", assetClass: "Equities" },
+  { id: "b", ticker: "BND", assetClass: "Fixed Income" },
+  { id: "c", ticker: "ZZZZ", assetClass: "Equities" },
+];
+const profile = (price: number) => ({ name: "n", price, sector: null, isEtf: false });
+
+describe("planPriceUpdates", () => {
+  it("sets prices that were found and flags the rest as manual", () => {
+    const plan = planPriceUpdates(holdings, new Map([["AAPL", profile(300)], ["BND", profile(70)], ["ZZZZ", null]]));
+    expect(plan.found).toEqual([{ id: "a", price: 300 }, { id: "b", price: 70 }]);
+    expect(plan.missing).toEqual(["c"]);
+  });
+  it("leaves a ticker alone when the API never answered for it (limit or network trouble)", () => {
+    const plan = planPriceUpdates(holdings, new Map([["AAPL", profile(300)]]));
+    expect(plan.found).toEqual([{ id: "a", price: 300 }]);
+    expect(plan.missing).toEqual([]);
+  });
+});
+
+describe("isStale", () => {
+  const now = new Date("2026-10-18T12:00:00Z");
+  it("is stale when never updated", () => expect(isStale(null, now, 60)).toBe(true));
+  it("is fresh inside the interval", () => expect(isStale(new Date("2026-10-18T11:30:00Z"), now, 60)).toBe(false));
+  it("is stale at or past the interval", () => {
+    expect(isStale(new Date("2026-10-18T11:00:00Z"), now, 60)).toBe(true);
+    expect(isStale(new Date("2026-10-18T09:00:00Z"), now, 60)).toBe(true);
+  });
+});

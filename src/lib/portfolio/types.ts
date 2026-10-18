@@ -17,4 +17,6 @@ export interface Position {
   shares: number;
   costBasisPerShare: number;
   currentPrice: number;
+  /** True when the market data API had no price for this ticker at the last refresh (the manual price is kept). */
+  noLivePrice?: boolean;
 }

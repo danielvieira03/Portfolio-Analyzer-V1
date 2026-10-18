@@ -4,12 +4,15 @@ import { prisma } from "@/lib/db";
 import { mergePositions } from "@/lib/portfolio/calc";
 import type { HoldingClass, Position } from "@/lib/portfolio/types";
 import type { HoldingInput } from "@/lib/holdings/schema";
+import type { PricePlan, PriceTarget } from "@/lib/market/refresh-plan";
 import { DEMO_CASH, DEMO_HOLDINGS } from "./seed-demo";
 
 export interface PortfolioData {
   positions: Position[];
   cash: number;
   isDemoData: boolean;
+  /** When prices were last refreshed from the market data API; null = never. */
+  pricesUpdatedAt: Date | null;
 }
 
 /** On the very first run, fill the database with the demo portfolio. Only ever happens once. */
@@ -61,9 +64,11 @@ export async function getPortfolio(): Promise<PortfolioData> {
       shares: r.shares,
       costBasisPerShare: r.costBasisPerShare,
       currentPrice: r.currentPrice,
+      noLivePrice: r.noLivePrice,
     })),
     cash: cash?.amount ?? 0,
     isDemoData: state?.isDemoData ?? false,
+    pricesUpdatedAt: state?.pricesUpdatedAt ?? null,
   };
 }
 
@@ -152,6 +157,33 @@ export async function fillSubtypes(found: Record<string, string>): Promise<numbe
     updated += res.count;
   }
   return updated;
+}
+
+/** Every holding's id, ticker and class: what a price refresh needs to know. */
+export async function getPriceTargets(): Promise<PriceTarget[]> {
+  const rows = await prisma.holding.findMany({ select: { id: true, ticker: true, assetClass: true } });
+  return rows;
+}
+
+export async function getPricesUpdatedAt(): Promise<Date | null> {
+  return (await prisma.appState.findUnique({ where: { id: 1 } }))?.pricesUpdatedAt ?? null;
+}
+
+/**
+ * Save refreshed prices: found prices replace the old ones (and clear the "manual" flag); holdings the
+ * API had no price for keep their price and get flagged. `stamp` records the refresh time.
+ * Refreshing prices never changes whether the portfolio counts as demo data.
+ */
+export async function applyPrices(plan: PricePlan, stamp: boolean) {
+  await prisma.$transaction([
+    ...plan.found.map((f) => prisma.holding.update({ where: { id: f.id }, data: { currentPrice: f.price, noLivePrice: false } })),
+    ...(plan.missing.length > 0
+      ? [prisma.holding.updateMany({ where: { id: { in: plan.missing } }, data: { noLivePrice: true } })]
+      : []),
+    ...(stamp
+      ? [prisma.appState.upsert({ where: { id: 1 }, update: { pricesUpdatedAt: new Date() }, create: { id: 1, seeded: true, pricesUpdatedAt: new Date() } })]
+      : []),
+  ]);
 }
 
 export async function deleteHolding(id: string) {

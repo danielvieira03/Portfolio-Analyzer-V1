@@ -3,6 +3,7 @@ import { AssetClassSection } from "@/components/holdings/asset-class-section";
 import { CashCard } from "@/components/holdings/cash-card";
 import { toExistingLots } from "@/components/holdings/existing-lots";
 import { ImportDialog } from "@/components/holdings/import-dialog";
+import { PriceRefresh } from "@/components/holdings/price-refresh";
 import { PageHeader } from "@/components/shared/page-header";
 import { getPortfolio } from "@/data/holdings.repo";
 import { summarize, weight } from "@/lib/portfolio/calc";
@@ -12,7 +13,7 @@ import { HOLDING_CLASSES } from "@/lib/portfolio/types";
 export const dynamic = "force-dynamic";
 
 export default async function HoldingsPage() {
-  const { positions, cash, isDemoData } = await getPortfolio();
+  const { positions, cash, isDemoData, pricesUpdatedAt } = await getPortfolio();
   const { totalValue } = summarize(positions, cash);
 
   return (
@@ -23,6 +24,7 @@ export default async function HoldingsPage() {
         actions={
           <>
             {isDemoData && <DemoBadge />}
+            <PriceRefresh updatedAt={pricesUpdatedAt?.toISOString() ?? null} />
             <ImportDialog existing={toExistingLots(positions)} />
           </>
         }

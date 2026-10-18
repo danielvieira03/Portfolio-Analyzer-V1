@@ -20,6 +20,7 @@ import { fieldErrors, holdingSchema, SECTOR_OPTIONS, type HoldingInput } from "@
 import { mergePositions, type Lot } from "@/lib/portfolio/calc";
 import type { DuplicateChoice } from "@/data/holdings.repo";
 import type { HoldingClass, Position } from "@/lib/portfolio/types";
+import { useTickerAutofill } from "./use-ticker-autofill";
 
 const NO_SECTOR = "__none";
 
@@ -92,6 +93,8 @@ function FormBody({
   // Set when the ticker already exists: shows the "add to existing or replace" step.
   const [duplicate, setDuplicate] = useState<{ current: Position; incoming: HoldingInput } | null>(null);
   const set = (k: keyof FormState) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const autofill = useTickerAutofill(form, setForm, assetClass, position?.ticker ?? "", NO_SECTOR);
   const isEquity = assetClass === "Equities";
   const subtypeLabel = hasSubtype(assetClass) ? SUBTYPE_LABEL[assetClass] : null;
   const valuesFor = (h: HoldingInput) => ({ ...h });
@@ -226,9 +229,16 @@ function FormBody({
         </DialogDescription>
       </DialogHeader>
       <div className="grid grid-cols-2 gap-3">
-        {field("ticker", "Ticker", { placeholder: "AAPL", autoCapitalize: "characters", autoFocus: true })}
+        {field("ticker", "Ticker", { placeholder: "AAPL", autoCapitalize: "characters", autoFocus: true, onBlur: autofill.onBlur })}
         {field("name", "Name", { placeholder: "Apple Inc." })}
       </div>
+      {autofill.state !== "idle" && (
+        <p className="text-[11px] text-muted-foreground">
+          {autofill.state === "looking" && "Looking up…"}
+          {autofill.state === "found" && "Filled from market data"}
+          {autofill.state === "none" && "No data found, enter it by hand"}
+        </p>
+      )}
       {isEquity && (
         <div className="space-y-1">
           <Label className="label-caps">Sector (optional)</Label>

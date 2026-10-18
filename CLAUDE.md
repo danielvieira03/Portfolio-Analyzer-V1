@@ -27,6 +27,7 @@ Next.js (App Router) + TypeScript · Tailwind CSS v4 + shadcn/ui (base-ui) · Re
 - `src/app/` — routes (Dashboard `/`, Holdings `/holdings`, Risk Analysis `/risk`) and layout shell
 - `src/components/layout/` top bar with horizontal tabs · `shared/` Panel, Num, PageHeader · `ui/` shadcn primitives
 - `src/lib/portfolio/` — ALL portfolio math as pure, tested functions (value, cost, gain/loss, weights)
+- `src/lib/market/` — market data: `fmp.ts` is SERVER ONLY (reads the key); `profile.ts` (parse + sector), `refresh-plan.ts` are pure and tested
 - `src/lib/holdings/` — validation (zod) shared by the form and server actions
 - `src/lib/import/` — CSV/Excel parsing, flexible column matching, row cleanup + warnings
 - `src/lib/ai/` — Claude calls: `claude.ts` is SERVER ONLY (reads the API key); `to-rows.ts` feeds AI output into the same importer; `client.ts` is the browser-side fetch helper
@@ -36,7 +37,7 @@ Next.js (App Router) + TypeScript · Tailwind CSS v4 + shadcn/ui (base-ui) · Re
 - `src/components/holdings/` — tables, add/edit/remove dialogs, cash card, import dialog
 - `src/lib/format.ts` — the only place numbers are formatted (currency, percent, dates)
 - `src/data/` — data layer; the only code that talks to Prisma
-- `src/config/` — nav items and editable settings (S&P 500 sector weights + as-of date, risk weights and labels in `risk.ts`)
+- `src/config/` — nav items and editable settings (price refresh interval and sector name map in `market.ts`, S&P 500 sector weights + as-of date, risk weights and labels in `risk.ts`)
 - `src/components/risk/` — Risk Analysis cards (Risk Profile meter, sector weights vs the S&P 500, over/underweight summary); score math is `src/lib/portfolio/risk.ts`
 - `prisma/` — schema and migrations; DB file `prisma/portfolio.db` is git-ignored
 - `src/generated/` — generated Prisma client (git-ignored)
@@ -48,7 +49,8 @@ Next.js (App Router) + TypeScript · Tailwind CSS v4 + shadcn/ui (base-ui) · Re
   Green/red ONLY for gains/losses (`text-gain` / `text-loss`, or `<Num tone="auto">`).
 - Numbers: use `<Num>` / `.num` (monospace, tabular, right-aligned) and `format.ts`.
 - Charts use `--chart-1..9` (no green/red) and always have hover tooltips.
-- Prices are manual (no live data, no daily change figures).
+- Prices come from Financial Modeling Prep (`src/lib/market/`, refreshed hourly and via the Holdings Refresh button; the interval is `PRICE_REFRESH_MINUTES` in `src/config/market.ts`). A ticker with no price keeps its manual price and is flagged quietly. No daily change figures. The free plan allows 250 calls a day.
+- Market data: `FINANCIAL_MODELING_API_KEY` stays server-side too (only `src/lib/market/fmp.ts` reads it; never `NEXT_PUBLIC_`, never logged or returned).
 - AI: `ANTHROPIC_API_KEY` stays server-side (never `NEXT_PUBLIC_`, never in the browser). Claude output goes through the
   same importer checks and preview as CSV/Excel; the user always confirms before anything is saved.
 - Secrets go in `.env.local` (git-ignored); keep `.env.example` current.
