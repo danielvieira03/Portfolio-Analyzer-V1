@@ -5,7 +5,7 @@ import { mergePositions } from "@/lib/portfolio/calc";
 import type { HoldingClass, Position } from "@/lib/portfolio/types";
 import type { HoldingInput } from "@/lib/holdings/schema";
 import type { PricePlan, PriceTarget } from "@/lib/market/refresh-plan";
-import { DEMO_CASH, DEMO_HOLDINGS } from "./seed-demo";
+import { DEMO_CASH, DEMO_HOLDINGS } from "@/config/demo-portfolio";
 
 export interface PortfolioData {
   positions: Position[];
