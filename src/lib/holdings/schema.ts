@@ -28,7 +28,6 @@ export const holdingSchema = z
     shares: positiveNumber("Shares"),
     costBasisPerShare: nonNegativeNumber("Cost basis"),
     currentPrice: nonNegativeNumber("Price"),
-    priceAsOf: z.coerce.date({ error: "Enter a valid date" }),
   })
   .superRefine((v, ctx) => {
     if (v.assetClass !== "Equities" && v.sector) {

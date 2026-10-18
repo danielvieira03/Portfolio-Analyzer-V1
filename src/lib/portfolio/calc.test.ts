@@ -22,7 +22,6 @@ const pos = (o: Partial<Position> & Pick<Position, "ticker">): Position => ({
   shares: 10,
   costBasisPerShare: 100,
   currentPrice: 150,
-  priceAsOf: new Date("2026-01-01"),
   ...o,
 });
 
@@ -111,17 +110,16 @@ describe("topHoldings", () => {
 });
 
 describe("mergePositions", () => {
-  const old = { name: "Apple", sector: "Information Technology", subtype: null, shares: 10, costBasisPerShare: 100, currentPrice: 150, priceAsOf: new Date("2026-01-01") };
-  const fresh = { name: "Apple Inc.", sector: null, subtype: null, shares: 30, costBasisPerShare: 200, currentPrice: 210, priceAsOf: new Date("2026-06-01") };
+  const old = { name: "Apple", sector: "Information Technology", subtype: null, shares: 10, costBasisPerShare: 100, currentPrice: 150 };
+  const fresh = { name: "Apple Inc.", sector: null, subtype: null, shares: 30, costBasisPerShare: 200, currentPrice: 210 };
   it("adds shares and averages the cost by share count", () => {
     const m = mergePositions(old, fresh);
     expect(m.shares).toBe(40);
     expect(m.costBasisPerShare).toBeCloseTo(175); // (10*100 + 30*200) / 40
   });
-  it("takes the newer price and date, keeps existing name and sector", () => {
+  it("takes the newer price, keeps existing name and sector", () => {
     const m = mergePositions(old, fresh);
     expect(m.currentPrice).toBe(210);
-    expect(m.priceAsOf).toEqual(fresh.priceAsOf);
     expect(m.name).toBe("Apple");
     expect(m.sector).toBe("Information Technology");
   });

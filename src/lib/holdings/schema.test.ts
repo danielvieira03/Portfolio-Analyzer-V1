@@ -3,7 +3,7 @@ import { fieldErrors, holdingSchema } from "./schema";
 
 const valid = {
   ticker: " aapl ", name: "Apple Inc.", assetClass: "Equities", sector: "Information Technology",
-  shares: 10, costBasisPerShare: 150, currentPrice: 200, priceAsOf: "2026-10-01",
+  shares: 10, costBasisPerShare: 150, currentPrice: 200,
 };
 
 describe("holdingSchema", () => {

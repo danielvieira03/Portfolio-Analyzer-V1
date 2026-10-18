@@ -16,7 +16,7 @@ describe("extractionToTable", () => {
       issues: [],
     };
     const { headers, rows } = extractionToTable(ex);
-    const parsed = parseImportRows(rows, headers, { today: new Date("2026-10-14") });
+    const parsed = parseImportRows(rows, headers);
     expect(parsed.missingRequired).toEqual([]);
     const [aapl, bnd, cash] = parsed.rows;
     expect(aapl.holding).toMatchObject({ ticker: "AAPL", shares: 10, costBasisPerShare: 150, sector: "Information Technology" });

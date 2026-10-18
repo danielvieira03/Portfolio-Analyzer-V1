@@ -4,7 +4,7 @@ import type { Position } from "./types";
 
 const p = (ticker: string, price: number, cost: number, name = ticker): Position => ({
   id: ticker, ticker, name, assetClass: "Equities", sector: null, subtype: null,
-  shares: 10, costBasisPerShare: cost, currentPrice: price, priceAsOf: new Date(),
+  shares: 10, costBasisPerShare: cost, currentPrice: price,
 });
 const list = [p("MSFT", 400, 300), p("AAPL", 200, 250), p("NVDA", 140, 60)];
 

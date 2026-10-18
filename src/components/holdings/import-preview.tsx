@@ -60,7 +60,6 @@ function averaged(old: ExistingLot, h: NonNullable<ParsedRow["holding"]>) {
     ...l,
     subtype: l.subtype ?? null,
     currentPrice: l.currentPrice ?? 0,
-    priceAsOf: new Date(0),
   });
   return mergePositions(lot(old), lot(h));
 }

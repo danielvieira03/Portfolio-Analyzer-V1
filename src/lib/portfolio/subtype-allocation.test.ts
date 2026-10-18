@@ -4,7 +4,7 @@ import type { Position } from "./types";
 
 const pos = (ticker: string, assetClass: Position["assetClass"], subtype: string | null, value: number): Position => ({
   id: ticker, ticker, name: ticker, assetClass, sector: null, subtype,
-  shares: 1, costBasisPerShare: value, currentPrice: value, priceAsOf: new Date("2026-01-01"),
+  shares: 1, costBasisPerShare: value, currentPrice: value,
 });
 
 const bonds = [

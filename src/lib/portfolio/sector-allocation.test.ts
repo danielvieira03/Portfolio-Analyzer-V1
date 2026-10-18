@@ -12,7 +12,6 @@ const pos = (ticker: string, sector: string | null, value: number, assetClass: P
   shares: 1,
   costBasisPerShare: value,
   currentPrice: value,
-  priceAsOf: new Date("2026-01-01"),
 });
 
 const ELEVEN = [

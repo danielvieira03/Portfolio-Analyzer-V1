@@ -122,13 +122,12 @@ export interface Lot {
   shares: number;
   costBasisPerShare: number;
   currentPrice: number;
-  priceAsOf: Date;
 }
 
 /**
  * Combine a new purchase into an existing position of the same ticker.
  * Shares add up, cost per share becomes the share-weighted average, and the
- * price/date come from the newer entry. Name and sector keep the existing
+ * price comes from the newer entry. Name and sector keep the existing
  * values unless those are blank.
  */
 export function mergePositions(existing: Lot, incoming: Lot): Lot {
@@ -141,6 +140,5 @@ export function mergePositions(existing: Lot, incoming: Lot): Lot {
     shares,
     costBasisPerShare: shares === 0 ? 0 : totalCost / shares,
     currentPrice: incoming.currentPrice,
-    priceAsOf: incoming.priceAsOf,
   };
 }

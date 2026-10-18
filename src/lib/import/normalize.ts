@@ -96,9 +96,8 @@ export function detectCostIsTotal(
 export function parseImportRows(
   raw: RawRow[],
   headers: string[],
-  options: { columns?: ColumnMap; today?: Date; headerRow?: number; defaultAssetClass?: HoldingClass } = {},
+  options: { columns?: ColumnMap; headerRow?: number; defaultAssetClass?: HoldingClass } = {},
 ): ParsedImport {
-  const today = options.today ?? new Date();
   const map = options.columns ?? matchColumns(headers);
   const columns = map.columns;
   const missing = missingRequired(columns);
@@ -209,7 +208,6 @@ export function parseImportRows(
       shares,
       costBasisPerShare: cost,
       currentPrice: price,
-      priceAsOf: today,
     });
     if (!parsed.success) return fail(parsed.error.issues[0].message);
     if (columns.name && !text(get(row, "name"))) messages.push("No name — using the ticker");

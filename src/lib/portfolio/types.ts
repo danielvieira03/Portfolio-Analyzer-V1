@@ -17,5 +17,4 @@ export interface Position {
   shares: number;
   costBasisPerShare: number;
   currentPrice: number;
-  priceAsOf: Date;
 }

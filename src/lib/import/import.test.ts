@@ -60,8 +60,7 @@ describe("table reading", () => {
 });
 
 const headers = ["Ticker", "Name", "Shares", "Cost", "Price", "Asset Class", "Sector"];
-const today = new Date("2026-10-13");
-const opts = { today };
+const opts = {};
 
 describe("parseImportRows", () => {
   it("accepts a clean row", () => {

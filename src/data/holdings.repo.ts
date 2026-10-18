@@ -21,7 +21,6 @@ async function ensureSeeded() {
   });
   if (state.seeded) return;
 
-  const now = new Date();
   await prisma.$transaction([
     prisma.holding.createMany({
       data: DEMO_HOLDINGS.map((h) => ({
@@ -33,7 +32,6 @@ async function ensureSeeded() {
         shares: h.shares,
         costBasisPerShare: h.cost,
         currentPrice: h.price,
-        priceAsOf: now,
       })),
     }),
     prisma.cashBalance.upsert({
@@ -63,7 +61,6 @@ export async function getPortfolio(): Promise<PortfolioData> {
       shares: r.shares,
       costBasisPerShare: r.costBasisPerShare,
       currentPrice: r.currentPrice,
-      priceAsOf: r.priceAsOf,
     })),
     cash: cash?.amount ?? 0,
     isDemoData: state?.isDemoData ?? false,
@@ -101,7 +98,6 @@ const toRow = (h: HoldingInput) => ({
   shares: h.shares,
   costBasisPerShare: h.costBasisPerShare,
   currentPrice: h.currentPrice,
-  priceAsOf: h.priceAsOf,
 });
 
 /** Create (id = null) or update a holding. Throws a Prisma P2002 error on a duplicate ticker. */

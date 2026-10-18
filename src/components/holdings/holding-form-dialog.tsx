@@ -22,7 +22,6 @@ import type { DuplicateChoice } from "@/data/holdings.repo";
 import type { HoldingClass, Position } from "@/lib/portfolio/types";
 
 const NO_SECTOR = "__none";
-const toDateInput = (d: Date) => new Date(d).toISOString().slice(0, 10);
 
 interface FormState {
   ticker: string;
@@ -32,18 +31,15 @@ interface FormState {
   shares: string;
   cost: string;
   price: string;
-  priceAsOf: string;
 }
 
 const blank = (): FormState => ({
   ticker: "", name: "", sector: NO_SECTOR, subtype: NO_SECTOR, shares: "", cost: "", price: "",
-  priceAsOf: toDateInput(new Date()),
 });
 
 const fromPosition = (p: Position): FormState => ({
   ticker: p.ticker, name: p.name, sector: p.sector ?? NO_SECTOR, subtype: p.subtype ?? NO_SECTOR,
   shares: String(p.shares), cost: String(p.costBasisPerShare), price: String(p.currentPrice),
-  priceAsOf: toDateInput(p.priceAsOf),
 });
 
 /** Add (position = null) or edit a holding within one asset class. */
@@ -112,7 +108,6 @@ function FormBody({
       shares: num(form.shares),
       costBasisPerShare: num(form.cost),
       currentPrice: num(form.price),
-      priceAsOf: form.priceAsOf,
     };
     const parsed = holdingSchema.safeParse(values);
     if (!parsed.success) {
@@ -202,7 +197,7 @@ function FormBody({
         </table>
         <p className="text-[11px] text-muted-foreground">
           Adding combines the shares and averages the cost per share (weighted by shares); the price
-          and date come from the new entry. Replacing overwrites the existing position with the new data.
+          comes from the new entry. Replacing overwrites the existing position with the new data.
         </p>
         <DialogFooter className="sm:flex-wrap">
           <Button type="button" variant="ghost" disabled={pending} onClick={() => setDuplicate(null)}>Back</Button>
@@ -227,7 +222,7 @@ function FormBody({
       <DialogHeader>
         <DialogTitle>{position ? `Edit ${position.ticker}` : `Add to ${assetClass}`}</DialogTitle>
         <DialogDescription>
-          Prices are entered by hand — update the price and date whenever you want fresh numbers.
+          Prices are entered by hand — update the price whenever you want fresh numbers.
         </DialogDescription>
       </DialogHeader>
       <div className="grid grid-cols-2 gap-3">
@@ -283,7 +278,6 @@ function FormBody({
         {field("cost", "Cost / share", { inputMode: "decimal", placeholder: "150.00" })}
         {field("price", "Price", { inputMode: "decimal", placeholder: "200.00" })}
       </div>
-      {field("priceAsOf", "Price as of", { type: "date" })}
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={close}>Cancel</Button>
         <Button type="submit" disabled={pending}>{pending ? "Saving…" : position ? "Save changes" : "Add holding"}</Button>
