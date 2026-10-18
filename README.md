@@ -1,6 +1,6 @@
 # Portfolio Analyzer
 
-**Version 1.0** — A dark, terminal-style web app for analyzing an investment portfolio: allocation, sector tilts
+**Version 1.1** — A dark, terminal-style web app for analyzing an investment portfolio: allocation, sector tilts
 versus the S&P 500, a risk profile, and a full holdings ledger, with automatic prices and CSV / Excel / screenshot import.
 
 Each visitor's portfolio is saved **in their own browser**: no accounts, no login, and no server database, so
@@ -63,8 +63,9 @@ one call per holding for every open tab, and each Claude fund lookup costs a few
 provider, and keep the link private if you don't want strangers using your keys.
 
 ## Releases
-Releases are tagged on GitHub. The current release is **v1.0**: browser-based private portfolios, automatic prices
-and autofill, the fund library, backup and restore, and the Risk Analysis tab.
+Releases are tagged on GitHub. The current release is **v1.1**.
+- **v1.1** — Country column for stocks (ETFs show "Diversified") and the **Individual Stock Exposure by Country** world map on the Dashboard; prices refresh every 2 minutes.
+- **v1.0** — browser-based private portfolios, automatic prices and autofill, the fund library, backup and restore, and the Risk Analysis tab.
 
 ## Project docs
 - [`docs/SPEC.md`](docs/SPEC.md) — what the app is and where it's heading
