@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FileImage, FileSpreadsheet, FileText, Loader2, Upload } from "lucide-react";
-import { importHoldingsAction } from "@/app/holdings/actions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,6 +12,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AI_ACCEPT_ATTR, IMAGE_TYPES, MAX_UPLOAD_BYTES } from "@/config/ai";
+import { holdingSchema } from "@/lib/holdings/schema";
+import { importIntoPortfolio } from "@/lib/storage/browser";
 import { hasSubtype } from "@/config/subtypes";
 import { lookupSubtypesWithClaude, readWithClaude, reviewWithClaude } from "@/lib/ai/client";
 import { matchColumns, missingRequired, type ColumnMap } from "@/lib/import/columns";
@@ -77,7 +78,6 @@ function ImportBody({
   // Repeated tickers the user unticked (kept out of the import).
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [defaultClass, setDefaultClass] = useState<HoldingClass>("Equities");
-  const [pending, startTransition] = useTransition();
   const [done, setDone] = useState<string | null>(null);
   // Screenshot / PDF read by Claude
   const aiRef = useRef<HTMLInputElement>(null);
@@ -229,22 +229,22 @@ function ImportBody({
 
   const save = () => {
     if (!view) return;
-    startTransition(async () => {
-      const res = await importHoldingsAction(
-        mode,
-        view.holdings.map((h) => ({ ...h, subtype: h.subtype ?? subtypes[lotKey(h.assetClass, h.ticker)] ?? null })),
-        view.cashAmount,
-        "merge",
-      );
-      if (res.ok) {
-        const parts = [
-          `${res.added} added`,
-          res.merged ? `${res.merged} averaged into existing` : "",
-          view.counts.leftOut ? `${view.counts.leftOut} left out` : "",
-        ].filter(Boolean);
-        setDone(parts.join(", ") + ".");
-      } else setError(res.errors.form ?? "Import failed.");
-    });
+    const valid = [];
+    for (const h of view.holdings) {
+      const parsed = holdingSchema.safeParse({ ...h, subtype: h.subtype ?? subtypes[lotKey(h.assetClass, h.ticker)] ?? null });
+      if (!parsed.success) {
+        setError("Some rows are invalid — please re-check the file.");
+        return;
+      }
+      valid.push(parsed.data);
+    }
+    const res = importIntoPortfolio(mode, valid, view.cashAmount, "merge");
+    const parts = [
+      `${res.added} added`,
+      res.merged ? `${res.merged} averaged into existing` : "",
+      view.counts.leftOut ? `${view.counts.leftOut} left out` : "",
+    ].filter(Boolean);
+    setDone(parts.join(", ") + ".");
   };
 
   if (done) {
@@ -399,10 +399,10 @@ function ImportBody({
         {step === "preview" && view && (
           <Button
             onClick={save}
-            disabled={pending || nothingToImport}
+            disabled={nothingToImport}
             variant={mode === "replace" ? "destructive" : "default"}
           >
-            {pending ? "Importing…" : `${mode === "replace" ? "Replace with" : "Import"} ${view.holdings.length} ${view.holdings.length === 1 ? "holding" : "holdings"}`}
+            {`${mode === "replace" ? "Replace with" : "Import"} ${view.holdings.length} ${view.holdings.length === 1 ? "holding" : "holdings"}`}
           </Button>
         )}
       </DialogFooter>

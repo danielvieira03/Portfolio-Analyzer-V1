@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { Check, Pencil, X } from "lucide-react";
-import { saveCashAction } from "@/app/holdings/actions";
 import { Num } from "@/components/shared/num";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency, formatPercent } from "@/lib/format";
+import { cashSchema, fieldErrors } from "@/lib/holdings/schema";
+import { setCashInPortfolio } from "@/lib/storage/browser";
 
 /** Cash is a single amount, not a table. */
 export function CashCard({ amount, weightOfPortfolio }: { amount: number; weightOfPortfolio: number }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
 
   const start = () => {
     setDraft(String(amount));
@@ -23,11 +23,13 @@ export function CashCard({ amount, weightOfPortfolio }: { amount: number; weight
 
   const save = () => {
     const value = draft.trim() === "" ? NaN : Number(draft.replace(/[$,]/g, ""));
-    startTransition(async () => {
-      const res = await saveCashAction(value);
-      if (res.ok) setEditing(false);
-      else setError(res.errors.amount ?? "Enter a valid amount");
-    });
+    const parsed = cashSchema.safeParse({ amount: value });
+    if (!parsed.success) {
+      setError(fieldErrors(parsed.error).amount ?? "Enter a valid amount");
+      return;
+    }
+    setCashInPortfolio(parsed.data.amount);
+    setEditing(false);
   };
 
   return (
@@ -63,7 +65,7 @@ export function CashCard({ amount, weightOfPortfolio }: { amount: number; weight
       </div>
       {editing ? (
         <div className="flex gap-1.5">
-          <Button size="sm" onClick={save} disabled={pending}><Check /> Save</Button>
+          <Button size="sm" onClick={save}><Check /> Save</Button>
           <Button size="sm" variant="ghost" onClick={() => setEditing(false)}><X /> Cancel</Button>
         </div>
       ) : (

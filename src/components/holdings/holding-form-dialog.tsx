@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { saveHoldingAction } from "@/app/holdings/actions";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,7 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { formatCurrency, formatPrice, formatShares } from "@/lib/format";
 import { fieldErrors, holdingSchema, SECTOR_OPTIONS, type HoldingInput } from "@/lib/holdings/schema";
 import { mergePositions, type Lot } from "@/lib/portfolio/calc";
-import type { DuplicateChoice } from "@/data/holdings.repo";
+import type { DuplicateChoice } from "@/lib/portfolio/ledger";
+import { addHoldingToPortfolio, saveHoldingInPortfolio } from "@/lib/storage/browser";
 import type { HoldingClass, Position } from "@/lib/portfolio/types";
 import { useTickerAutofill } from "./use-ticker-autofill";
 
@@ -89,7 +89,6 @@ function FormBody({
 }) {
   const [form, setForm] = useState<FormState>(position ? fromPosition(position) : blank());
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [pending, startTransition] = useTransition();
   // Set when the ticker already exists: shows the "add to existing or replace" step.
   const [duplicate, setDuplicate] = useState<{ current: Position; incoming: HoldingInput } | null>(null);
   const set = (k: keyof FormState) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -97,7 +96,6 @@ function FormBody({
   const autofill = useTickerAutofill(form, setForm, assetClass, position?.ticker ?? "", NO_SECTOR);
   const isEquity = assetClass === "Equities";
   const subtypeLabel = hasSubtype(assetClass) ? SUBTYPE_LABEL[assetClass] : null;
-  const valuesFor = (h: HoldingInput) => ({ ...h });
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,18 +123,24 @@ function FormBody({
       setDuplicate({ current: clash, incoming: parsed.data });
       return;
     }
-    save(values);
+    save(parsed.data);
   };
 
-  const save = (values: Record<string, unknown>, onDuplicate?: DuplicateChoice) => {
-    startTransition(async () => {
-      const res = await saveHoldingAction(position?.id ?? null, values, onDuplicate);
-      if (res.ok) close();
-      else {
+  const save = (values: HoldingInput, onDuplicate?: DuplicateChoice) => {
+    const exists = { ticker: `${values.ticker} already exists in ${values.assetClass}` };
+    if (position) {
+      const res = saveHoldingInPortfolio(position.id, values);
+      if (!res.ok) {
         setDuplicate(null);
-        setErrors({ ...res.errors, cost: res.errors.costBasisPerShare, price: res.errors.currentPrice });
+        setErrors(res.error === "duplicate" ? exists : { ticker: "This holding no longer exists." });
+        return;
       }
-    });
+    } else if (addHoldingToPortfolio(values, onDuplicate) === "duplicate") {
+      setDuplicate(null);
+      setErrors(exists);
+      return;
+    }
+    close();
   };
 
   const field = (id: keyof FormState, label: string, props: React.ComponentProps<typeof Input> = {}) => (
@@ -203,17 +207,16 @@ function FormBody({
           comes from the new entry. Replacing overwrites the existing position with the new data.
         </p>
         <DialogFooter className="sm:flex-wrap">
-          <Button type="button" variant="ghost" disabled={pending} onClick={() => setDuplicate(null)}>Back</Button>
+          <Button type="button" variant="ghost" onClick={() => setDuplicate(null)}>Back</Button>
           <Button
             type="button"
             variant="outline"
-            disabled={pending}
-            onClick={() => save(valuesFor(incoming), "replace")}
+            onClick={() => save(incoming, "replace")}
           >
             Replace with new data
           </Button>
-          <Button type="button" disabled={pending} onClick={() => save(valuesFor(incoming), "merge")}>
-            {pending ? "Saving…" : "Add to existing (average cost)"}
+          <Button type="button" onClick={() => save(incoming, "merge")}>
+            Add to existing (average cost)
           </Button>
         </DialogFooter>
       </div>
@@ -287,7 +290,7 @@ function FormBody({
       </div>
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={close}>Cancel</Button>
-        <Button type="submit" disabled={pending}>{pending ? "Saving…" : position ? "Save changes" : "Add holding"}</Button>
+        <Button type="submit">{position ? "Save changes" : "Add holding"}</Button>
       </DialogFooter>
     </form>
   );

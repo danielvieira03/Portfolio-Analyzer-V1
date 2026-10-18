@@ -1,6 +1,9 @@
 // Browser-side helpers that call our own API routes (the API key never reaches the browser).
 
+import { resolveSubtypes, type ClaudeLookup } from "@/lib/funds/resolve";
 import type { RawRow } from "@/lib/import/normalize";
+import { addLearnedFunds, libraryFunds } from "@/lib/portfolio/ledger";
+import { getBrowserStore } from "@/lib/storage/browser";
 import type { Review } from "./schema";
 
 async function postAndParse<T>(url: string, init: RequestInit): Promise<T> {
@@ -52,11 +55,23 @@ export interface ClassifyInput {
   assetClass: "Fixed Income" | "Alternatives";
 }
 
-/** Ask Claude (with web search) for the maturity / type of holdings. Returns values keyed by "Asset Class:TICKER". */
+/**
+ * Find the maturity / type of holdings. This visitor's own fund library answers first (free); only funds it
+ * doesn't know are sent to Claude (with web search), and what Claude finds is saved in this browser's library.
+ * Returns values keyed by "Asset Class:TICKER".
+ */
 export async function lookupSubtypesWithClaude(items: ClassifyInput[]): Promise<Record<string, string>> {
-  const res = await postAndParse<{ found: Record<string, string> }>("/api/holdings/classify", {
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ items }),
+  const store = getBrowserStore();
+  const res = await resolveSubtypes(items, {
+    getLibrary: async (tickers) => libraryFunds(store.getSnapshot().doc, tickers),
+    lookup: async (unknown) => {
+      const r = await postAndParse<ClaudeLookup & { ok: true }>("/api/holdings/classify", {
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ items: unknown }),
+      });
+      return { found: r.found, durations: r.durations ?? {}, usage: r.usage, searches: r.searches };
+    },
+    save: async (funds) => store.update((doc) => addLearnedFunds(doc, funds)),
   });
   return res.found;
 }

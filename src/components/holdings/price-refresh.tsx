@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
-import { refreshPricesAction, type PriceRefreshResult } from "@/app/holdings/actions";
 import { Button } from "@/components/ui/button";
 import { formatUpdated } from "@/lib/format";
+import { refreshPrices, type PriceRefreshResult } from "@/lib/storage/browser-refresh";
 
 /** A quiet note for the outcome of the last manual refresh; null = nothing worth saying. */
 function noteFor(r: PriceRefreshResult): string | null {
@@ -29,7 +29,7 @@ export function PriceRefresh({ updatedAt }: { updatedAt: string | null }) {
     setNote(null);
     startTransition(async () => {
       try {
-        setNote(noteFor(await refreshPricesAction(true)));
+        setNote(noteFor(await refreshPrices(true)));
       } catch {
         setNote("Couldn’t update prices");
       }

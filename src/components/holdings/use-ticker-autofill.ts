@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { lookupTickerAction } from "@/app/holdings/actions";
+import { lookupProfileAction } from "@/app/holdings/actions";
+import { libraryFunds } from "@/lib/portfolio/ledger";
+import { getBrowserStore } from "@/lib/storage/browser";
+import { lookupTicker } from "@/lib/storage/ticker-lookup";
 
 interface AutofillFields {
   ticker: string;
@@ -52,7 +55,10 @@ export function useTickerAutofill<F extends AutofillFields>(
     setState("looking");
     let res;
     try {
-      res = await lookupTickerAction(t, assetClass);
+      res = await lookupTicker(t, assetClass, {
+        fetchProfile: lookupProfileAction,
+        libraryFunds: (tickers) => libraryFunds(getBrowserStore().getSnapshot().doc, tickers),
+      });
     } catch {
       res = { found: false as const };
     }

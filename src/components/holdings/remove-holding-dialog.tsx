@@ -1,7 +1,5 @@
 "use client";
 
-import { useTransition } from "react";
-import { removeHoldingAction } from "@/app/holdings/actions";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -12,6 +10,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { removeHoldingFromPortfolio } from "@/lib/storage/browser";
 import type { Position } from "@/lib/portfolio/types";
 
 export function RemoveHoldingDialog({
@@ -21,7 +20,6 @@ export function RemoveHoldingDialog({
   position: Position | null;
   onClose: () => void;
 }) {
-  const [pending, startTransition] = useTransition();
   return (
     <AlertDialog open={!!position} onOpenChange={(o) => !o && onClose()}>
       <AlertDialogContent>
@@ -35,15 +33,12 @@ export function RemoveHoldingDialog({
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <Button
             variant="destructive"
-            disabled={pending}
-            onClick={() =>
-              startTransition(async () => {
-                if (position) await removeHoldingAction(position.id);
-                onClose();
-              })
-            }
+            onClick={() => {
+              if (position) removeHoldingFromPortfolio(position.id);
+              onClose();
+            }}
           >
-            {pending ? "Removing…" : "Remove"}
+            Remove
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

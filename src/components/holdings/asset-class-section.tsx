@@ -2,12 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { Loader2, Plus, Sparkles } from "lucide-react";
-import { saveSubtypesAction } from "@/app/holdings/actions";
 import { Num } from "@/components/shared/num";
 import { Button } from "@/components/ui/button";
 import { hasSubtype, SUBTYPE_LABEL } from "@/config/subtypes";
 import { lookupSubtypesWithClaude } from "@/lib/ai/client";
 import { formatCurrency, formatPercent } from "@/lib/format";
+import { fillSubtypesInPortfolio } from "@/lib/storage/browser";
 import { totalValue, weight } from "@/lib/portfolio/calc";
 import type { HoldingClass, Position } from "@/lib/portfolio/types";
 import { HoldingFormDialog } from "./holding-form-dialog";
@@ -43,8 +43,7 @@ export function AssetClassSection({
         const items = missing.map((p) => ({ ticker: p.ticker, name: p.name, assetClass }));
         const found: Record<string, string> = {};
         for (let i = 0; i < items.length; i += 20) Object.assign(found, await lookupSubtypesWithClaude(items.slice(i, i + 20)));
-        const res = await saveSubtypesAction(found);
-        const n = res.ok ? res.updated : 0;
+        const n = fillSubtypesInPortfolio(found);
         setLookupNote({ text: n > 0 ? `Filled in ${n} ${n === 1 ? "holding" : "holdings"}.` : "Claude couldn’t find anything new.", error: false });
       } catch (e) {
         setLookupNote({ text: e instanceof Error ? e.message : "The lookup failed.", error: true });

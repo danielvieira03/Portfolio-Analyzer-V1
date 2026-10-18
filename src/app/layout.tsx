@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { TopBar } from "@/components/layout/top-bar";
+import { StorageGuard } from "@/components/providers/storage-guard";
 import { PriceAutoRefresh } from "@/components/shared/price-auto-refresh";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { APP_NAME } from "@/config/nav";
@@ -22,7 +23,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <TopBar />
           <PriceAutoRefresh />
           <main className="min-h-screen px-4 pb-8 pt-24 md:px-6">
-            <div className="mx-auto max-w-[1400px]">{children}</div>
+            <div className="mx-auto max-w-[1400px]">
+              <StorageGuard />
+              {children}
+            </div>
           </main>
         </TooltipProvider>
       </body>

@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { clearDemoDataAction } from "@/app/actions";
+import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -13,11 +12,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { clearDemoPortfolio } from "@/lib/storage/browser";
 
 /** "Demo data" marker with a button to clear the sample portfolio. */
 export function DemoBadge() {
   const [open, setOpen] = useState(false);
-  const [pending, startTransition] = useTransition();
 
   return (
     <>
@@ -40,15 +39,12 @@ export function DemoBadge() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <Button
               variant="destructive"
-              disabled={pending}
-              onClick={() =>
-                startTransition(async () => {
-                  await clearDemoDataAction();
-                  setOpen(false);
-                })
-              }
+              onClick={() => {
+                clearDemoPortfolio();
+                setOpen(false);
+              }}
             >
-              {pending ? "Clearing…" : "Clear demo data"}
+              Clear demo data
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
