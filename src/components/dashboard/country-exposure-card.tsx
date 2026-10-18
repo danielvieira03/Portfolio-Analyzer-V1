@@ -68,7 +68,7 @@ export function CountryExposureCard({ exposure }: { exposure: CountryExposure })
           No individual stocks with a country yet. Countries fill in after the next price refresh.
         </p>
       ) : (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_25rem]">
           <div className="min-w-0">
             <div ref={boxRef} className="relative">
               {world ? (
