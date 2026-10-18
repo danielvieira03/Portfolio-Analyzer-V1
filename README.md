@@ -16,18 +16,18 @@ the S&P 500, and a full holdings ledger — with CSV/Excel import.
 - **Import** — CSV and Excel (flexible column matching, manual mapping), plus screenshots and PDFs read by Claude, always with a preview before anything is saved
 - **Claude check** — CSV/Excel imports are automatically sanity-checked by Claude (data mistakes only; never blocks the import)
 - **Demo portfolio** — realistic ~$500K sample data on first run, removable in one click
-- Single user, local data, no login
+- **Backup** — download your portfolio as a file and restore it later or on another device
+- Private by design: each visitor's portfolio is saved in their own browser, with no login and no server database
 
 ## Tech stack
-Next.js (App Router) · TypeScript · Tailwind CSS · shadcn/ui · Recharts · Prisma + SQLite · SheetJS · Claude API (Anthropic SDK) · Vitest
+Next.js (App Router) · TypeScript · Tailwind CSS · shadcn/ui · Recharts · SheetJS · Claude API (Anthropic SDK) · Vitest
 
 ## Run it locally
 Requires Node.js 20+.
 
 ```bash
-npm install                 # install packages (also prepares the database client)
+npm install                 # install packages
 cp .env.example .env.local  # local settings
-npm run db:migrate          # create the local SQLite database
 # optional: add ANTHROPIC_API_KEY to .env.local to enable screenshot/PDF import
 # optional: add FINANCIAL_MODELING_API_KEY to .env.local to enable automatic prices and ticker autofill
 npm run dev                 # open http://localhost:3000

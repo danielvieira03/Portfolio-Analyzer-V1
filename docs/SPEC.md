@@ -1,8 +1,10 @@
 # Portfolio Analyzer — Spec (big picture)
 
 ## What it is
-A single-user web app for analyzing an investment portfolio. Positions are entered by hand or imported
-from CSV/Excel, stored in a local database, and shown in a dark, dense, terminal-style interface.
+A web app for analyzing an investment portfolio. Positions are entered by hand or imported
+from CSV/Excel, saved **in the visitor's own browser** (no accounts, no server database: each person who opens the
+app has their own private portfolio), and shown in a dark, dense, terminal-style interface. The server only holds the
+API keys and does market data and Claude lookups for the browser.
 It is a rebuild of an earlier plain HTML/JS version, with the emphasis on quality, structure and visuals.
 
 ## What it has now
@@ -35,11 +37,14 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
   and Screenshot/PDF (read by Claude). The first step of Import is choosing "Add additional holdings" or "New portfolio". The
   preview looks like the Holdings table; in Add mode repeated tickers are flagged, averaged by default, and can be
   unticked. CSV/Excel files get an automatic "Claude check" (parsed rows only, text, no file) that flags data mistakes only; it never blocks the import.
-- A demo portfolio (~$500K) loaded on first run, clearly badged and removable.
+- **Backup** (button on Holdings) — because the portfolio lives in one browser, you can download it as a file and restore it
+  later, or move it to another browser or device. Restoring replaces the current portfolio after a confirm step.
+- A demo portfolio (~$500K) shown to every new visitor, clearly badged and removable.
 
 ## What it deliberately lacks
 Live (second-by-second) prices, daily change figures, AI features beyond import,
-historical performance, multiple portfolios, login, and deployment.
+historical performance, multiple portfolios per person, login, syncing between devices (use Backup), and any
+limit on how much a visitor can use the price and Claude lookups (the owner's API keys pay for them).
 
 ## Direction
 Future tabs, each added as a new top-bar tab:
