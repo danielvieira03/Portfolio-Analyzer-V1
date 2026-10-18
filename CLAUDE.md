@@ -43,6 +43,14 @@ SheetJS `xlsx` (Excel) · Anthropic SDK (screenshot/PDF import, optional review)
 
 ## Conventions
 - Data lives in the visitor's browser: UI → `src/lib/storage/browser.ts` → pure rules in `src/lib/portfolio/ledger.ts` → browser store. The server has NO database and stores nothing about anyone's portfolio; server actions/routes are stateless (they receive tickers or files, call the market data / Claude API with the server's keys, and return answers).
+- **Never break saved portfolios.** The app is live and every visitor's portfolio is stored in their browser in a versioned format
+  (`DOC_VERSION` in `src/lib/portfolio/ledger.ts`, read by `parseStoredDoc` in `document.ts`; the backup file has its own version in
+  the same file). If a change alters what is saved (renamed, removed or newly required fields, a different shape), STOP and tell Daniel
+  first, then: add an upgrade step that converts the old saved data to the new shape (and the same for old backup files), bump the
+  version, and add tests that load a real sample of the OLD format. Adding an optional field with a default (like `noLivePrice`) is
+  safe. Today an unreadable or unknown-version document is replaced by the demo portfolio (the unreadable copy is kept under
+  `portfolio-analyzer:v1:unreadable`), which for a real visitor means losing their portfolio from view; treat that as a bug, not a plan.
+- Pushing to `main` deploys the live site automatically (Vercel). Run tests, typecheck, lint and build before Daniel is asked to push.
 - Keep files small. Math lives only in `src/lib/portfolio`, with tests beside it (`*.test.ts`).
 - Design tokens live in `src/app/globals.css` — change colours there only. Amber = accent.
   Green/red ONLY for gains/losses (`text-gain` / `text-loss`, or `<Num tone="auto">`).
