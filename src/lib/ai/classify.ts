@@ -25,6 +25,10 @@ const resultSchema = z.object({
       ticker: z.string(),
       assetClass: z.enum(["Fixed Income", "Alternatives"]),
       subtype: z.string().describe("Exactly one of the allowed values for this asset class"),
+      durationYears: z
+        .number()
+        .nullable()
+        .describe("Fixed Income only: the fund's average or effective duration in years, if the page states it; otherwise null"),
       basis: z.string().describe("One short phrase: what you found and where"),
     }),
   ),
@@ -38,6 +42,8 @@ ${MATURITY_HELP} Use the fund's average maturity or duration. Use "Not specified
 
 Alternatives holdings get a type: ${ALT_TYPES.join(", ")}.
 Commodities = gold, silver, oil, metals, agriculture or broad commodity funds. REITs = real estate funds. Crypto = bitcoin/ether and other crypto trusts or ETFs. Infrastructure = infrastructure funds. Other = anything else (hedge-fund style, managed futures, private equity...).
+
+For Fixed Income holdings also report the fund's average or effective duration in years (a number such as 6.2) if the page you read states it; otherwise null. Never estimate it.
 
 Return one result per holding, using the exact ticker and asset class you were given and one of the allowed values. If a search fails or you cannot read any result for a holding, leave that holding OUT of the results (it will be retried later) instead of guessing. Never invent facts: if you read the fund's page but it does not say, answer "${SUBTYPE_FALLBACK["Fixed Income"]}" (Fixed Income) or "${SUBTYPE_FALLBACK.Alternatives}" (Alternatives).`;
 
@@ -91,9 +97,10 @@ async function lookupBatch(items: ClassifyItem[]): Promise<{ results: ClassifyRe
  */
 export async function lookupSubtypes(
   items: ClassifyItem[],
-): Promise<{ found: Record<string, string>; usage: AiUsage; searches: number }> {
+): Promise<{ found: Record<string, string>; durations: Record<string, number>; usage: AiUsage; searches: number }> {
   const wanted = items.slice(0, BATCH_SIZE * MAX_BATCHES_PER_CALL);
   const found: Record<string, string> = {};
+  const durations: Record<string, number> = {};
   const usage: AiUsage = { inputTokens: 0, outputTokens: 0 };
   let searches = 0;
   try {
@@ -108,10 +115,13 @@ export async function lookupSubtypes(
         const r = out.results.find((x) => x.ticker.toUpperCase() === item.ticker.toUpperCase() && x.assetClass === item.assetClass);
         if (!r) continue;
         found[classifyKey(item.assetClass, item.ticker)] = checkSubtype(item.assetClass, r.subtype);
+        if (item.assetClass === "Fixed Income" && typeof r.durationYears === "number" && r.durationYears > 0 && r.durationYears < 50) {
+          durations[classifyKey(item.assetClass, item.ticker)] = r.durationYears;
+        }
       }
     }
   } catch (e) {
     throw toAiError(e);
   }
-  return { found, usage, searches };
+  return { found, durations, usage, searches };
 }

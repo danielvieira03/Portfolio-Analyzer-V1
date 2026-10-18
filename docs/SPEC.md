@@ -17,9 +17,13 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
   editable in `src/config/risk.ts`). Known limitation: it ignores how volatile the holdings inside a class are.
 - **Maturity and Type** — Fixed Income holdings have a Maturity (short / medium / long-term / not specified) and
   Alternatives a Type (commodities, REITs, crypto, infrastructure, other), as sortable columns and form fields.
-  Missing values are filled by Claude with web search: automatically in the import preview, or with the "Look up
-  with Claude" button on the Holdings page (about 3 to 5 cents per fund). Values you set yourself are never overwritten.
-  The allowed values live in `src/config/subtypes.ts`.
+  Missing values are filled automatically in the import preview, or with the "Look up with Claude" button on the
+  Holdings page. A **fund library** in the database answers first, for free: it starts with 20 well-known bond funds
+  and 20 alternatives funds (`src/config/fund-library.ts`; bond figures read from iShares and Vanguard pages, including
+  each fund's duration in years, saved but not shown yet). Only funds the library doesn't know are searched by Claude
+  (about 3 to 5 cents per fund), and what Claude finds is saved to the library so that fund is never searched twice
+  (a bond fund Claude can't pin down is not saved). Values you set yourself are never overwritten. The allowed values
+  live in `src/config/subtypes.ts`.
 - **Market prices** — every holding's price comes from Financial Modeling Prep (profile lookup, one call per holding):
   refreshed automatically once an hour while the app is open (`PRICE_REFRESH_MINUTES` in `src/config/market.ts`), and on
   demand with the **Refresh** button on the Holdings tab, which also shows when prices were last updated. A ticker with no

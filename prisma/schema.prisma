@@ -41,4 +41,17 @@ model AppState {
   isDemoData Boolean @default(false)
   seeded     Boolean @default(false)
   pricesUpdatedAt DateTime? // last time prices were refreshed from the market data API
+  fundsSeeded Boolean @default(false) // the starting fund library has been inserted (only ever once)
+}
+
+// Known funds and their maturity (bonds) or type (alternatives), so Claude is only asked about funds not listed here.
+// Starts with a built-in list; funds Claude looks up are saved here too.
+model FundInfo {
+  ticker        String   @id
+  name          String
+  assetClass    String // "Fixed Income" | "Alternatives"
+  subtype       String // maturity bucket or alternatives type (validated in code)
+  durationYears Float? // bond funds only; saved but not shown anywhere yet
+  source        String // "builtin" | "claude"
+  createdAt     DateTime @default(now())
 }
