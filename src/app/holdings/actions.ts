@@ -1,8 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getFunds } from "@/data/funds.repo";
 import { addHolding, applyPrices, deleteHolding, fillSubtypes, getPriceTargets, getPricesUpdatedAt, importHoldings, saveHolding, setCash, type DuplicateChoice, type ImportDuplicateChoice, type ImportResult } from "@/data/holdings.repo";
-import { isValidSubtype } from "@/config/subtypes";
+import { hasSubtype, isValidSubtype } from "@/config/subtypes";
 import { PRICE_REFRESH_MINUTES } from "@/config/market";
 import { cashSchema, fieldErrors, holdingSchema } from "@/lib/holdings/schema";
 import { fetchProfiles, type FetchStatus } from "@/lib/market/fmp";
@@ -131,6 +132,8 @@ export interface TickerLookup {
   price?: number;
   /** Only for stocks in the Equities form; never for ETFs, bonds or alternatives. */
   sector?: string;
+  /** Maturity (Fixed Income form) or type (Alternatives form), only when the fund library knows the fund. Free. */
+  subtype?: string;
 }
 
 /** One-ticker lookup for the Add/Edit form. Never throws: no data simply means "enter it by hand". */
@@ -139,7 +142,14 @@ export async function lookupTickerAction(ticker: string, assetClass: string): Pr
   if (!/^[A-Z0-9.^=\-]{1,12}$/.test(t)) return { found: false };
   const { profiles } = await fetchProfiles([t]);
   const profile = profiles.get(t);
-  if (!profile) return { found: false };
-  const sector = assetClass === "Equities" ? stockSector(profile) : null;
-  return { found: true, name: profile.name, price: profile.price, ...(sector ? { sector } : {}) };
+  const sector = assetClass === "Equities" ? stockSector(profile ?? null) : null;
+  // The fund library answers maturity / type for free (no Claude call).
+  const fund = hasSubtype(assetClass) ? (await getFunds([t])).find((f) => f.assetClass === assetClass) : undefined;
+  if (!profile && !fund) return { found: false };
+  return {
+    found: true,
+    ...(profile ? { name: profile.name, price: profile.price } : {}),
+    ...(sector ? { sector } : {}),
+    ...(fund ? { subtype: fund.subtype } : {}),
+  };
 }

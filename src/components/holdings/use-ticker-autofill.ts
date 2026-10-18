@@ -8,6 +8,7 @@ interface AutofillFields {
   name: string;
   price: string;
   sector: string;
+  subtype: string;
 }
 
 export type LookupState = "idle" | "looking" | "found" | "none";
@@ -15,7 +16,7 @@ export type LookupState = "idle" | "looking" | "found" | "none";
 /**
  * Fills name, price and (for stocks) sector from market data when the ticker field is left.
  * Only blank fields, or ones this hook filled earlier, are filled: typed values are never overwritten.
- * `noSector` is the form's value for "no sector chosen".
+ * `noSector` is the form's value for "nothing chosen" (used for both sector and maturity/type).
  */
 export function useTickerAutofill<F extends AutofillFields>(
   form: F,
@@ -26,7 +27,7 @@ export function useTickerAutofill<F extends AutofillFields>(
 ) {
   const [state, setState] = useState<LookupState>("idle");
   const last = useRef(initialTicker);
-  const filled = useRef<{ name?: string; price?: string; sector?: string }>({});
+  const filled = useRef<{ name?: string; price?: string; sector?: string; subtype?: string }>({});
 
   const onBlur = async () => {
     const t = form.ticker.trim().toUpperCase();
@@ -44,14 +45,15 @@ export function useTickerAutofill<F extends AutofillFields>(
       setState("none");
       return;
     }
-    const price = String(res.price);
+    const price = res.price === undefined ? undefined : String(res.price);
     setForm((f) => {
-      const blank = (cur: string, key: "name" | "price" | "sector", none = "") =>
+      const blank = (cur: string, key: "name" | "price" | "sector" | "subtype", none = "") =>
         cur.trim() === none || cur === filled.current[key];
       const next = { ...f };
       if (res.name && blank(f.name, "name")) next.name = filled.current.name = res.name;
-      if (blank(f.price, "price")) next.price = filled.current.price = price;
+      if (price !== undefined && blank(f.price, "price")) next.price = filled.current.price = price;
       if (res.sector && blank(f.sector, "sector", noSector)) next.sector = filled.current.sector = res.sector;
+      if (res.subtype && blank(f.subtype, "subtype", noSector)) next.subtype = filled.current.subtype = res.subtype;
       return next;
     });
     setState("found");

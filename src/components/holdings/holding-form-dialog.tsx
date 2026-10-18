@@ -235,7 +235,7 @@ function FormBody({
       {autofill.state !== "idle" && (
         <p className="text-[11px] text-muted-foreground">
           {autofill.state === "looking" && "Looking up…"}
-          {autofill.state === "found" && "Filled from market data"}
+          {autofill.state === "found" && "Filled in automatically"}
           {autofill.state === "none" && "No data found, enter it by hand"}
         </p>
       )}
