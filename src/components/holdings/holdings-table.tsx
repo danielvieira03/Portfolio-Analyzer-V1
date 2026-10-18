@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Pencil, Trash2 } from "lucide-react";
 import { Num } from "@/components/shared/num";
-import { countryName } from "@/config/countries";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -15,6 +14,7 @@ import {
   formatCurrency,
 } from "@/lib/format";
 import { gainLoss, gainLossPct, marketValue, weight } from "@/lib/portfolio/calc";
+import { countryLabel } from "@/lib/portfolio/country-label";
 import { sortPositions, type SortDir, type SortKey } from "@/lib/portfolio/sort";
 import type { HoldingClass, Position } from "@/lib/portfolio/types";
 import { cn } from "@/lib/utils";
@@ -135,7 +135,7 @@ export function HoldingsTable({
                 <Num className="block">{formatPercent(weight(marketValue(p), portfolioTotal), 1)}</Num>
               </TableCell>
               {assetClass === "Equities" && (
-                <TableCell className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">{p.country ? countryName(p.country) : "—"}</TableCell>
+                <TableCell className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">{countryLabel(p) || "—"}</TableCell>
               )}
               <TableCell className="px-1 py-1">
                 <div className="flex justify-end gap-0.5">

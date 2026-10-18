@@ -1,4 +1,4 @@
-import { countryName } from "@/config/countries";
+import { countryLabel } from "./country-label";
 import { SUBTYPE_OPTIONS, hasSubtype } from "@/config/subtypes";
 import { gainLoss, gainLossPct, marketValue } from "./calc";
 import type { Position } from "./types";
@@ -23,8 +23,8 @@ function valueFor(p: Position, key: SortKey): string | number {
     case "ticker": return p.ticker;
     case "name": return p.name;
     case "sector": return p.sector ?? "";
-    // By country name; holdings with no country sort as empty text.
-    case "country": return countryName(p.country);
+    // By what the column shows: country name, or "Diversified" for broad funds; unknown sorts as empty text.
+    case "country": return countryLabel(p);
     // Maturity sorts short to long; type sorts in its list order; holdings with no value come last.
     case "subtype": {
       const i = hasSubtype(p.assetClass) && p.subtype ? (SUBTYPE_OPTIONS[p.assetClass] as readonly string[]).indexOf(p.subtype) : -1;

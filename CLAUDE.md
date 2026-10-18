@@ -43,6 +43,7 @@ SheetJS `xlsx` (Excel) · Anthropic SDK (screenshot/PDF import, optional review)
 
 ## Conventions
 - Data lives in the visitor's browser: UI → `src/lib/storage/browser.ts` → pure rules in `src/lib/portfolio/ledger.ts` → browser store. The server has NO database and stores nothing about anyone's portfolio; server actions/routes are stateless (they receive tickers or files, call the market data / Claude API with the server's keys, and return answers).
+- **Country column:** individual stocks show their headquarters country (from market data, stored hidden on the holding); equity ETFs/funds show "Diversified" (`countryLabel` in `src/lib/portfolio/country-label.ts`). Daniel's rule for when ETFs get country data: they still say "Diversified" unless the fund obviously tracks ONE country (e.g. EWZ shows Brazil), in which case the country is stored and shown.
 - **Never break saved portfolios.** The app is live and every visitor's portfolio is stored in their browser in a versioned format
   (`DOC_VERSION` in `src/lib/portfolio/ledger.ts`, read by `parseStoredDoc` in `document.ts`; the backup file has its own version in
   the same file). If a change alters what is saved (renamed, removed or newly required fields, a different shape), STOP and tell Daniel

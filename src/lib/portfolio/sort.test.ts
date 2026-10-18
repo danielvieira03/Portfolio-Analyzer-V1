@@ -39,4 +39,8 @@ describe("sorting by country", () => {
   it("reverses for descending", () => {
     expect(sortPositions(stocks, "country", "desc").map((x) => x.ticker)).toEqual(["A", "C", "D", "B"]);
   });
+  it("sorts broad funds as Diversified, between the countries alphabetically", () => {
+    const withFund = [...stocks, { ...p("E", 1, 1), sector: "Diversified", country: null } as Position];
+    expect(sortPositions(withFund, "country", "asc").map((x) => x.ticker)).toEqual(["B", "E", "D", "C", "A"]); // none, Diversified, Japan, Netherlands, United States
+  });
 });
