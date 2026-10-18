@@ -19,4 +19,6 @@ export interface Position {
   currentPrice: number;
   /** True when the market data API had no price for this ticker at the last refresh (the manual price is kept). */
   noLivePrice?: boolean;
+  /** Individual stocks only: the company's headquarters country (ISO two-letter code), from market data. Null = not known. */
+  country?: string | null;
 }

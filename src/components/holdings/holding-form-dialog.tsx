@@ -29,17 +29,19 @@ interface FormState {
   name: string;
   sector: string;
   subtype: string;
+  /** Hidden: the company's country, carried along so editing a stock doesn't erase it. */
+  country: string;
   shares: string;
   cost: string;
   price: string;
 }
 
 const blank = (): FormState => ({
-  ticker: "", name: "", sector: NO_SECTOR, subtype: NO_SECTOR, shares: "", cost: "", price: "",
+  ticker: "", name: "", sector: NO_SECTOR, subtype: NO_SECTOR, country: "", shares: "", cost: "", price: "",
 });
 
 const fromPosition = (p: Position): FormState => ({
-  ticker: p.ticker, name: p.name, sector: p.sector ?? NO_SECTOR, subtype: p.subtype ?? NO_SECTOR,
+  ticker: p.ticker, name: p.name, sector: p.sector ?? NO_SECTOR, subtype: p.subtype ?? NO_SECTOR, country: p.country ?? "",
   shares: String(p.shares), cost: String(p.costBasisPerShare), price: String(p.currentPrice),
 });
 
@@ -106,6 +108,7 @@ function FormBody({
       assetClass,
       sector: isEquity && form.sector !== NO_SECTOR ? form.sector : null,
       subtype: !isEquity && form.subtype !== NO_SECTOR ? form.subtype : null,
+      country: isEquity && form.country ? form.country : null,
       shares: num(form.shares),
       costBasisPerShare: num(form.cost),
       currentPrice: num(form.price),

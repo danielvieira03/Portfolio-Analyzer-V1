@@ -11,6 +11,8 @@ export interface TickerLookup {
   price?: number;
   /** Equities form only: the stock's sector, or "Diversified" for an ETF. Never for bonds or alternatives. */
   sector?: string;
+  /** Equities form only: the stock's headquarters country (ISO code); never for ETFs, bonds or alternatives. */
+  country?: string;
   /** Maturity (Fixed Income form) or type (Alternatives form), only when the fund library knows the fund. */
   subtype?: string;
 }
@@ -35,6 +37,7 @@ export async function lookupTicker(
     found: true,
     ...(profile ? { name: profile.name, price: profile.price } : {}),
     ...(sector ? { sector } : {}),
+    ...(assetClass === "Equities" && profile?.country ? { country: profile.country } : {}),
     ...(fund ? { subtype: fund.subtype } : {}),
   };
 }

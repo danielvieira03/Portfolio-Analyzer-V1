@@ -29,3 +29,14 @@ describe("sortPositions", () => {
     expect(list[0].ticker).toBe("MSFT");
   });
 });
+
+describe("sorting by country", () => {
+  const withCountry = (ticker: string, country: string | null): Position => ({ ...p(ticker, 1, 1), country });
+  const stocks = [withCountry("A", "US"), withCountry("B", null), withCountry("C", "NL"), withCountry("D", "JP")];
+  it("sorts by country name A-Z, with holdings that have none first when ascending", () => {
+    expect(sortPositions(stocks, "country", "asc").map((x) => x.ticker)).toEqual(["B", "D", "C", "A"]); // none, Japan, Netherlands, United States
+  });
+  it("reverses for descending", () => {
+    expect(sortPositions(stocks, "country", "desc").map((x) => x.ticker)).toEqual(["A", "C", "D", "B"]);
+  });
+});

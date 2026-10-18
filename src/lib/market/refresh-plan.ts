@@ -10,7 +10,7 @@ export interface PriceTarget {
 
 export interface PricePlan {
   /** Holdings that got a price: save it and clear any "manual" flag. */
-  found: { id: string; price: number }[];
+  found: { id: string; price: number; /** Stocks only: headquarters country, when the provider gave one. */ country?: string | null }[];
   /** Holdings the provider answered for but has no price: keep the manual price, flag it. */
   missing: string[];
 }
@@ -24,7 +24,7 @@ export function planPriceUpdates(targets: PriceTarget[], profiles: Map<string, M
   for (const t of targets) {
     if (!profiles.has(t.ticker)) continue;
     const p = profiles.get(t.ticker);
-    if (p) plan.found.push({ id: t.id, price: p.price });
+    if (p) plan.found.push({ id: t.id, price: p.price, ...(t.assetClass === "Equities" && p.country ? { country: p.country } : {}) });
     else plan.missing.push(t.id);
   }
   return plan;

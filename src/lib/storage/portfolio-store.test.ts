@@ -13,7 +13,7 @@ function fakeStorage(initial: Record<string, string> = {}): StorageLike & { data
     removeItem: (k) => void data.delete(k),
   };
 }
-const holding = { ticker: "ZZZ", name: "Z Co", assetClass: "Equities" as const, sector: "Energy", subtype: null, shares: 1, costBasisPerShare: 1, currentPrice: 2 };
+const holding = { ticker: "ZZZ", name: "Z Co", assetClass: "Equities" as const, sector: "Energy", subtype: null, country: null, shares: 1, costBasisPerShare: 1, currentPrice: 2 };
 
 describe("createPortfolioStore", () => {
   it("gives a first-time visitor the demo portfolio and saves it", () => {

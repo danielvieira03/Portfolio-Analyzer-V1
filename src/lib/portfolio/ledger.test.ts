@@ -9,7 +9,7 @@ import {
 let n = 0;
 const id = () => `id${++n}`;
 const input = (o: Partial<HoldingInput> = {}): HoldingInput => ({
-  ticker: "AAPL", name: "Apple Inc.", assetClass: "Equities", sector: "Information Technology", subtype: null,
+  ticker: "AAPL", name: "Apple Inc.", assetClass: "Equities", sector: "Information Technology", subtype: null, country: null,
   shares: 10, costBasisPerShare: 100, currentPrice: 150, ...o,
 });
 const empty = (o: Partial<PortfolioDoc> = {}): PortfolioDoc => ({
@@ -221,5 +221,53 @@ describe("fund library", () => {
     const d2 = addLearnedFunds(addLearnedFunds(empty(), [learned]), [{ ...learned, subtype: "Long-term" }]);
     expect(d2.learnedFunds).toHaveLength(1);
     expect(d2.learnedFunds[0].subtype).toBe("Medium-term");
+  });
+});
+
+describe("country (hidden, from market data)", () => {
+  const withCountry = (o: Partial<HoldingInput> = {}) => input({ country: "US", ...o });
+  const asml = () => addHolding(empty(), withCountry({ ticker: "ASML", country: "NL" }), undefined, id).doc;
+
+  it("is saved with a new holding", () => {
+    expect(asml().holdings[0].country).toBe("NL");
+  });
+  it("is kept when merging a repeated ticker that has none", () => {
+    const r = addHolding(asml(), input({ ticker: "ASML", country: null, shares: 5 }), "merge", id);
+    expect(r.doc.holdings[0]).toMatchObject({ shares: 15, country: "NL" });
+  });
+  it("is kept when replacing with data that has none, and updated when it has one", () => {
+    expect(addHolding(asml(), input({ ticker: "ASML", country: null }), "replace", id).doc.holdings[0].country).toBe("NL");
+    expect(addHolding(asml(), input({ ticker: "ASML", country: "DE" }), "replace", id).doc.holdings[0].country).toBe("DE");
+  });
+  it("follows the form when a holding is edited (kept if carried, cleared if the form cleared it)", () => {
+    const d = asml();
+    const kept = saveHolding(d, d.holdings[0].id, input({ ticker: "ASML", country: "NL" }));
+    expect(kept.ok && kept.doc.holdings[0].country).toBe("NL");
+    const cleared = saveHolding(d, d.holdings[0].id, input({ ticker: "ASML", country: null }));
+    expect(cleared.ok && cleared.doc.holdings[0].country).toBeNull();
+  });
+  it("is kept by imports that have none (add/merge and replace)", () => {
+    const merged = importHoldings(asml(), "add", [input({ ticker: "ASML", country: null })], undefined, "merge", id);
+    expect(merged.doc.holdings[0].country).toBe("NL");
+    const replaced = importHoldings(asml(), "add", [input({ ticker: "ASML", country: null })], undefined, "replace", id);
+    expect(replaced.doc.holdings[0].country).toBe("NL");
+  });
+  it("is saved by a price refresh for stocks, never erased, and ignored for funds", () => {
+    let d = addHolding(empty(), input({ ticker: "TSM" }), undefined, id).doc;
+    d = addHolding(d, input({ ticker: "BND", assetClass: "Fixed Income", sector: null }), undefined, id).doc;
+    const [tsm, bnd] = d.holdings;
+    const now = new Date("2026-10-18T12:00:00Z");
+    const a = applyPrices(d, { found: [{ id: tsm.id, price: 200, country: "TW" }, { id: bnd.id, price: 70, country: "US" }], missing: [] }, true, now);
+    expect(a.holdings[0].country).toBe("TW");
+    expect(a.holdings[1].country).toBeNull();
+    const b = applyPrices(a, { found: [{ id: tsm.id, price: 210 }], missing: [] }, true, now);
+    expect(b.holdings[0]).toMatchObject({ currentPrice: 210, country: "TW" });
+  });
+  it("is set on the demo stocks, including foreign ones", () => {
+    const demo = newVisitorDoc(id).holdings;
+    expect(demo.find((h) => h.ticker === "AAPL")?.country).toBe("US");
+    expect(demo.find((h) => h.ticker === "ASML")?.country).toBe("NL");
+    expect(demo.find((h) => h.ticker === "VOO")?.country).toBeNull();
+    expect(demo.find((h) => h.ticker === "BND")?.country).toBeNull();
   });
 });

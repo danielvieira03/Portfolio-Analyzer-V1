@@ -25,6 +25,8 @@ export const holdingSchema = z
     assetClass: z.enum(HOLDING_CLASSES, { error: "Choose an asset class" }),
     sector: z.string().nullable(),
     subtype: z.string().nullish().transform((v) => v || null),
+    /** Headquarters country of an individual stock (ISO two-letter code); filled from market data, never typed. */
+    country: z.string().regex(/^[A-Z]{2}$/, "Not a country code").nullish().transform((v) => v || null),
     shares: positiveNumber("Shares"),
     costBasisPerShare: nonNegativeNumber("Cost basis"),
     currentPrice: nonNegativeNumber("Price"),

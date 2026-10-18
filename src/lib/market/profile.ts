@@ -9,6 +9,8 @@ export interface MarketProfile {
   /** The provider's own sector name (not yet translated), or null. */
   sector: string | null;
   isEtf: boolean;
+  /** The company's headquarters country (ISO two-letter code); null for ETFs and funds, or when the provider has none. */
+  country: string | null;
 }
 
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
@@ -20,11 +22,14 @@ export function parseProfile(json: unknown): MarketProfile | null {
   const r = item as Record<string, unknown>;
   const price = typeof r.price === "number" && Number.isFinite(r.price) ? r.price : 0;
   if (price <= 0) return null;
+  const isEtf = r.isEtf === true || r.isFund === true;
+  const country = str(r.country)?.toUpperCase() ?? null;
   return {
     name: str(r.companyName) ?? str(r.symbol) ?? "",
     price,
     sector: str(r.sector),
-    isEtf: r.isEtf === true || r.isFund === true,
+    isEtf,
+    country: !isEtf && country && /^[A-Z]{2}$/.test(country) ? country : null,
   };
 }
 

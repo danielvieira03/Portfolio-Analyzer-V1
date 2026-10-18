@@ -40,6 +40,8 @@ const storedHolding = z.object({
   costBasisPerShare: money,
   currentPrice: money,
   noLivePrice: z.boolean().default(false),
+  // Added after v1.0: older saved portfolios have none, so it defaults to "not known".
+  country: z.string().regex(/^[A-Z]{2}$/).nullable().default(null),
 });
 
 const storedDoc = z.object({
@@ -94,6 +96,7 @@ export function exportBackup(doc: PortfolioDoc, now: Date): string {
         costBasisPerShare: h.costBasisPerShare,
         currentPrice: h.currentPrice,
         noLivePrice: h.noLivePrice ?? false,
+        country: h.country ?? null,
       })),
       learnedFunds: doc.learnedFunds,
     },
@@ -136,6 +139,7 @@ export function parseBackup(text: string, newId: () => string = () => globalThis
       costBasisPerShare: h.data.costBasisPerShare,
       currentPrice: h.data.currentPrice,
       noLivePrice: flag,
+      country: h.data.country,
     });
   }
   const learnedFunds: FundRecord[] = file.data.learnedFunds ?? [];

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Pencil, Trash2 } from "lucide-react";
 import { Num } from "@/components/shared/num";
+import { countryName } from "@/config/countries";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -39,6 +40,8 @@ const COLUMNS: Column[] = [
   { key: "gainLoss", label: "Gain/Loss $", numeric: true },
   { key: "gainLossPct", label: "Gain/Loss %", numeric: true },
   { key: "weight", label: "Weight", numeric: true },
+  // Last column: where the company is based (individual stocks only; funds have none).
+  { key: "country", label: "Country", numeric: false, only: "Equities" },
 ];
 
 export function HoldingsTable({
@@ -63,7 +66,7 @@ export function HoldingsTable({
     setSort((s) =>
       s.key === key
         ? { key, dir: s.dir === "asc" ? "desc" : "asc" }
-        : { key, dir: key === "ticker" || key === "name" || key === "sector" || key === "subtype" ? "asc" : "desc" },
+        : { key, dir: key === "ticker" || key === "name" || key === "sector" || key === "subtype" || key === "country" ? "asc" : "desc" },
     );
 
   return (
@@ -131,6 +134,9 @@ export function HoldingsTable({
               <TableCell className="px-2 py-1.5">
                 <Num className="block">{formatPercent(weight(marketValue(p), portfolioTotal), 1)}</Num>
               </TableCell>
+              {assetClass === "Equities" && (
+                <TableCell className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">{p.country ? countryName(p.country) : "—"}</TableCell>
+              )}
               <TableCell className="px-1 py-1">
                 <div className="flex justify-end gap-0.5">
                   <Button variant="ghost" size="icon-xs" aria-label={`Edit ${p.ticker}`} onClick={() => onEdit(p)}>

@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { equitySector, parseProfile, stockSector } from "./profile";
 
-const aapl = [{ symbol: "AAPL", companyName: "Apple Inc.", price: 343.46, sector: "Technology", isEtf: false }];
-const etf = [{ symbol: "BND", companyName: "Vanguard Total Bond Market ETF", price: 70.82, sector: "Financial Services", isEtf: true }];
+const aapl = [{ symbol: "AAPL", companyName: "Apple Inc.", price: 343.46, sector: "Technology", isEtf: false, country: null }];
+const etf = [{ symbol: "BND", companyName: "Vanguard Total Bond Market ETF", price: 70.82, sector: "Financial Services", isEtf: true, country: null }];
 
 describe("parseProfile", () => {
   it("reads name, price, sector and the ETF flag", () => {
-    expect(parseProfile(aapl)).toEqual({ name: "Apple Inc.", price: 343.46, sector: "Technology", isEtf: false });
+    expect(parseProfile(aapl)).toEqual({ name: "Apple Inc.", price: 343.46, sector: "Technology", isEtf: false, country: null });
   });
   it("treats a fund flag as an ETF too", () => {
     expect(parseProfile([{ ...etf[0], isEtf: false, isFund: true }])?.isEtf).toBe(true);
@@ -26,14 +26,14 @@ describe("parseProfile", () => {
 describe("stockSector", () => {
   it("translates FMP sector names to the app's names", () => {
     expect(stockSector(parseProfile(aapl))).toBe("Information Technology");
-    expect(stockSector({ name: "x", price: 1, sector: "Consumer Cyclical", isEtf: false })).toBe("Consumer Discretionary");
-    expect(stockSector({ name: "x", price: 1, sector: "Healthcare", isEtf: false })).toBe("Health Care");
-    expect(stockSector({ name: "x", price: 1, sector: "Energy", isEtf: false })).toBe("Energy");
+    expect(stockSector({ name: "x", price: 1, sector: "Consumer Cyclical", isEtf: false, country: null })).toBe("Consumer Discretionary");
+    expect(stockSector({ name: "x", price: 1, sector: "Healthcare", isEtf: false, country: null })).toBe("Health Care");
+    expect(stockSector({ name: "x", price: 1, sector: "Energy", isEtf: false, country: null })).toBe("Energy");
   });
   it("gives nothing for ETFs, unknown names and no profile", () => {
     expect(stockSector(parseProfile(etf))).toBeNull();
-    expect(stockSector({ name: "x", price: 1, sector: "Space Mining", isEtf: false })).toBeNull();
-    expect(stockSector({ name: "x", price: 1, sector: null, isEtf: false })).toBeNull();
+    expect(stockSector({ name: "x", price: 1, sector: "Space Mining", isEtf: false, country: null })).toBeNull();
+    expect(stockSector({ name: "x", price: 1, sector: null, isEtf: false, country: null })).toBeNull();
     expect(stockSector(null)).toBeNull();
   });
 });
@@ -46,7 +46,20 @@ describe("equitySector", () => {
     expect(equitySector(parseProfile(aapl))).toBe("Information Technology");
   });
   it("gives nothing for an unknown sector or no profile", () => {
-    expect(equitySector({ name: "x", price: 1, sector: "Space Mining", isEtf: false })).toBeNull();
+    expect(equitySector({ name: "x", price: 1, sector: "Space Mining", isEtf: false, country: null })).toBeNull();
     expect(equitySector(null)).toBeNull();
+  });
+});
+
+describe("country", () => {
+  it("reads a stock's headquarters country as an upper-case code", () => {
+    expect(parseProfile([{ ...aapl[0], country: "US" }])?.country).toBe("US");
+    expect(parseProfile([{ ...aapl[0], country: "tw" }])?.country).toBe("TW");
+  });
+  it("gives no country for ETFs, missing or invalid values", () => {
+    expect(parseProfile([{ ...etf[0], country: "US" }])?.country).toBeNull();
+    expect(parseProfile(aapl)?.country).toBeNull();
+    expect(parseProfile([{ ...aapl[0], country: "USA" }])?.country).toBeNull();
+    expect(parseProfile([{ ...aapl[0], country: "" }])?.country).toBeNull();
   });
 });

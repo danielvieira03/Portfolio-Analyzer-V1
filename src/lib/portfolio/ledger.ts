@@ -49,6 +49,7 @@ const fromInput = (h: HoldingInput, id: string, noLivePrice = false): Position =
   costBasisPerShare: h.costBasisPerShare,
   currentPrice: h.currentPrice,
   noLivePrice,
+  country: h.country,
 });
 
 /** The portfolio of someone who has never been here: the demo portfolio. */
@@ -62,6 +63,7 @@ export function newVisitorDoc(newId: IdMaker = defaultId): PortfolioDoc {
       assetClass: h.assetClass,
       sector: h.sector,
       subtype: h.subtype ?? null,
+      country: h.country ?? null,
       shares: h.shares,
       costBasisPerShare: h.cost,
       currentPrice: h.price,
@@ -100,8 +102,8 @@ export function addHolding(
   if (!onDuplicate) return { doc, outcome: "duplicate" };
   const updated: Position =
     onDuplicate === "replace"
-      ? { ...fromInput(input, existing.id), noLivePrice: existing.noLivePrice }
-      : { ...existing, ...mergePositions(existing, input) };
+      ? { ...fromInput(input, existing.id), noLivePrice: existing.noLivePrice, country: input.country ?? existing.country ?? null }
+      : { ...existing, ...mergePositions(existing, input), country: existing.country ?? input.country };
   return {
     doc: leaveDemo({ ...doc, holdings: doc.holdings.map((h) => (h.id === existing.id ? updated : h)) }),
     outcome: onDuplicate === "replace" ? "replaced" : "merged",
@@ -162,10 +164,10 @@ export function importHoldings(
     } else if (onDuplicate === "skip") {
       result.skipped++;
     } else if (onDuplicate === "replace") {
-      holdings[at] = { ...fromInput(h, holdings[at].id), noLivePrice: holdings[at].noLivePrice };
+      holdings[at] = { ...fromInput(h, holdings[at].id), noLivePrice: holdings[at].noLivePrice, country: h.country ?? holdings[at].country ?? null };
       result.replaced++;
     } else {
-      holdings[at] = { ...holdings[at], ...mergePositions(holdings[at], h) };
+      holdings[at] = { ...holdings[at], ...mergePositions(holdings[at], h), country: holdings[at].country ?? h.country };
       result.merged++;
     }
   }
@@ -181,13 +183,13 @@ export function importHoldings(
  * when `stamp` is true. Refreshing prices never changes whether the portfolio counts as demo data.
  */
 export function applyPrices(doc: PortfolioDoc, plan: PricePlan, stamp: boolean, now: Date): PortfolioDoc {
-  const found = new Map(plan.found.map((f) => [f.id, f.price]));
+  const found = new Map(plan.found.map((f) => [f.id, f]));
   const missing = new Set(plan.missing);
   return {
     ...doc,
     holdings: doc.holdings.map((h) =>
       found.has(h.id)
-        ? { ...h, currentPrice: found.get(h.id)!, noLivePrice: false }
+        ? { ...h, currentPrice: found.get(h.id)!.price, noLivePrice: false, country: h.assetClass === "Equities" ? (found.get(h.id)!.country ?? h.country ?? null) : h.country }
         : missing.has(h.id)
           ? { ...h, noLivePrice: true }
           : h,

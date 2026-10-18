@@ -97,3 +97,31 @@ describe("backup", () => {
     expect(r.ok && r.doc).toMatchObject({ holdings: [], cash: 5, learnedFunds: [], pricesUpdatedAt: null });
   });
 });
+
+describe("country compatibility", () => {
+  it("loads a portfolio saved BEFORE the country field existed (country becomes null)", () => {
+    const d = doc();
+    const old = { ...d, holdings: d.holdings.map(({ country, ...rest }) => (void country, rest)) };
+    const parsed = parseStoredDoc(JSON.stringify(old));
+    expect(parsed).not.toBeNull();
+    expect(parsed!.holdings.every((h) => h.country === null)).toBe(true);
+  });
+  it("restores a backup written before the country field existed", () => {
+    const file = JSON.parse(exportBackup(doc(), now));
+    for (const h of file.holdings) delete h.country;
+    const r = parseBackup(JSON.stringify(file));
+    expect(r.ok && r.doc.holdings.every((h) => h.country === null)).toBe(true);
+  });
+  it("keeps the country through a saved document and through a backup", () => {
+    const d = doc();
+    d.holdings[0] = { ...d.holdings[0], country: "NL" };
+    expect(parseStoredDoc(JSON.stringify(d))?.holdings[0].country).toBe("NL");
+    const r = parseBackup(exportBackup(d, now));
+    expect(r.ok && r.doc.holdings[0].country).toBe("NL");
+  });
+  it("rejects a backup holding with an invalid country code", () => {
+    const file = JSON.parse(exportBackup(doc(), now));
+    file.holdings[0].country = "Netherlands";
+    expect(parseBackup(JSON.stringify(file)).ok).toBe(false);
+  });
+});

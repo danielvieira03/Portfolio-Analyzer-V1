@@ -7,7 +7,7 @@ const memory = (): StorageLike => {
   const m = new Map<string, string>();
   return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => void m.set(k, v), removeItem: (k) => void m.delete(k) };
 };
-const profile = (price: number) => ({ name: "n", price, sector: null, isEtf: false });
+const profile = (price: number) => ({ name: "n", price, sector: null, isEtf: false, country: null });
 const now = new Date("2026-10-18T12:00:00Z");
 
 function setup(opts: { updatedAt?: string | null } = {}) {
@@ -101,7 +101,7 @@ describe("runPriceRefresh", () => {
   it("keeps two visitors apart: one visitor's refresh does not touch the other's portfolio", async () => {
     const a = setup();
     const b = setup();
-    b.update((d) => addHolding(d, { ticker: "BOB", name: "Bob Co", assetClass: "Equities", sector: "Energy", subtype: null, shares: 1, costBasisPerShare: 1, currentPrice: 5 }).doc);
+    b.update((d) => addHolding(d, { ticker: "BOB", name: "Bob Co", assetClass: "Equities", sector: "Energy", subtype: null, country: null, shares: 1, costBasisPerShare: 1, currentPrice: 5 }).doc);
     const bBefore = JSON.stringify(b.getSnapshot().doc);
     await runPriceRefresh(true, { store: a, fetchPrices: async () => answer(a, 999), now: () => now });
     expect(JSON.stringify(b.getSnapshot().doc)).toBe(bBefore);

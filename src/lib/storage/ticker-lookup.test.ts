@@ -3,8 +3,8 @@ import type { FundRecord } from "@/lib/funds/library";
 import type { MarketProfile } from "@/lib/market/profile";
 import { lookupTicker } from "./ticker-lookup";
 
-const stock: MarketProfile = { name: "Apple Inc.", price: 300, sector: "Technology", isEtf: false };
-const etf: MarketProfile = { name: "Vanguard S&P 500 ETF", price: 700, sector: "Financial Services", isEtf: true };
+const stock: MarketProfile = { name: "Apple Inc.", price: 300, sector: "Technology", isEtf: false, country: null };
+const etf: MarketProfile = { name: "Vanguard S&P 500 ETF", price: 700, sector: "Financial Services", isEtf: true, country: null };
 const lib: FundRecord[] = [
   { ticker: "BND", name: "Vanguard Total Bond", assetClass: "Fixed Income", subtype: "Medium-term", durationYears: 5.7 },
   { ticker: "GLD", name: "SPDR Gold", assetClass: "Alternatives", subtype: "Commodities", durationYears: null },
@@ -41,5 +41,17 @@ describe("lookupTicker", () => {
     const d2 = deps(stock);
     expect(await lookupTicker("not a ticker!", "Equities", d2)).toEqual({ found: false });
     expect(d2.fetchProfile).not.toHaveBeenCalled();
+  });
+});
+
+describe("lookupTicker country", () => {
+  const dutch: MarketProfile = { name: "ASML", price: 800, sector: "Technology", isEtf: false, country: "NL" };
+  it("gives a stock's country in the Equities form only", async () => {
+    expect((await lookupTicker("ASML", "Equities", deps(dutch))).country).toBe("NL");
+    expect((await lookupTicker("ASML", "Fixed Income", deps(dutch))).country).toBeUndefined();
+  });
+  it("gives no country for an ETF or when the provider has none", async () => {
+    expect((await lookupTicker("VOO", "Equities", deps(etf))).country).toBeUndefined();
+    expect((await lookupTicker("AAPL", "Equities", deps(stock))).country).toBeUndefined();
   });
 });

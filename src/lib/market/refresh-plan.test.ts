@@ -6,7 +6,7 @@ const holdings = [
   { id: "b", ticker: "BND", assetClass: "Fixed Income" },
   { id: "c", ticker: "ZZZZ", assetClass: "Equities" },
 ];
-const profile = (price: number) => ({ name: "n", price, sector: null, isEtf: false });
+const profile = (price: number) => ({ name: "n", price, sector: null, isEtf: false, country: null });
 
 describe("planPriceUpdates", () => {
   it("sets prices that were found and flags the rest as manual", () => {
@@ -38,4 +38,19 @@ describe("checkEveryMs", () => {
     expect(checkEveryMs(4)).toBe(60_000);
   });
   it("never checks more often than every 15 seconds", () => expect(checkEveryMs(0.5)).toBe(15_000));
+});
+
+describe("planPriceUpdates country", () => {
+  const stock = { name: "n", price: 5, sector: null, isEtf: false, country: "NL" };
+  it("carries a stock's country, but only for Equities", () => {
+    const plan = planPriceUpdates(
+      [{ id: "a", ticker: "ASML", assetClass: "Equities" }, { id: "b", ticker: "BND", assetClass: "Fixed Income" }],
+      new Map([["ASML", stock], ["BND", stock]]),
+    );
+    expect(plan.found).toEqual([{ id: "a", price: 5, country: "NL" }, { id: "b", price: 5 }]);
+  });
+  it("omits the country when the provider gave none", () => {
+    const plan = planPriceUpdates([{ id: "a", ticker: "X", assetClass: "Equities" }], new Map([["X", { ...stock, country: null }]]));
+    expect(plan.found).toEqual([{ id: "a", price: 5 }]);
+  });
 });

@@ -12,6 +12,8 @@ interface AutofillFields {
   price: string;
   sector: string;
   subtype: string;
+  /** Hidden: set from market data, never typed. */
+  country: string;
 }
 
 export type LookupState = "idle" | "looking" | "found" | "none";
@@ -66,7 +68,7 @@ export function useTickerAutofill<F extends AutofillFields>(
     if (!res.found) {
       // Nothing for this ticker: take back what an earlier ticker filled in, unless it was edited since.
       setForm((f) => {
-        const next = { ...f };
+        const next = { ...f, country: "" }; // the country always follows the ticker
         const undo = (key: Key, empty: string) => {
           if (filled.current[key] !== undefined && f[key] === filled.current[key]) next[key] = empty as F[Key];
         };
@@ -83,7 +85,8 @@ export function useTickerAutofill<F extends AutofillFields>(
     const price = res.price === undefined ? undefined : String(res.price);
     setForm((f) => {
       const blank = (cur: string, key: Key, none = "") => cur.trim() === none || cur === filled.current[key];
-      const next = { ...f };
+      // The hidden country always follows the ticker: the new one, or none (ETFs, bonds, unknown tickers).
+      const next = { ...f, country: res.country ?? "" };
       if (res.name && blank(f.name, "name")) next.name = filled.current.name = res.name;
       if (price !== undefined && blank(f.price, "price")) next.price = filled.current.price = price;
       if (res.sector && blank(f.sector, "sector", noSector)) next.sector = filled.current.sector = res.sector;
