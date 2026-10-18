@@ -11,7 +11,7 @@ It is both a real tool for Daniel and a portfolio showpiece, so quality and visu
 - Daniel is a finance graduate and cannot read code. Explain in plain English, keep steps small, say exactly how to run and check things.
 - Do NOT add features he hasn't listed. Leave clean room for future tabs, build nothing for them.
 - Build in checkpoints: finish, run the app, fix errors, `git commit`, explain how to view it, then STOP for feedback.
-- Never push or touch the GitHub remote; Daniel connects it himself.
+- Push to origin/main only when Daniel says so, and tag each pushed version (v0.x). Never push on your own.
 
 ## Stack
 Next.js (App Router) + TypeScript · Tailwind CSS v4 + shadcn/ui (base-ui) · Recharts · Prisma 7 + SQLite

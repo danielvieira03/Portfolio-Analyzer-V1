@@ -74,7 +74,7 @@ export function AssetClassSection({
               variant="outline"
               disabled={looking}
               onClick={lookUp}
-              title="Claude searches the web for each fund (about 3 cents per fund)"
+              title="Claude searches the web for each fund (about 3 to 5 cents per fund)"
             >
               {looking ? <Loader2 className="animate-spin" /> : <Sparkles />}
               {looking ? `Looking up ${subtypeLabel.toLowerCase()}…` : `Look up ${subtypeLabel.toLowerCase()} with Claude`}

@@ -10,7 +10,7 @@ the S&P 500, and a full holdings ledger — with CSV/Excel import.
 ## Features
 - **Dashboard** — portfolio value, cost basis, unrealized gain/loss, allocation donuts (asset class, equity sector, fixed-income maturity, alternatives type), top holdings
 - **Holdings** — sortable tables per asset class, editable cash, add / edit / remove with validation
-- **Maturity / Type** — bond maturity and alternatives type columns, filled in by Claude with web search (about 3 cents per fund; needs `ANTHROPIC_API_KEY`)
+- **Maturity / Type** — bond maturity and alternatives type columns, filled in by Claude with web search (about 3 to 5 cents per fund; needs `ANTHROPIC_API_KEY`)
 - **Risk Analysis** — Risk Profile meter (1–5, from the asset-class mix) and equity sector weights vs. the S&P 500 with a plain-English over/underweight summary
 - **Import** — CSV and Excel (flexible column matching, manual mapping), plus screenshots and PDFs read by Claude, always with a preview before anything is saved
 - **Claude check** — CSV/Excel imports are automatically sanity-checked by Claude (data mistakes only; never blocks the import)

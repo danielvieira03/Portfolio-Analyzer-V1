@@ -18,7 +18,7 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
 - **Maturity and Type** — Fixed Income holdings have a Maturity (short / medium / long-term / not specified) and
   Alternatives a Type (commodities, REITs, crypto, infrastructure, other), as sortable columns and form fields.
   Missing values are filled by Claude with web search: automatically in the import preview, or with the "Look up
-  with Claude" button on the Holdings page (about 3 cents per fund). Values you set yourself are never overwritten.
+  with Claude" button on the Holdings page (about 3 to 5 cents per fund). Values you set yourself are never overwritten.
   The allowed values live in `src/config/subtypes.ts`.
 - **Import** (button on both Dashboard and Holdings) — CSV/Excel (parsed locally, tolerant of different column names, with manual column matching)
   and Screenshot/PDF (read by Claude). The first step of Import is choosing "Add additional holdings" or "New portfolio". The
