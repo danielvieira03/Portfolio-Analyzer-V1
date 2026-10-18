@@ -7,7 +7,7 @@ import { hasSubtype, isValidSubtype } from "@/config/subtypes";
 import { PRICE_REFRESH_MINUTES } from "@/config/market";
 import { cashSchema, fieldErrors, holdingSchema } from "@/lib/holdings/schema";
 import { fetchProfiles, type FetchStatus } from "@/lib/market/fmp";
-import { stockSector } from "@/lib/market/profile";
+import { equitySector } from "@/lib/market/profile";
 import { isStale, planPriceUpdates } from "@/lib/market/refresh-plan";
 
 export type ActionResult<T = unknown> =
@@ -130,7 +130,7 @@ export interface TickerLookup {
   found: boolean;
   name?: string;
   price?: number;
-  /** Only for stocks in the Equities form; never for ETFs, bonds or alternatives. */
+  /** Equities form only: the stock's sector, or "Diversified" for an ETF. Never for bonds or alternatives. */
   sector?: string;
   /** Maturity (Fixed Income form) or type (Alternatives form), only when the fund library knows the fund. Free. */
   subtype?: string;
@@ -142,7 +142,7 @@ export async function lookupTickerAction(ticker: string, assetClass: string): Pr
   if (!/^[A-Z0-9.^=\-]{1,12}$/.test(t)) return { found: false };
   const { profiles } = await fetchProfiles([t]);
   const profile = profiles.get(t);
-  const sector = assetClass === "Equities" ? stockSector(profile ?? null) : null;
+  const sector = assetClass === "Equities" ? equitySector(profile ?? null) : null;
   // The fund library answers maturity / type for free (no Claude call).
   const fund = hasSubtype(assetClass) ? (await getFunds([t])).find((f) => f.assetClass === assetClass) : undefined;
   if (!profile && !fund) return { found: false };

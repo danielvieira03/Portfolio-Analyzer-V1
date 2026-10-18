@@ -1,6 +1,7 @@
 // Reads one answer from the market data profile lookup. Pure: no network, no database.
 
 import { FMP_SECTOR_MAP } from "@/config/market";
+import { DIVERSIFIED } from "@/lib/portfolio/sectors";
 
 export interface MarketProfile {
   name: string;
@@ -31,4 +32,10 @@ export function parseProfile(json: unknown): MarketProfile | null {
 export function stockSector(profile: MarketProfile | null): string | null {
   if (!profile || profile.isEtf || !profile.sector) return null;
   return FMP_SECTOR_MAP[profile.sector] ?? null;
+}
+
+/** What the Equities form fills into Sector: "Diversified" for an ETF / fund, the translated sector for a stock, else nothing. */
+export function equitySector(profile: MarketProfile | null): string | null {
+  if (!profile) return null;
+  return profile.isEtf ? DIVERSIFIED : stockSector(profile);
 }

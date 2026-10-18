@@ -256,9 +256,6 @@ function FormBody({
             </SelectContent>
           </Select>
           {errors.sector && <p className="text-[11px] text-destructive">{errors.sector}</p>}
-          <p className="text-[11px] text-muted-foreground">
-            Use “Diversified” for broad funds so they stay out of the sector comparison.
-          </p>
         </div>
       )}
       {hasSubtype(assetClass) && subtypeLabel && (

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseProfile, stockSector } from "./profile";
+import { equitySector, parseProfile, stockSector } from "./profile";
 
 const aapl = [{ symbol: "AAPL", companyName: "Apple Inc.", price: 343.46, sector: "Technology", isEtf: false }];
 const etf = [{ symbol: "BND", companyName: "Vanguard Total Bond Market ETF", price: 70.82, sector: "Financial Services", isEtf: true }];
@@ -35,5 +35,18 @@ describe("stockSector", () => {
     expect(stockSector({ name: "x", price: 1, sector: "Space Mining", isEtf: false })).toBeNull();
     expect(stockSector({ name: "x", price: 1, sector: null, isEtf: false })).toBeNull();
     expect(stockSector(null)).toBeNull();
+  });
+});
+
+describe("equitySector", () => {
+  it("files an ETF under Diversified", () => {
+    expect(equitySector(parseProfile(etf))).toBe("Diversified");
+  });
+  it("gives a stock its translated sector", () => {
+    expect(equitySector(parseProfile(aapl))).toBe("Information Technology");
+  });
+  it("gives nothing for an unknown sector or no profile", () => {
+    expect(equitySector({ name: "x", price: 1, sector: "Space Mining", isEtf: false })).toBeNull();
+    expect(equitySector(null)).toBeNull();
   });
 });
