@@ -2,6 +2,7 @@
 
 import { AllocationDonut } from "@/components/dashboard/allocation-donut";
 import { DemoBadge } from "@/components/dashboard/demo-badge";
+import { CountryExposureCard } from "@/components/dashboard/country-exposure-card";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { SectorDonut } from "@/components/dashboard/sector-donut";
 import { StatCards } from "@/components/dashboard/stat-cards";
@@ -13,6 +14,7 @@ import { usePortfolio } from "@/components/providers/use-portfolio";
 import { LoadingPage } from "@/components/shared/loading-page";
 import { PageHeader } from "@/components/shared/page-header";
 import { allocationByClass, summarize, topHoldings } from "@/lib/portfolio/calc";
+import { countryExposure } from "@/lib/portfolio/country-exposure";
 import { equitySectorAllocation } from "@/lib/portfolio/sector-allocation";
 import { subtypeAllocation } from "@/lib/portfolio/subtype-allocation";
 
@@ -66,6 +68,7 @@ export function DashboardView() {
         </div>
       </div>
       <TopHoldings holdings={topHoldings(positions, cash, 5)} />
+      <CountryExposureCard exposure={countryExposure(positions)} />
     </div>
   );
 }

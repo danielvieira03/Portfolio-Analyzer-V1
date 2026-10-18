@@ -34,6 +34,7 @@ SheetJS `xlsx` (Excel) · Anthropic SDK (screenshot/PDF import, optional review)
 - `src/lib/import/` — CSV/Excel parsing, flexible column matching, row cleanup + warnings
 - `src/lib/ai/` — Claude calls: `claude.ts` is SERVER ONLY (reads the API key); `to-rows.ts` feeds AI output into the same importer; `client.ts` is the browser-side fetch helper
 - `src/app/api/import/` — route handlers `extract` (screenshot/PDF) and `review` (double-check)
+- `src/config/countries.ts` — ISO country codes, numeric ids (for the map) and names; `src/lib/map/` — `world.ts` turns the Natural Earth 110m data (`world-atlas`, lazy-loaded) into SVG paths with d3-geo, `shade.ts` is the amber scale; `src/lib/portfolio/country-exposure.ts` (stocks only) and `country-label.ts` (what the Country column shows); `src/components/dashboard/country-exposure-card.tsx` is the map card
 - `src/config/ai.ts` — the Claude model and upload limits (change the model here)
 - `src/config/subtypes.ts` — allowed Maturity (Fixed Income) / Type (Alternatives) values; `src/config/fund-library.ts` — the starting fund library (verified bond figures); `src/lib/funds/` — pure library logic (`splitKnown`, `resolveSubtypes`: the visitor's browser library first, then Claude, then save in the browser); `src/lib/ai/classify.ts` looks unknown funds up with Claude + web search (route `src/app/api/holdings/classify`)
 - `src/components/holdings/` — tables, add/edit/remove dialogs, cash card, import dialog, backup dialog

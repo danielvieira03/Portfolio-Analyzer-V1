@@ -15,8 +15,8 @@ nobody can see or change anyone else's portfolio.
 _Screenshots show the built-in demo portfolio (illustrative numbers, not advice)._
 
 ## What it does
-- **Dashboard** — portfolio value, cost basis, unrealized gain/loss and cash; allocation by asset class, equity sector, fixed-income maturity and alternatives type; top holdings.
-- **Holdings** — sortable tables for Equities, Fixed Income and Alternatives, plus a cash card. Add, edit and remove with validation; adding a ticker you already hold offers to average it in or replace it.
+- **Dashboard** — portfolio value, cost basis, unrealized gain/loss and cash; allocation by asset class, equity sector, fixed-income maturity and alternatives type; top holdings; and a **world map of individual-stock exposure by country** (SVG from Natural Earth data, shaded from faint to full amber, with a hover tooltip and a country list).
+- **Holdings** — sortable tables for Equities, Fixed Income and Alternatives, plus a cash card. Add, edit and remove with validation; a Country column shows where each stock's company is based ("Diversified" for ETFs); adding a ticker you already hold offers to average it in or replace it.
 - **Automatic prices** — every holding's price refreshes from [Financial Modeling Prep](https://site.financialmodelingprep.com) (every 2 minutes while the app is open, or with the **Refresh** button). A ticker with no price keeps the value you entered and is quietly marked "manual".
 - **Autofill** — typing a ticker in the Add form fills the name and price; for stocks also the sector (an ETF is filed under "Diversified"), and for bond and alternatives funds the maturity or type.
 - **Fund library** — a built-in list of 40 well-known bond and alternatives funds (maturity, duration, type) answers instantly and for free. Funds not in it are looked up by Claude with web search, and the answer is remembered in your browser.
@@ -34,7 +34,7 @@ them. Because of that:
 
 ## Tech stack
 Next.js (App Router) · TypeScript · Tailwind CSS · shadcn/ui · Recharts · SheetJS · Claude API (Anthropic SDK) ·
-Financial Modeling Prep · browser `localStorage` · Vitest
+Financial Modeling Prep · d3-geo + Natural Earth (world-atlas) for the map · browser `localStorage` · Vitest
 
 ## Run it locally
 Requires Node.js 20+.

@@ -12,10 +12,17 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
 ## What it has now
 - **Dashboard** — total value, cost basis, unrealized gain/loss and cash; allocation by asset
   class and by equity sector (top 7 sectors, broad funds as "Diversified", the rest grouped as "Other" with a hover
-  card listing them), by fixed-income maturity and by alternatives type; top 5 holdings.
+  card listing them), by fixed-income maturity and by alternatives type; top 5 holdings; and **Individual Stock Exposure by Country**: an SVG world map
+  (Natural Earth data, drawn with d3-geo; no images or paid map services) plus a list of countries with percentages. Countries with no
+  exposure are muted grey; countries with exposure go from a faint to full amber on a square-root scale (so small exposures stay visible);
+  hovering a country shows its name and share. Percentages are shares of the individual stocks that have a country; funds, bonds,
+  alternatives and cash are excluded, and the card says so. The map uses the 110m Natural Earth resolution, so very small countries
+  (e.g. Singapore) appear in the list but are not drawn.
 - **Holdings** — one sortable table per asset class (Equities, Fixed Income, Alternatives), a separate
   cash card, add/edit/remove (adding an existing ticker offers to average it in or replace it), and import
-  with a preview.
+  with a preview. The Equities table's last column is **Country**: an individual stock's headquarters country (from market data,
+  stored hidden on the holding, filled on the next price refresh), or "Diversified" for equity ETFs and funds. When ETFs get country
+  data, they stay "Diversified" unless they obviously track one country (e.g. a Brazil ETF shows Brazil).
 - **Risk Analysis** — equity sector weights versus the S&P 500 (with a plain-English over/underweight summary beside it), plus a Risk Profile meter (1 Conservative to 5 Aggressive) scored from the asset-class mix only:
   each class's share of the portfolio times its risk weight (Equities 5, Alternatives 3.5, Fixed Income 2, Cash 1,
   editable in `src/config/risk.ts`). Known limitation: it ignores how volatile the holdings inside a class are.
@@ -57,6 +64,7 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
 ## What it deliberately lacks
 Live (second-by-second) prices, daily change figures, AI features beyond import and fund lookups,
 historical performance, multiple portfolios per person, login, syncing between devices (use Backup), and any
+country exposure for ETFs, bond funds and alternatives (the map is individual stocks only for now), and any
 limit on how much a visitor can use the price and Claude lookups (the owner's API keys pay for them).
 
 ## Direction
