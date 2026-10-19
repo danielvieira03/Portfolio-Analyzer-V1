@@ -1,56 +1,52 @@
-import { marketValue } from "./calc";
-import { DIVERSIFIED } from "./sectors";
-import type { Position } from "./types";
-
-/** Label for individual stocks that have no sector filled in. */
-export const NO_SECTOR = "No sector";
+import { lookThroughExposure, UNCLASSIFIED } from "./exposure";
+import type { EtfBreakdown, Position } from "./types";
 
 export interface SectorMember {
   label: string;
   value: number;
-  /** Fraction of total equities. */
+  /** Fraction of the equities counted (including the unclassified part). */
   weight: number;
 }
 
 export interface SectorSlice extends SectorMember {
-  kind: "sector" | "diversified" | "other";
+  kind: "sector" | "unclassified" | "other";
   /** For "other": the sectors grouped into it, largest first. */
   members?: SectorMember[];
 }
 
 export interface SectorAllocation {
-  /** Total market value of all equities (broad funds included). */
+  /** Total market value of all equities counted (stocks and equity ETFs). */
   total: number;
   slices: SectorSlice[];
+  /** Equity ETFs with no usable breakdown (all of their value is unclassified). */
+  fundsWithoutData: number;
+  /** Oldest "last updated" among the fund breakdowns used (ISO), or null. */
+  oldestBreakdown: string | null;
 }
 
 /**
- * Where the equities sit by sector, as shares of total equities. The `topN` biggest sectors get
- * their own slice, broad equity funds ("Diversified") always get theirs, and any remaining
+ * Where the equities sit by sector, as shares of total equities, with equity ETFs split across their sectors
+ * (via `lookThroughExposure`, the shared exposure function). The `topN` biggest sectors get their own slice,
+ * whatever has no sector (an ETF's missing part, a stock with no sector yet) is "Unclassified", and any remaining
  * sectors are grouped into one "Other" slice that lists them as `members`. Empty if no equities.
  */
-export function equitySectorAllocation(positions: Position[], topN = 7): SectorAllocation {
-  const byLabel = new Map<string, number>();
-  for (const p of positions) {
-    if (p.assetClass !== "Equities") continue;
-    const label = !p.sector ? NO_SECTOR : p.sector;
-    byLabel.set(label, (byLabel.get(label) ?? 0) + marketValue(p));
+export function equitySectorAllocation(
+  positions: Position[],
+  breakdowns: Record<string, EtfBreakdown> = {},
+  topN = 7,
+): SectorAllocation {
+  const { sector } = lookThroughExposure(positions, breakdowns);
+  const meta = { fundsWithoutData: sector.fundsWithoutData, oldestBreakdown: sector.oldestBreakdown };
+  if (sector.total === 0) return { total: 0, slices: [], ...meta };
+
+  const toMember = (r: { label: string; value: number; weight: number }): SectorMember => ({ label: r.label, value: r.value, weight: r.weight });
+  const top = sector.rows.slice(0, topN);
+  const rest = sector.rows.slice(topN);
+
+  const slices: SectorSlice[] = top.map((r) => ({ ...toMember(r), kind: "sector" }));
+  if (sector.unclassified.value > 0) {
+    slices.push({ label: UNCLASSIFIED, value: sector.unclassified.value, weight: sector.unclassified.weight, kind: "unclassified" });
   }
-
-  const entries = [...byLabel.entries()].filter(([, value]) => value > 0);
-  const total = entries.reduce((t, [, value]) => t + value, 0);
-  if (total === 0) return { total: 0, slices: [] };
-
-  const toMember = ([label, value]: [string, number]): SectorMember => ({ label, value, weight: value / total });
-  const bySize = (a: [string, number], b: [string, number]) => b[1] - a[1] || a[0].localeCompare(b[0]);
-
-  const sectors = entries.filter(([label]) => label !== DIVERSIFIED).sort(bySize);
-  const diversified = entries.find(([label]) => label === DIVERSIFIED);
-  const top = sectors.slice(0, topN);
-  const rest = sectors.slice(topN);
-
-  const slices: SectorSlice[] = top.map((e) => ({ ...toMember(e), kind: "sector" }));
-  if (diversified) slices.push({ ...toMember(diversified), kind: "diversified" });
   if (rest.length > 0) {
     const members = rest.map(toMember);
     slices.push({
@@ -61,5 +57,5 @@ export function equitySectorAllocation(positions: Position[], topN = 7): SectorA
       members,
     });
   }
-  return { total, slices };
+  return { total: sector.total, slices, ...meta };
 }

@@ -38,7 +38,7 @@ function Detail({ i }: { i: SectorInsight }) {
   switch (i.kind) {
     case "over":
     case "under":
-      return <>{pct(i.portfolioPct)} of your stocks vs {pct(i.benchmarkPct)} in the S&amp;P 500</>;
+      return <>{pct(i.portfolioPct)} of your equities vs {pct(i.benchmarkPct)} in the S&amp;P 500</>;
     case "none":
       return <>S&amp;P 500 weight {pct(i.benchmarkPct)}, so you’re underweight by {gap(i.diffPp)}</>;
     case "inline":

@@ -10,16 +10,20 @@ import { LoadingPage } from "@/components/shared/loading-page";
 import { PageHeader } from "@/components/shared/page-header";
 import { SP500_AS_OF, SP500_SECTOR_WEIGHTS } from "@/config/sp500-sectors";
 import { allocationByClass, compareSectors } from "@/lib/portfolio/calc";
+import { lookThroughExposure } from "@/lib/portfolio/exposure";
+import { fundDataNote, unclassifiedNote } from "@/lib/portfolio/exposure-notes";
 import { riskScore } from "@/lib/portfolio/risk";
 
 export function RiskView() {
   const state = usePortfolio();
   if (!state) return <LoadingPage title="Risk Analysis" subtitle="Portfolio risk" />;
-  const { holdings: positions, cash, isDemoData } = state.doc;
+  const { holdings: positions, cash, isDemoData, etfBreakdowns } = state.doc;
 
   const allocation = allocationByClass(positions, cash);
   const score = riskScore(allocation);
-  const sectorRows = compareSectors(positions, SP500_SECTOR_WEIGHTS);
+  const sectorRows = compareSectors(positions, SP500_SECTOR_WEIGHTS, etfBreakdowns);
+  const { sector } = lookThroughExposure(positions, etfBreakdowns);
+  const dataNote = [unclassifiedNote(sector.unclassified.weight, "sector"), fundDataNote(sector.oldestBreakdown, sector.fundsWithoutData)].filter(Boolean).join(" ");
   const hasSectorData = sectorRows.some((r) => r.portfolio > 0);
 
   return (
@@ -33,14 +37,14 @@ export function RiskView() {
           {hasSectorData ? (
             <div className="grid gap-3 xl:grid-cols-5">
               <div className="min-w-0 xl:col-span-3">
-                <SectorVsSp500 rows={sectorRows} asOf={SP500_AS_OF} hasSectorData />
+                <SectorVsSp500 rows={sectorRows} asOf={SP500_AS_OF} hasSectorData dataNote={dataNote} />
               </div>
               <div className="min-w-0 xl:col-span-2">
                 <SectorInsights rows={sectorRows} />
               </div>
             </div>
           ) : (
-            <SectorVsSp500 rows={sectorRows} asOf={SP500_AS_OF} hasSectorData={false} />
+            <SectorVsSp500 rows={sectorRows} asOf={SP500_AS_OF} hasSectorData={false} dataNote={dataNote} />
           )}
         </>
       )}

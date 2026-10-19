@@ -1,45 +1,46 @@
-import { countryName } from "@/config/countries";
-import { marketValue } from "./calc";
-import { DIVERSIFIED } from "./sectors";
-import type { Position } from "./types";
+import { lookThroughExposure } from "./exposure";
+import type { EtfBreakdown, Position } from "./types";
 
 export interface CountryRow {
   /** ISO two-letter code. */
   code: string;
   name: string;
   value: number;
-  /** Fraction of the individual stocks that have a country (0 to 1). */
+  /** Fraction of the holdings that have a country (0 to 1), so the rows add up to 100%. */
   weight: number;
 }
 
 export interface CountryExposure {
-  /** Market value of the individual stocks that have a country. */
+  /** Market value of the part that has a country. */
   total: number;
   /** Countries, biggest first. */
   rows: CountryRow[];
-  /** Individual stocks whose country isn't known yet (left out of the percentages). */
-  withoutCountry: number;
+  /** The part with no country (a fund with missing weights, a stock with no country yet), as a share of everything counted. */
+  unclassified: { value: number; weight: number };
+  /** Funds counted that have no usable breakdown at all. */
+  fundsWithoutData: number;
+  /** Oldest "last updated" among the fund breakdowns used (ISO), or null. */
+  oldestBreakdown: string | null;
 }
 
 /**
- * Where the individual stocks are based, as shares of the individual stocks that have a country. Broad equity
- * funds (sector "Diversified"), bond funds, alternatives and cash are not part of this.
+ * Where the money is, by country: individual stocks (by headquarters), equity ETFs and bond funds (split by their
+ * country weights), through `lookThroughExposure`, the shared exposure function. Alternatives and cash are not part of
+ * this. Percentages are shares of the part that has a country (so they add up to 100%); the part without one is
+ * reported separately as `unclassified`.
  */
-export function countryExposure(positions: Position[]): CountryExposure {
-  const byCode = new Map<string, number>();
-  let withoutCountry = 0;
-  for (const p of positions) {
-    if (p.assetClass !== "Equities" || p.sector === DIVERSIFIED) continue;
-    if (!p.country) {
-      withoutCountry++;
-      continue;
-    }
-    byCode.set(p.country, (byCode.get(p.country) ?? 0) + marketValue(p));
-  }
-  const entries = [...byCode.entries()].filter(([, value]) => value > 0);
-  const total = entries.reduce((t, [, value]) => t + value, 0);
-  const rows = entries
-    .map(([code, value]) => ({ code, name: countryName(code), value, weight: total === 0 ? 0 : value / total }))
-    .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
-  return { total, rows, withoutCountry };
+export function countryExposure(positions: Position[], breakdowns: Record<string, EtfBreakdown> = {}): CountryExposure {
+  const { country } = lookThroughExposure(positions, breakdowns);
+  return {
+    total: country.classified,
+    rows: country.rows.map((r) => ({
+      code: r.key,
+      name: r.label,
+      value: r.value,
+      weight: country.classified === 0 ? 0 : r.value / country.classified,
+    })),
+    unclassified: country.unclassified,
+    fundsWithoutData: country.fundsWithoutData,
+    oldestBreakdown: country.oldestBreakdown,
+  };
 }

@@ -8,6 +8,7 @@ import { formatPercent } from "@/lib/format";
 import { exposureOpacity } from "@/lib/map/shade";
 import type { WorldMap } from "@/lib/map/world";
 import type { CountryExposure } from "@/lib/portfolio/country-exposure";
+import { fundDataNote, unclassifiedNote } from "@/lib/portfolio/exposure-notes";
 
 let cachedWorld: WorldMap | null = null;
 
@@ -38,7 +39,7 @@ interface Hover {
   width: number;
 }
 
-/** World map shaded by where the individual stocks are based, with the countries listed beside it. */
+/** World map shaded by where the money is (stocks, equity ETFs and bond funds), with the countries listed beside it. */
 export function CountryExposureCard({ exposure }: { exposure: CountryExposure }) {
   const world = useWorld();
   const boxRef = useRef<HTMLDivElement>(null);
@@ -62,10 +63,10 @@ export function CountryExposureCard({ exposure }: { exposure: CountryExposure })
   const summary = rows.slice(0, 3).map((r) => `${r.name} ${formatPercent(r.weight, 0)}`).join(", ");
 
   return (
-    <Panel title="Individual Stock Exposure by Country">
+    <Panel title="Exposure by Country">
       {rows.length === 0 ? (
         <p className="py-10 text-center text-muted-foreground">
-          No individual stocks with a country yet. Countries fill in after the next price refresh.
+          No stocks or funds with a country yet. Countries fill in after the next price refresh.
         </p>
       ) : (
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_25rem]">
@@ -76,7 +77,7 @@ export function CountryExposureCard({ exposure }: { exposure: CountryExposure })
                   viewBox={`0 0 ${world.width} ${world.height}`}
                   className="block h-auto w-full"
                   role="img"
-                  aria-label={`World map shaded by the share of individual stocks based in each country. ${summary}.`}
+                  aria-label={`World map shaded by the share of the portfolio in each country. ${summary}.`}
                   onPointerLeave={(e) => e.pointerType !== "touch" && setHover(null)}
                 >
                   <rect width={world.width} height={world.height} fill="transparent" onPointerDown={() => setHover(null)} />
@@ -113,7 +114,7 @@ export function CountryExposureCard({ exposure }: { exposure: CountryExposure })
                 >
                   <p className="font-medium">{hoveredName}</p>
                   <p className="num !text-left text-muted-foreground">
-                    {hoveredRow ? `${formatPercent(hoveredRow.weight, 1)} of stocks` : "No exposure"}
+                    {hoveredRow ? formatPercent(hoveredRow.weight, 1) : "No exposure"}
                   </p>
                 </div>
               )}
@@ -123,7 +124,7 @@ export function CountryExposureCard({ exposure }: { exposure: CountryExposure })
           <div className="min-w-0">
             <div className="label-caps flex justify-between border-b pb-1.5">
               <span>Country</span>
-              <span>Share of stocks</span>
+              <span>Share</span>
             </div>
             <ul className="max-h-72 overflow-y-auto pr-1 xl:max-h-[22rem]">
               {rows.map((r) => (
@@ -142,9 +143,9 @@ export function CountryExposureCard({ exposure }: { exposure: CountryExposure })
         </div>
       )}
       <p className="mt-3 text-[11px] text-muted-foreground">
-        Individual stocks only: funds, bonds, alternatives and cash are excluded. By country of company headquarters.
-        {exposure.withoutCountry > 0 &&
-          ` ${exposure.withoutCountry} ${exposure.withoutCountry === 1 ? "stock has" : "stocks have"} no country yet.`}
+        Equity and Fixed Income included, Alternatives are not. Stocks by country of company headquarters; ETFs and bond
+        funds split by their country weights.
+        {` ${[unclassifiedNote(exposure.unclassified.weight, "country"), fundDataNote(exposure.oldestBreakdown, exposure.fundsWithoutData)].filter(Boolean).join(" ")}`}
         {notDrawn.length > 0 && ` Too small to draw at this map size: ${notDrawn.map((r) => r.name).join(", ")}.`}
       </p>
     </Panel>

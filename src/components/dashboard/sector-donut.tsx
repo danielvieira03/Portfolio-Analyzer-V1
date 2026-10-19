@@ -1,7 +1,7 @@
 import { DonutPanel, type DonutSlice } from "@/components/dashboard/donut-panel";
 import type { SectorAllocation } from "@/lib/portfolio/sector-allocation";
 
-// The biggest sectors take these colours in size order; broad funds and "Other" have their own.
+// The biggest sectors take these colours in size order; "Unclassified" and "Other" have their own.
 const SECTOR_COLORS = [
   "var(--chart-1)",
   "var(--chart-2)",
@@ -11,7 +11,7 @@ const SECTOR_COLORS = [
   "var(--chart-8)",
   "var(--chart-9)",
 ];
-const DIVERSIFIED_COLOR = "var(--chart-3)";
+const UNCLASSIFIED_COLOR = "var(--chart-3)";
 const OTHER_COLOR = "var(--chart-6)";
 
 export function SectorDonut({ allocation }: { allocation: SectorAllocation }) {
@@ -22,7 +22,7 @@ export function SectorDonut({ allocation }: { allocation: SectorAllocation }) {
     value: s.value,
     weight: s.weight,
     members: s.members,
-    color: s.kind === "diversified" ? DIVERSIFIED_COLOR : s.kind === "other" ? OTHER_COLOR : SECTOR_COLORS[nextSector++ % SECTOR_COLORS.length],
+    color: s.kind === "unclassified" ? UNCLASSIFIED_COLOR : s.kind === "other" ? OTHER_COLOR : SECTOR_COLORS[nextSector++ % SECTOR_COLORS.length],
   }));
   return (
     <DonutPanel

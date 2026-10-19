@@ -21,7 +21,7 @@ import { subtypeAllocation } from "@/lib/portfolio/subtype-allocation";
 export function DashboardView() {
   const state = usePortfolio();
   if (!state) return <LoadingPage title="Dashboard" subtitle="Portfolio overview" />;
-  const { holdings: positions, cash, isDemoData } = state.doc;
+  const { holdings: positions, cash, isDemoData, etfBreakdowns } = state.doc;
 
   const header = (
     <PageHeader
@@ -56,7 +56,7 @@ export function DashboardView() {
           <AllocationDonut slices={allocationByClass(positions, cash)} totalValue={summary.totalValue} />
         </div>
         <div className="min-w-0">
-          <SectorDonut allocation={equitySectorAllocation(positions)} />
+          <SectorDonut allocation={equitySectorAllocation(positions, etfBreakdowns)} />
         </div>
       </div>
       <div className="grid gap-3 xl:grid-cols-2">
@@ -68,7 +68,7 @@ export function DashboardView() {
         </div>
       </div>
       <TopHoldings holdings={topHoldings(positions, cash, 5)} />
-      <CountryExposureCard exposure={countryExposure(positions)} />
+      <CountryExposureCard exposure={countryExposure(positions, etfBreakdowns)} />
     </div>
   );
 }

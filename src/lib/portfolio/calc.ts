@@ -1,8 +1,9 @@
 // All portfolio math lives here as plain functions (no database, no UI).
 // Weights and percentages are fractions: 0.25 means 25%.
 
-import { DIVERSIFIED, SECTORS, type Sector } from "./sectors";
-import type { AssetClass, Position } from "./types";
+import { lookThroughExposure } from "./exposure";
+import { SECTORS, type Sector } from "./sectors";
+import type { AssetClass, EtfBreakdown, Position } from "./types";
 import { ASSET_CLASSES } from "./types";
 
 /** Current market value of one position. */
@@ -75,23 +76,22 @@ export interface SectorComparison {
 }
 
 /**
- * Equity sector weights vs a benchmark. Only equities with a real sector count
- * (broad funds tagged "Diversified" are skipped), and weights are shares of that
- * sector-tagged total. `benchmarkPercent` is in percent (33.9 = 33.9%).
+ * Equity sector weights vs a benchmark, from the shared exposure function: stocks count to their own sector and
+ * equity ETFs are split across their sectors (`breakdowns`). Whatever has no sector (a fund with no data, the part of
+ * a fund the weights don't cover) is left out, and weights are shares of the part that has one.
+ * `benchmarkPercent` is in percent (33.9 = 33.9%).
  */
 export function compareSectors(
   positions: Position[],
   benchmarkPercent: Record<Sector, number>,
+  breakdowns: Record<string, EtfBreakdown> = {},
 ): SectorComparison[] {
-  const tagged = positions.filter(
-    (p) => p.assetClass === "Equities" && p.sector && p.sector !== DIVERSIFIED,
-  );
-  const total = sum(tagged.map(marketValue));
-  return SECTORS.map((sector) => {
-    const value = sum(tagged.filter((p) => p.sector === sector).map(marketValue));
-    const portfolio = weight(value, total);
-    const benchmark = benchmarkPercent[sector] / 100;
-    return { sector, portfolio, benchmark, difference: portfolio - benchmark };
+  const { sector } = lookThroughExposure(positions, breakdowns);
+  const valueOf = new Map(sector.rows.map((r) => [r.key, r.value]));
+  return SECTORS.map((name) => {
+    const portfolio = weight(valueOf.get(name) ?? 0, sector.classified);
+    const benchmark = benchmarkPercent[name] / 100;
+    return { sector: name, portfolio, benchmark, difference: portfolio - benchmark };
   });
 }
 

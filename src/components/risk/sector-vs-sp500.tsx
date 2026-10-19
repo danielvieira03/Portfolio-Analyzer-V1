@@ -21,10 +21,13 @@ export function SectorVsSp500({
   rows,
   asOf,
   hasSectorData,
+  dataNote = "",
 }: {
   rows: SectorComparison[];
   asOf: string;
   hasSectorData: boolean;
+  /** Small print about unclassified equities and fund data age (empty = nothing to say). */
+  dataNote?: string;
 }) {
   const data: Row[] = rows.map((r) => ({
     ...r,
@@ -41,7 +44,7 @@ export function SectorVsSp500({
     >
       {!hasSectorData ? (
         <p className="py-10 text-center text-muted-foreground">
-          No individual stocks with a sector yet.
+          No stocks or equity ETFs with a sector yet.{dataNote && ` ${dataNote}`}
         </p>
       ) : (
         <>
@@ -127,8 +130,8 @@ export function SectorVsSp500({
             </ResponsiveContainer>
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            Individual stocks only — broad funds are excluded. Portfolio weights are shares of
-            sector-tagged equities.
+            Stocks plus equity ETFs, which are split across their sectors. Portfolio weights are shares of
+            the equities that have a sector.{dataNote && ` ${dataNote}`}
           </p>
         </>
       )}

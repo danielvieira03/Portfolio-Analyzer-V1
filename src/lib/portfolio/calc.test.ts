@@ -99,6 +99,19 @@ describe("compareSectors", () => {
     expect(fin.difference).toBeCloseTo(0.05);
     expect(rows).toHaveLength(11);
   });
+  it("splits an equity ETF across its sectors, shares of the part that has a sector", () => {
+    const saved = { ETF: { sectors: [{ name: "Information Technology", weight: 0.5 }, { name: "Financials", weight: 0.3 }], countries: [], updatedAt: "2026-10-12T00:00:00.000Z", status: "ok" as const } };
+    const rows = compareSectors([A, B, ETF], bench, saved); // tech 1500 + 600, financials 500 + 360, 240 unclassified
+    const tech = rows.find((r) => r.sector === "Information Technology")!;
+    const fin = rows.find((r) => r.sector === "Financials")!;
+    expect(tech.portfolio).toBeCloseTo(2100 / 2960);
+    expect(fin.portfolio).toBeCloseTo(860 / 2960);
+    expect(rows.reduce((t, r) => t + r.portfolio, 0)).toBeCloseTo(1); // only the part that has a sector counts
+  });
+  it("never counts bond funds in the sector comparison, even with saved data", () => {
+    const saved = { BND: { sectors: [{ name: "Energy", weight: 1 }], countries: [], updatedAt: "2026-10-12T00:00:00.000Z", status: "ok" as const } };
+    expect(compareSectors([A, B, BOND], bench, saved)).toEqual(compareSectors([A, B], bench));
+  });
 });
 
 describe("topHoldings", () => {

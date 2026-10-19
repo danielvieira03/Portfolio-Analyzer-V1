@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { countryExposure } from "./country-exposure";
-import type { Position } from "./types";
+import type { EtfBreakdown, Position } from "./types";
 
 const stock = (ticker: string, country: string | null, shares: number, price: number, o: Partial<Position> = {}): Position => ({
   id: ticker, ticker, name: ticker, assetClass: "Equities", sector: "Energy", subtype: null,
@@ -16,26 +16,35 @@ describe("countryExposure", () => {
     expect(r.rows.reduce((t, x) => t + x.weight, 0)).toBeCloseTo(1);
     expect(r.total).toBe(3500);
   });
-  it("leaves out broad funds (Diversified), bond funds, alternatives and anything that isn't Equities", () => {
-    const r = countryExposure([
-      stock("A", "US", 10, 100),
-      stock("VOO", "US", 10, 500, { sector: "Diversified" }),
-      stock("EWZ", "BR", 10, 30, { sector: "Diversified" }), // a one-country fund: not included in this stocks-only card
-      stock("BND", "US", 10, 70, { assetClass: "Fixed Income", sector: null }),
-      stock("GLD", "US", 10, 300, { assetClass: "Alternatives", sector: null }),
-    ]);
+  it("leaves out alternatives and cash-like things that aren't Equities or Fixed Income", () => {
+    const r = countryExposure([stock("A", "US", 10, 100), stock("GLD", "US", 10, 300, { assetClass: "Alternatives", sector: null })]);
     expect(r.rows).toHaveLength(1);
     expect(r.total).toBe(1000);
-    expect(r.withoutCountry).toBe(0);
+    expect(r.unclassified).toEqual({ value: 0, weight: 0 });
   });
-  it("counts stocks with no country yet, without letting them change the percentages", () => {
-    const r = countryExposure([stock("A", "US", 10, 100), stock("X", null, 10, 999), stock("Y", null, 1, 1)]);
-    expect(r.withoutCountry).toBe(2);
+  it("splits equity ETFs and bond funds by their country weights", () => {
+    const saved: Record<string, EtfBreakdown> = {
+      VXUS: { sectors: [], countries: [{ code: "JP", weight: 0.5 }, { code: "TW", weight: 0.5 }], updatedAt: "2026-10-12T00:00:00.000Z", status: "ok" },
+      BND: { sectors: [], countries: [{ code: "US", weight: 0.9 }, { code: "CA", weight: 0.1 }], updatedAt: "2026-10-14T00:00:00.000Z", status: "ok" },
+    };
+    const r = countryExposure(
+      [stock("VXUS", null, 10, 100, { sector: "Diversified" }), stock("BND", null, 10, 100, { assetClass: "Fixed Income", sector: null })],
+      saved,
+    );
+    expect(r.rows.map((x) => [x.code, Math.round(x.value)])).toEqual([["US", 900], ["JP", 500], ["TW", 500], ["CA", 100]]);
+    expect(r.rows.reduce((t, x) => t + x.weight, 0)).toBeCloseTo(1);
+    expect(r.oldestBreakdown).toBe("2026-10-12T00:00:00.000Z");
+  });
+  it("reports the part with no country separately, without changing the percentages", () => {
+    const r = countryExposure([stock("A", "US", 10, 100), stock("X", null, 10, 100), stock("F", null, 10, 100, { sector: "Diversified" })]);
     expect(r.rows).toEqual([{ code: "US", name: "United States", value: 1000, weight: 1 }]);
+    expect(r.unclassified.value).toBe(2000);
+    expect(r.unclassified.weight).toBeCloseTo(2000 / 3000);
+    expect(r.fundsWithoutData).toBe(1);
   });
-  it("is empty when there are no stocks with a country", () => {
-    expect(countryExposure([])).toEqual({ total: 0, rows: [], withoutCountry: 0 });
-    expect(countryExposure([stock("X", null, 1, 1)])).toEqual({ total: 0, rows: [], withoutCountry: 1 });
+  it("is empty when nothing has a country", () => {
+    expect(countryExposure([])).toEqual({ total: 0, rows: [], unclassified: { value: 0, weight: 0 }, fundsWithoutData: 0, oldestBreakdown: null });
+    expect(countryExposure([stock("X", null, 1, 1)]).rows).toEqual([]);
   });
   it("ties break alphabetically by country name", () => {
     const r = countryExposure([stock("A", "NL", 1, 100), stock("B", "DE", 1, 100)]);
