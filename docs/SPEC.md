@@ -1,6 +1,6 @@
 # Portfolio Analyzer — Spec (big picture)
 
-Current release: **v1.2** (live on Vercel).
+Current release: **v1.2.1** (live on Vercel).
 
 ## What it is
 A web app for analyzing an investment portfolio. Positions are entered by hand or imported
