@@ -15,7 +15,11 @@ export const BREAKDOWN_REFRESH_DAYS = 7;
 /** Most funds looked up in one refresh (the rest wait for the next one). */
 export const BREAKDOWN_MAX_PER_REFRESH = 50;
 
-/** The name FMP uses for each sector, mapped to the app's S&P 500 style sector names. */
+/**
+ * The name FMP uses for each sector, mapped to the app's S&P 500 style sector names. FMP uses its own names for
+ * companies but the fund company's S&P / GICS style names for many ETFs (e.g. iShares funds say "Financials",
+ * "Health Care", "Communication"), so both spellings are listed. Anything not listed counts as Unclassified.
+ */
 export const FMP_SECTOR_MAP: Record<string, string> = {
   Technology: "Information Technology",
   "Consumer Cyclical": "Consumer Discretionary",
@@ -28,4 +32,21 @@ export const FMP_SECTOR_MAP: Record<string, string> = {
   Utilities: "Utilities",
   "Real Estate": "Real Estate",
   "Communication Services": "Communication Services",
+  // The S&P / GICS style spellings many ETFs use (and the app's own names).
+  "Information Technology": "Information Technology",
+  Financials: "Financials",
+  "Health Care": "Health Care",
+  "Consumer Discretionary": "Consumer Discretionary",
+  "Consumer Staples": "Consumer Staples",
+  Materials: "Materials",
+  Communication: "Communication Services",
+  "Communications": "Communication Services",
+  "Telecommunications": "Communication Services",
 };
+
+/**
+ * Saved fund breakdowns older than this are looked up again, even if they are less than a week old. Raise it
+ * (to the current date and time) whenever the translation of the provider's sector or country names is
+ * improved, so visitors don't keep a partly translated copy for a week.
+ */
+export const BREAKDOWN_MAPPING_UPDATED = "2026-10-19T02:40:00.000Z";

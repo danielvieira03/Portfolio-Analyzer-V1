@@ -2,6 +2,9 @@ import { countryByName } from "@/config/countries";
 import { FMP_SECTOR_MAP } from "@/config/market";
 import type { EtfBreakdown } from "@/lib/portfolio/types";
 
+/** The sector translation, matched without regard to capital letters. */
+const SECTOR_BY_LOWER = new Map(Object.entries(FMP_SECTOR_MAP).map(([k, v]) => [k.toLowerCase(), v]));
+
 /** One fund to look up. Bond funds skip the sector list (FMP only says "Cash & Others"), saving a call. */
 export interface FundRequest {
   ticker: string;
@@ -23,7 +26,7 @@ function rows(json: unknown): Record<string, unknown>[] {
 export function parseSectorWeights(json: unknown): EtfBreakdown["sectors"] {
   const out = new Map<string, number>();
   for (const r of rows(json)) {
-    const name = typeof r.sector === "string" ? FMP_SECTOR_MAP[r.sector.trim()] : undefined;
+    const name = typeof r.sector === "string" ? SECTOR_BY_LOWER.get(r.sector.trim().toLowerCase()) : undefined;
     const weight = parseWeight(r.weightPercentage);
     if (name && weight) out.set(name, (out.get(name) ?? 0) + weight);
   }

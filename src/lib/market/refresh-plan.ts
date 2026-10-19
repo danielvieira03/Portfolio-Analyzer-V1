@@ -1,5 +1,6 @@
 // Decides what a price refresh changes. Pure: no network, no database.
 
+import { BREAKDOWN_MAPPING_UPDATED } from "@/config/market";
 import type { EtfBreakdown, Position } from "@/lib/portfolio/types";
 import type { FundRequest } from "./breakdown";
 import type { MarketProfile } from "./profile";
@@ -58,6 +59,7 @@ export function breakdownsDue(
   saved: Record<string, EtfBreakdown>,
   now: Date,
   days: number,
+  mappingUpdated: string = BREAKDOWN_MAPPING_UPDATED,
 ): FundRequest[] {
   const due = new Map<string, FundRequest>();
   for (const h of holdings) {
@@ -66,7 +68,9 @@ export function breakdownsDue(
     const ticker = h.ticker.toUpperCase();
     const b = saved[ticker];
     const age = b ? now.getTime() - Date.parse(b.updatedAt) : Infinity;
-    if (age < days * 86_400_000) continue;
+    // Data saved before the names were last translated better is looked up again right away.
+    const outdated = b ? !(Date.parse(b.updatedAt) >= Date.parse(mappingUpdated)) : false;
+    if (age < days * 86_400_000 && !outdated) continue;
     // A ticker held as an equity ETF anywhere still gets its sectors.
     due.set(ticker, { ticker, sectors: h.assetClass === "Equities" || (due.get(ticker)?.sectors ?? false) });
   }

@@ -51,6 +51,44 @@ describe("parseSectorWeights", () => {
   });
 });
 
+// Shape copied from the real FMP answer for EWZ (an iShares fund: S&P style sector names).
+const ewzSectors = [
+  { symbol: "EWZ", sector: "Financials", weightPercentage: 37.38 },
+  { symbol: "EWZ", sector: "Energy", weightPercentage: 17.58 },
+  { symbol: "EWZ", sector: "Utilities", weightPercentage: 13.25 },
+  { symbol: "EWZ", sector: "Materials", weightPercentage: 11.16 },
+  { symbol: "EWZ", sector: "Industrials", weightPercentage: 8.57 },
+  { symbol: "EWZ", sector: "Consumer Staples", weightPercentage: 5.05 },
+  { symbol: "EWZ", sector: "Consumer Discretionary", weightPercentage: 2.57 },
+  { symbol: "EWZ", sector: "Cash and/or Derivatives", weightPercentage: 1.62 },
+  { symbol: "EWZ", sector: "Communication", weightPercentage: 1.55 },
+  { symbol: "EWZ", sector: "Health Care", weightPercentage: 1.26 },
+];
+const ewzCountries = [
+  { country: "Brazil", weightPercentage: "96.04%" },
+  { country: "United States", weightPercentage: "1.99%" },
+  { country: "Other", weightPercentage: "1.09%" },
+  { country: "Netherlands", weightPercentage: "0.87%" },
+];
+
+describe("an ETF that uses S&P style sector names (EWZ)", () => {
+  it("translates every real sector, leaving out only cash/derivatives", () => {
+    const s = parseSectorWeights(ewzSectors);
+    expect(s.map((x) => x.name)).toEqual([
+      "Financials", "Energy", "Utilities", "Materials", "Industrials", "Consumer Staples", "Consumer Discretionary", "Communication Services", "Health Care",
+    ]);
+    expect(s.reduce((t, x) => t + x.weight, 0)).toBeCloseTo(0.9838); // 100% minus the 1.62% cash/derivatives
+  });
+  it("reads Brazil as 96%, leaving out 'Other'", () => {
+    const c = parseCountryWeights(ewzCountries);
+    expect(c.map((x) => x.code)).toEqual(["BR", "US", "NL"]);
+    expect(c[0].weight).toBeCloseTo(0.9604);
+  });
+  it("matches sector names whatever the capital letters", () => {
+    expect(parseSectorWeights([{ sector: "health care", weightPercentage: 10 }, { sector: "INFORMATION TECHNOLOGY", weightPercentage: 5 }]).map((x) => x.name)).toEqual(["Health Care", "Information Technology"]);
+  });
+});
+
 describe("parseCountryWeights", () => {
   it("turns country names into codes, including the provider's spellings", () => {
     const c = parseCountryWeights(vxusCountries);
