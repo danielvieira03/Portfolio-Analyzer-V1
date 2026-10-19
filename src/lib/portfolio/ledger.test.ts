@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEMO_HOLDINGS } from "@/config/demo-portfolio";
 import type { HoldingInput } from "@/lib/holdings/schema";
 import {
-  addHolding, addLearnedFunds, applyPrices, clearDemo, fillSubtypes, importHoldings, libraryFunds,
+  addHolding, addLearnedFunds, applyBreakdowns, applyPrices, clearDemo, fillSubtypes, importHoldings, libraryFunds,
   newVisitorDoc, removeHolding, saveHolding, setCash, type PortfolioDoc,
 } from "./ledger";
 
@@ -13,7 +13,7 @@ const input = (o: Partial<HoldingInput> = {}): HoldingInput => ({
   shares: 10, costBasisPerShare: 100, currentPrice: 150, ...o,
 });
 const empty = (o: Partial<PortfolioDoc> = {}): PortfolioDoc => ({
-  version: 1, holdings: [], cash: 0, isDemoData: false, seeded: true, pricesUpdatedAt: null, learnedFunds: [], ...o,
+  version: 1, holdings: [], cash: 0, isDemoData: false, seeded: true, pricesUpdatedAt: null, learnedFunds: [], etfBreakdowns: {}, ...o,
 });
 const withApple = () => addHolding(empty(), input(), undefined, id).doc;
 
@@ -269,5 +269,23 @@ describe("country (hidden, from market data)", () => {
     expect(demo.find((h) => h.ticker === "ASML")?.country).toBe("NL");
     expect(demo.find((h) => h.ticker === "VOO")?.country).toBeNull();
     expect(demo.find((h) => h.ticker === "BND")?.country).toBeNull();
+  });
+});
+
+describe("applyBreakdowns", () => {
+  const bd = (updatedAt: string) => ({ sectors: [{ name: "Energy", weight: 1 }], countries: [{ code: "US", weight: 1 }], updatedAt, status: "ok" as const });
+  it("starts empty for a new visitor", () => {
+    expect(newVisitorDoc(id).etfBreakdowns).toEqual({});
+  });
+  it("saves new fund breakdowns, replaces a fund's old one and keeps the others", () => {
+    const a = applyBreakdowns(empty(), { VOO: bd("2026-10-01T00:00:00.000Z"), QQQ: bd("2026-10-01T00:00:00.000Z") });
+    const b = applyBreakdowns(a, { VOO: bd("2026-10-18T00:00:00.000Z") });
+    expect(b.etfBreakdowns.VOO.updatedAt).toBe("2026-10-18T00:00:00.000Z");
+    expect(b.etfBreakdowns.QQQ.updatedAt).toBe("2026-10-01T00:00:00.000Z");
+  });
+  it("changes nothing when there is nothing new, and never counts as an edit of demo data", () => {
+    const d = newVisitorDoc(id);
+    expect(applyBreakdowns(d, {})).toBe(d);
+    expect(applyBreakdowns(d, { VOO: bd("2026-10-18T00:00:00.000Z") }).isDemoData).toBe(true);
   });
 });

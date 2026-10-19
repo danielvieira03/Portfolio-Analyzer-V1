@@ -16,7 +16,10 @@ function noteFor(r: PriceRefreshResult): string | null {
     case "unreachable":
       return "Couldn’t update prices";
     default:
-      return r.unavailable > 0 ? `${r.unavailable} without a live price` : null;
+      if (r.unavailable > 0) return `${r.unavailable} without a live price`;
+      return r.breakdown === "limit" || r.breakdown === "restricted" || r.breakdown === "unreachable"
+        ? "Fund breakdowns not updated, using saved data"
+        : null;
   }
 }
 

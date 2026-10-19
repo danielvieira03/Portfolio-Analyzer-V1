@@ -29,6 +29,14 @@ const fundSchema = z
   })
   .refine((f) => isValidSubtype(f.assetClass, f.subtype), "Maturity / type not allowed for this class");
 
+const breakdownSchema = z.object({
+  sectors: z.array(z.object({ name: z.string().min(1).max(60), weight: z.number().finite().gt(0).max(1) })).max(60),
+  countries: z.array(z.object({ code: z.string().regex(/^[A-Z]{2}$/), weight: z.number().finite().gt(0).max(1) })).max(300),
+  updatedAt: isoTime,
+  status: z.enum(["ok", "none"]),
+});
+const breakdownsSchema = z.record(z.string().min(1).max(12), breakdownSchema).refine((r) => Object.keys(r).length <= MAX_FUNDS, "Too many funds");
+
 const storedHolding = z.object({
   id: z.string().min(1),
   ticker: z.string().min(1).max(12),
@@ -52,6 +60,9 @@ const storedDoc = z.object({
   seeded: z.boolean(),
   pricesUpdatedAt: isoTime.nullable(),
   learnedFunds: z.array(fundSchema).max(MAX_FUNDS),
+  // Added after v1.1: older saved portfolios have none, so it defaults to "nothing looked up yet". It is only a
+  // saved copy of provider data, so if it is ever damaged it is dropped (and looked up again), never the portfolio.
+  etfBreakdowns: breakdownsSchema.catch({}),
 });
 
 /** Parse what the browser had saved. Returns null for anything missing, damaged or from an unknown version. */
@@ -75,6 +86,7 @@ const backupFile = z.object({
   pricesUpdatedAt: isoTime.nullable().optional(),
   holdings: z.array(z.unknown()).max(MAX_HOLDINGS),
   learnedFunds: z.array(fundSchema).max(MAX_FUNDS).optional(),
+  etfBreakdowns: breakdownsSchema.catch({}),
 });
 
 /** The text of a backup file for this portfolio. */
@@ -99,6 +111,7 @@ export function exportBackup(doc: PortfolioDoc, now: Date): string {
         country: h.country ?? null,
       })),
       learnedFunds: doc.learnedFunds,
+      etfBreakdowns: doc.etfBreakdowns,
     },
     null,
     2,
@@ -153,6 +166,7 @@ export function parseBackup(text: string, newId: () => string = () => globalThis
       seeded: true,
       pricesUpdatedAt: file.data.pricesUpdatedAt ?? null,
       learnedFunds,
+      etfBreakdowns: file.data.etfBreakdowns,
     },
   };
 }

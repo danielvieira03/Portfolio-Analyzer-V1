@@ -7,6 +7,16 @@
  */
 export const PRICE_REFRESH_MINUTES = 2;
 
+/**
+ * How often a fund's sector and country weights are looked up again, in days (they change slowly).
+ * Each lookup is 2 market data calls per fund; a newly added fund is looked up on its first refresh.
+ */
+export const BREAKDOWN_REFRESH_DAYS = 7;
+/** Most funds looked up in one refresh (the rest wait for the next one). */
+export const BREAKDOWN_MAX_PER_REFRESH = 20;
+/** After a limit, a plan restriction or a network failure, wait this long before the automatic refresh tries again. */
+export const BREAKDOWN_RETRY_MINUTES = 30;
+
 /** The name FMP uses for each sector, mapped to the app's S&P 500 style sector names. */
 export const FMP_SECTOR_MAP: Record<string, string> = {
   Technology: "Information Technology",

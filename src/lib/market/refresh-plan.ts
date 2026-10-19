@@ -1,5 +1,6 @@
 // Decides what a price refresh changes. Pure: no network, no database.
 
+import type { EtfBreakdown, Position } from "@/lib/portfolio/types";
 import type { MarketProfile } from "./profile";
 
 export interface PriceTarget {
@@ -43,4 +44,27 @@ export function checkEveryMs(minutes: number): number {
 export function isStale(lastUpdated: Date | null, now: Date, minutes: number): boolean {
   if (!lastUpdated) return true;
   return now.getTime() - lastUpdated.getTime() >= minutes * 60_000;
+}
+
+/**
+ * Funds whose sector / country weights should be looked up now: equity ETFs (sector "Diversified") and Fixed Income
+ * funds that have no saved breakdown yet, or one `days` old or older (a "none" answer is retried only this often too).
+ * Alternatives are not looked up (they are outside the exposure views). Upper-case tickers, no repeats.
+ */
+export function breakdownsDue(
+  holdings: Pick<Position, "ticker" | "assetClass" | "sector">[],
+  saved: Record<string, EtfBreakdown>,
+  now: Date,
+  days: number,
+): string[] {
+  const due = new Set<string>();
+  for (const h of holdings) {
+    const isFund = h.assetClass === "Fixed Income" || (h.assetClass === "Equities" && h.sector === "Diversified");
+    if (!isFund) continue;
+    const ticker = h.ticker.toUpperCase();
+    const b = saved[ticker];
+    const age = b ? now.getTime() - Date.parse(b.updatedAt) : Infinity;
+    if (!(age < days * 86_400_000)) due.add(ticker);
+  }
+  return [...due];
 }

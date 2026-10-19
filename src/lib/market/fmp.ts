@@ -2,6 +2,8 @@
 // only be imported from server actions / route handlers, never from a "use client" component.
 // The key is never logged and never part of anything returned.
 
+import type { EtfBreakdown } from "@/lib/portfolio/types";
+import { buildBreakdown } from "./breakdown";
 import { parseProfile, type MarketProfile } from "./profile";
 
 const BASE = "https://financialmodelingprep.com/stable/profile";
@@ -59,4 +61,72 @@ export async function fetchProfiles(tickers: string[]): Promise<FetchResult> {
   if (limit) return { status: "limit", profiles };
   if (unique.length > 0 && errors === unique.length) return { status: "unreachable", profiles };
   return { status: "ok", profiles };
+}
+
+// ---- Fund breakdowns (sector and country weights of an ETF) ----
+
+const ETF_BASE = "https://financialmodelingprep.com/stable/etf";
+
+export type BreakdownStatus =
+  | "ok"
+  | "no_key"
+  | "limit" // HTTP 429
+  | "restricted" // HTTP 402/403: this data is not included in the plan
+  | "unreachable"; // every lookup failed (offline, provider down)
+
+export interface BreakdownResult {
+  status: BreakdownStatus;
+  /** Only funds the provider fully answered for (both lists, "no data" included). Anything missing keeps its saved data. */
+  breakdowns: Map<string, EtfBreakdown>;
+}
+
+/** One list for one fund: its JSON, "empty" when the provider has none, or why it failed. */
+async function fetchWeights(path: string, ticker: string, key: string): Promise<unknown | "empty" | "limit" | "restricted" | "error"> {
+  try {
+    const url = `${ETF_BASE}/${path}?symbol=${encodeURIComponent(ticker)}&apikey=${encodeURIComponent(key)}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS), cache: "no-store" });
+    if (res.status === 429) return "limit";
+    if (res.status === 402 || res.status === 403) return "restricted";
+    if (res.status === 404) return "empty";
+    if (!res.ok) return "error";
+    return await res.json();
+  } catch {
+    return "error";
+  }
+}
+
+/**
+ * Look up the sector and country weights of many funds, a few at a time (2 calls per fund). A usage limit stops the
+ * run; a fund the plan doesn't cover, or that failed, is skipped (never recorded as "no data", so saved data stays).
+ * Funds answered are always returned so they can be saved.
+ */
+export async function fetchBreakdowns(tickers: string[], now: Date = new Date()): Promise<BreakdownResult> {
+  const key = process.env.FINANCIAL_MODELING_API_KEY?.trim();
+  const breakdowns = new Map<string, EtfBreakdown>();
+  if (!key) return { status: "no_key", breakdowns };
+
+  const unique = [...new Set(tickers)];
+  let next = 0;
+  let limit = false;
+  let restricted = 0;
+  let errors = 0;
+  const worker = async () => {
+    while (!limit && next < unique.length) {
+      const ticker = unique[next++];
+      const [sectors, countries] = await Promise.all([fetchWeights("sector-weightings", ticker, key), fetchWeights("country-weightings", ticker, key)]);
+      const answers = [sectors, countries];
+      if (answers.includes("limit")) limit = true;
+      else if (answers.includes("restricted")) restricted++;
+      else if (answers.includes("error")) errors++;
+      else breakdowns.set(ticker, buildBreakdown(sectors === "empty" ? [] : sectors, countries === "empty" ? [] : countries, now));
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(PARALLEL, unique.length) }, worker));
+
+  if (limit) return { status: "limit", breakdowns };
+  if (unique.length > 0 && breakdowns.size === 0) {
+    if (restricted > 0) return { status: "restricted", breakdowns };
+    if (errors === unique.length) return { status: "unreachable", breakdowns };
+  }
+  return { status: "ok", breakdowns };
 }

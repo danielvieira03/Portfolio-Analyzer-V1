@@ -125,3 +125,36 @@ describe("country compatibility", () => {
     expect(parseBackup(JSON.stringify(file)).ok).toBe(false);
   });
 });
+
+describe("fund breakdown compatibility", () => {
+  const saved = { sectors: [{ name: "Information Technology", weight: 0.3 }], countries: [{ code: "US", weight: 0.9 }], updatedAt: "2026-10-18T12:00:00.000Z", status: "ok" as const };
+  it("loads a portfolio saved BEFORE fund breakdowns existed (becomes empty)", () => {
+    const { etfBreakdowns, ...old } = doc();
+    void etfBreakdowns;
+    const parsed = parseStoredDoc(JSON.stringify(old));
+    expect(parsed).not.toBeNull();
+    expect(parsed!.etfBreakdowns).toEqual({});
+  });
+  it("restores a backup written before fund breakdowns existed", () => {
+    const file = JSON.parse(exportBackup(doc(), now));
+    delete file.etfBreakdowns;
+    const r = parseBackup(JSON.stringify(file));
+    expect(r.ok && r.doc.etfBreakdowns).toEqual({});
+  });
+  it("keeps breakdowns through a saved document and through a backup", () => {
+    const d = { ...doc(), etfBreakdowns: { VOO: saved } };
+    expect(parseStoredDoc(JSON.stringify(d))?.etfBreakdowns).toEqual({ VOO: saved });
+    const r = parseBackup(exportBackup(d, now));
+    expect(r.ok && r.doc.etfBreakdowns).toEqual({ VOO: saved });
+  });
+  it("drops damaged breakdowns (to be looked up again) without losing the portfolio", () => {
+    const d = { ...doc(), etfBreakdowns: { VOO: { ...saved, countries: [{ code: "United States", weight: 1 }] } } };
+    const parsed = parseStoredDoc(JSON.stringify(d));
+    expect(parsed?.etfBreakdowns).toEqual({});
+    expect(parsed?.holdings).toHaveLength(d.holdings.length);
+    const file = JSON.parse(exportBackup({ ...doc(), etfBreakdowns: { VOO: saved } }, now));
+    file.etfBreakdowns.VOO.sectors[0].weight = 5;
+    const r = parseBackup(JSON.stringify(file));
+    expect(r.ok && r.doc.etfBreakdowns).toEqual({});
+  });
+});

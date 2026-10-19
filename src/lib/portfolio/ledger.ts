@@ -9,7 +9,7 @@ import type { HoldingInput } from "@/lib/holdings/schema";
 import type { FundRecord } from "@/lib/funds/library";
 import type { PricePlan } from "@/lib/market/refresh-plan";
 import { mergePositions } from "./calc";
-import type { Position } from "./types";
+import type { EtfBreakdown, Position } from "./types";
 
 export const DOC_VERSION = 1;
 
@@ -26,6 +26,8 @@ export interface PortfolioDoc {
   pricesUpdatedAt: string | null;
   /** Funds Claude looked up for this visitor (added to the built-in fund library). */
   learnedFunds: FundRecord[];
+  /** What each fund (ETF) holds by sector and country, keyed by upper-case ticker (see `EtfBreakdown`). Added after v1.1: older saves have none. */
+  etfBreakdowns: Record<string, EtfBreakdown>;
 }
 
 type IdMaker = () => string;
@@ -74,6 +76,7 @@ export function newVisitorDoc(newId: IdMaker = defaultId): PortfolioDoc {
     seeded: true,
     pricesUpdatedAt: null,
     learnedFunds: [],
+    etfBreakdowns: {},
   };
 }
 
@@ -196,6 +199,16 @@ export function applyPrices(doc: PortfolioDoc, plan: PricePlan, stamp: boolean, 
     ),
     pricesUpdatedAt: stamp ? now.toISOString() : doc.pricesUpdatedAt,
   };
+}
+
+/**
+ * Save freshly looked-up fund breakdowns (one per ticker, replacing the old one). Funds not in `fresh` keep what
+ * they had, so a failed or partial lookup never erases saved data. Looking up breakdowns is not an edit: it never
+ * changes whether the portfolio counts as demo data.
+ */
+export function applyBreakdowns(doc: PortfolioDoc, fresh: Record<string, EtfBreakdown>): PortfolioDoc {
+  if (Object.keys(fresh).length === 0) return doc;
+  return { ...doc, etfBreakdowns: { ...doc.etfBreakdowns, ...fresh } };
 }
 
 /**

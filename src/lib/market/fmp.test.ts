@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchProfiles } from "./fmp";
+import { fetchBreakdowns, fetchProfiles } from "./fmp";
 
 const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
 const aapl = [{ symbol: "AAPL", companyName: "Apple Inc.", price: 300, sector: "Technology", isEtf: false }];
@@ -53,5 +53,81 @@ describe("fetchProfiles", () => {
     const r = await fetchProfiles(["AAPL"]);
     expect(r.status).toBe("unreachable");
     expect(r.profiles.size).toBe(0);
+  });
+});
+
+describe("fetchBreakdowns", () => {
+  const sectors = [{ symbol: "VOO", sector: "Technology", weightPercentage: 38.72 }, { symbol: "VOO", sector: "Energy", weightPercentage: 3.48 }];
+  const countries = [{ country: "United States", weightPercentage: "100%" }];
+  const now = new Date("2026-10-18T12:00:00Z");
+  const answer = (map: Record<string, Response | (() => Response)>) =>
+    vi.fn(async (url: string) => {
+      const hit = Object.entries(map).find(([k]) => url.includes(k));
+      const r = hit ? hit[1] : ok([]);
+      return typeof r === "function" ? r() : r;
+    });
+
+  it("reports a missing key without calling the API", async () => {
+    vi.stubEnv("FINANCIAL_MODELING_API_KEY", "");
+    const spy = vi.fn();
+    vi.stubGlobal("fetch", spy);
+    expect((await fetchBreakdowns(["VOO"], now)).status).toBe("no_key");
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("makes two calls per fund and returns the translated weights", async () => {
+    vi.stubEnv("FINANCIAL_MODELING_API_KEY", "secret-key");
+    const spy = answer({ "sector-weightings": ok(sectors), "country-weightings": ok(countries) });
+    vi.stubGlobal("fetch", spy);
+    const r = await fetchBreakdowns(["VOO"], now);
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(r.status).toBe("ok");
+    const b = r.breakdowns.get("VOO")!;
+    expect(b.status).toBe("ok");
+    expect(b.sectors.map((s) => s.name)).toEqual(["Information Technology", "Energy"]);
+    expect(b.countries).toEqual([{ code: "US", weight: 1 }]);
+    expect(b.updatedAt).toBe(now.toISOString());
+  });
+
+  it("records 'none' for a fund the provider answers with nothing (404 or empty)", async () => {
+    vi.stubEnv("FINANCIAL_MODELING_API_KEY", "secret-key");
+    vi.stubGlobal("fetch", answer({ "sector-weightings": new Response("", { status: 404 }), "country-weightings": ok([]) }));
+    const r = await fetchBreakdowns(["XYZ"], now);
+    expect(r.status).toBe("ok");
+    expect(r.breakdowns.get("XYZ")?.status).toBe("none");
+  });
+
+  it("stops on a usage limit and returns what it already had", async () => {
+    vi.stubEnv("FINANCIAL_MODELING_API_KEY", "secret-key");
+    const spy = vi.fn(async () => new Response("limit", { status: 429 }));
+    vi.stubGlobal("fetch", spy);
+    const r = await fetchBreakdowns(Array.from({ length: 30 }, (_, i) => `T${i}`), now);
+    expect(r.status).toBe("limit");
+    expect(r.breakdowns.size).toBe(0);
+    expect(spy.mock.calls.length).toBeLessThan(60);
+  });
+
+  it("reports a plan restriction without recording 'no data' (so saved data survives)", async () => {
+    vi.stubEnv("FINANCIAL_MODELING_API_KEY", "secret-key");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("upgrade", { status: 402 })));
+    const r = await fetchBreakdowns(["VOO", "QQQ"], now);
+    expect(r.status).toBe("restricted");
+    expect(r.breakdowns.size).toBe(0);
+  });
+
+  it("one restricted fund does not block the others", async () => {
+    vi.stubEnv("FINANCIAL_MODELING_API_KEY", "secret-key");
+    vi.stubGlobal("fetch", answer({ ODD: new Response("x", { status: 403 }), "sector-weightings": ok(sectors), "country-weightings": ok(countries) }));
+    const r = await fetchBreakdowns(["ODD", "VOO"], now);
+    expect(r.status).toBe("ok");
+    expect([...r.breakdowns.keys()]).toEqual(["VOO"]);
+  });
+
+  it("survives network errors, never recording anything", async () => {
+    vi.stubEnv("FINANCIAL_MODELING_API_KEY", "secret-key");
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("boom secret-key"); }));
+    const r = await fetchBreakdowns(["VOO"], now);
+    expect(r.status).toBe("unreachable");
+    expect(r.breakdowns.size).toBe(0);
   });
 });
