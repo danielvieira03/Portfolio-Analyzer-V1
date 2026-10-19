@@ -68,8 +68,8 @@ describe("lookThroughExposure", () => {
     expect(x.sector.rows).toEqual([]);
     expect(x.sector.unclassified).toEqual({ value: 1000, weight: 1 });
     expect(x.country.unclassified.value).toBe(1000);
-    expect(x.fundsWithoutData).toBe(2);
-    expect(x.oldestBreakdown).toBeNull();
+    expect(x.sector.fundsWithoutData).toBe(2);
+    expect(x.sector.oldestBreakdown).toBeNull();
   });
 
   it("a fund can have sector data but no country data (dimensions are independent)", () => {
@@ -89,19 +89,33 @@ describe("lookThroughExposure", () => {
     const x = lookThroughExposure([pos("NEW", 300)], {});
     expect(x.sector.unclassified.value).toBe(300);
     expect(x.country.unclassified.value).toBe(300);
-    expect(x.fundsWithoutData).toBe(0);
+    expect(x.sector.fundsWithoutData).toBe(0);
   });
 
-  it("covers bond funds and alternatives when asked, and ignores them by default", () => {
+  it("bond funds count in the country view only, never in the sector view (and are not Unclassified there)", () => {
     const bond = pos("BND", 1000, { assetClass: "Fixed Income" });
+    const stock = pos("AAPL", 1000, { sector: "Information Technology", country: "US" });
+    const saved = { BND: bd([], [["US", 0.9], ["CA", 0.1]]) };
+    const x = lookThroughExposure([bond, stock], saved);
+    expect(x.sector.total).toBe(1000);
+    expect(x.sector.unclassified.value).toBe(0);
+    expect(x.sector.rows.map((r) => r.key)).toEqual(["Information Technology"]);
+    expect(x.country.total).toBe(2000);
+    expect(val(x.country.rows, "US")).toBeCloseTo(1900);
+    expect(val(x.country.rows, "CA")).toBeCloseTo(100);
+  });
+
+  it("a bond fund with no data is Unclassified in the country view, not in sectors; alternatives are out unless asked", () => {
+    const bond = pos("XBD", 400, { assetClass: "Fixed Income" });
     const gold = pos("GLD", 500, { assetClass: "Alternatives" });
-    const saved = { BND: bd([], [["US", 0.9], ["CA", 0.1]]), GLD: bd([], [], { status: "none" }) };
-    expect(lookThroughExposure([bond, gold], saved).country.total).toBe(0);
-    const x = lookThroughExposure([bond, gold], saved, { assetClasses: ["Fixed Income", "Alternatives"] });
-    expect(x.country.total).toBe(1500);
-    expect(val(x.country.rows, "US")).toBeCloseTo(900);
-    expect(x.country.unclassified.value).toBeCloseTo(500);
-    expect(x.fundsWithoutData).toBe(1);
+    const x = lookThroughExposure([bond, gold], {});
+    expect(x.sector.total).toBe(0);
+    expect(x.country.total).toBe(400);
+    expect(x.country.unclassified.value).toBe(400);
+    expect(x.country.fundsWithoutData).toBe(1);
+    const all = lookThroughExposure([bond, gold], {}, { countryClasses: ["Equities", "Fixed Income", "Alternatives"], sectorClasses: ["Alternatives"] });
+    expect(all.country.total).toBe(900);
+    expect(all.sector.total).toBe(500);
   });
 
   it("finds breakdowns by upper-case ticker and reports the oldest one used", () => {
@@ -110,13 +124,13 @@ describe("lookThroughExposure", () => {
       QQQ: bd([["Energy", 1]], [], { updatedAt: "2026-09-01T00:00:00.000Z" }),
     });
     expect(x.sector.unclassified.value).toBe(0);
-    expect(x.oldestBreakdown).toBe("2026-09-01T00:00:00.000Z");
+    expect(x.sector.oldestBreakdown).toBe("2026-09-01T00:00:00.000Z");
   });
 
   it("sorts biggest first and handles an empty portfolio", () => {
     const x = lookThroughExposure([etf("F", 1000)], { F: bd([["Energy", 0.2], ["Utilities", 0.8]], []) });
     expect(x.sector.rows.map((r) => r.key)).toEqual(["Utilities", "Energy"]);
     const empty = lookThroughExposure([], {});
-    expect(empty.sector).toEqual({ total: 0, classified: 0, unclassified: { value: 0, weight: 0 }, rows: [] });
+    expect(empty.sector).toEqual({ total: 0, classified: 0, unclassified: { value: 0, weight: 0 }, rows: [], fundsWithoutData: 0, oldestBreakdown: null });
   });
 });

@@ -3,7 +3,7 @@ import { marketValue } from "./calc";
 import { DIVERSIFIED } from "./sectors";
 import type { EtfBreakdown, HoldingClass, Position } from "./types";
 
-/** Label for the part of a portfolio whose sector or country is not known (a fund with missing weights, a stock with no data yet). */
+/** Label for the part of a view whose sector or country is not known (a fund with missing weights, a stock with no data yet). */
 export const UNCLASSIFIED = "Unclassified";
 
 export interface ExposureRow {
@@ -16,7 +16,7 @@ export interface ExposureRow {
 }
 
 export interface ExposureView {
-  /** Market value of everything counted, classified or not. */
+  /** Market value of everything counted in this view, classified or not. */
   total: number;
   /** The part that has a sector / country. */
   classified: number;
@@ -24,29 +24,34 @@ export interface ExposureView {
   unclassified: { value: number; weight: number };
   /** Sectors / countries, biggest first. */
   rows: ExposureRow[];
+  /** Funds counted in this view that have no usable breakdown at all (no record, or the provider had nothing). */
+  fundsWithoutData: number;
+  /** Oldest "last updated" among the breakdowns used in this view (ISO), or null if none were used. */
+  oldestBreakdown: string | null;
 }
 
 export interface LookThroughExposure {
   sector: ExposureView;
   country: ExposureView;
-  /** Funds counted that have no usable breakdown at all (no record, or the provider had nothing). */
-  fundsWithoutData: number;
-  /** Oldest "last updated" among the breakdowns used (ISO), or null if none were used. */
-  oldestBreakdown: string | null;
 }
 
 export interface ExposureOptions {
-  /** Which asset classes to count. Default: Equities only (cash is never a position). */
-  assetClasses?: readonly HoldingClass[];
+  /** Asset classes counted in the sector view. Default: Equities only (sector charts are about equities). */
+  sectorClasses?: readonly HoldingClass[];
+  /** Asset classes counted in the country view. Default: Equities and Fixed Income (bond funds have a country split). */
+  countryClasses?: readonly HoldingClass[];
 }
 
-type Parts = { key: string; fraction: number }[];
+type Dimension = "sector" | "country";
 
 /**
  * The ONE place that works out where a portfolio's money sits by sector and by country, for individual stocks AND
  * funds (ETFs, bond funds, alternatives). An individual stock counts 100% to its own sector and country. A fund's
  * value is split using its saved breakdown ($10,000 in a fund that is 30% Technology adds $3,000 to Technology);
  * whatever the weights don't cover (under 100%, no data, names the app can't match) goes to "Unclassified".
+ *
+ * Each view has its own scope: by default sectors count equities only, countries count equities and bond funds.
+ * A holding outside a view's scope is simply not part of it (it is NOT unclassified).
  *
  * Every exposure feature (cards, charts, risk checks, future bond-duration views) must use this, so it covers
  * stocks, ETFs, bond funds and alternatives, not equities only.
@@ -56,22 +61,23 @@ export function lookThroughExposure(
   breakdowns: Record<string, EtfBreakdown>,
   opts: ExposureOptions = {},
 ): LookThroughExposure {
-  const classes = opts.assetClasses ?? ["Equities"];
-  const sectorValues = new Map<string, number>();
-  const countryValues = new Map<string, number>();
-  const unclassified = { sector: 0, country: 0 };
+  return {
+    sector: dimensionView(positions, breakdowns, "sector", opts.sectorClasses ?? ["Equities"]),
+    country: dimensionView(positions, breakdowns, "country", opts.countryClasses ?? ["Equities", "Fixed Income"]),
+  };
+}
+
+function dimensionView(
+  positions: Position[],
+  breakdowns: Record<string, EtfBreakdown>,
+  dim: Dimension,
+  classes: readonly HoldingClass[],
+): ExposureView {
+  const values = new Map<string, number>();
   let total = 0;
+  let unclassified = 0;
   let fundsWithoutData = 0;
   let oldest: string | null = null;
-
-  const spread = (value: number, parts: Parts, into: Map<string, number>, other: "sector" | "country") => {
-    let used = 0;
-    for (const { key, fraction } of parts) {
-      into.set(key, (into.get(key) ?? 0) + value * fraction);
-      used += fraction;
-    }
-    unclassified[other] += value * Math.max(0, 1 - used);
-  };
 
   for (const p of positions) {
     if (!classes.includes(p.assetClass)) continue;
@@ -79,51 +85,50 @@ export function lookThroughExposure(
     if (!(value > 0)) continue;
     total += value;
 
-    const isStock = p.assetClass === "Equities" && p.sector !== DIVERSIFIED;
-    if (isStock) {
-      spread(value, p.sector ? [{ key: p.sector, fraction: 1 }] : [], sectorValues, "sector");
-      spread(value, p.country ? [{ key: p.country, fraction: 1 }] : [], countryValues, "country");
+    // An individual stock: 100% to its own sector / country.
+    if (p.assetClass === "Equities" && p.sector !== DIVERSIFIED) {
+      const key = dim === "sector" ? p.sector : p.country;
+      if (key) values.set(key, (values.get(key) ?? 0) + value);
+      else unclassified += value;
       continue;
     }
 
+    // A fund: split by its saved weights.
     const b = breakdowns[p.ticker.toUpperCase()];
     if (!b || b.status !== "ok") {
       fundsWithoutData++;
-      unclassified.sector += value;
-      unclassified.country += value;
+      unclassified += value;
       continue;
     }
     if (oldest === null || b.updatedAt < oldest) oldest = b.updatedAt;
-    spread(value, normalise(b.sectors.map((s) => ({ key: s.name, fraction: s.weight }))), sectorValues, "sector");
-    spread(value, normalise(b.countries.map((c) => ({ key: c.code, fraction: c.weight }))), countryValues, "country");
+    const parts = dim === "sector" ? b.sectors.map((s) => ({ key: s.name, fraction: s.weight })) : b.countries.map((c) => ({ key: c.code, fraction: c.weight }));
+    let used = 0;
+    for (const { key, fraction } of normalise(parts)) {
+      values.set(key, (values.get(key) ?? 0) + value * fraction);
+      used += fraction;
+    }
+    unclassified += value * Math.max(0, 1 - used);
   }
 
+  const label = dim === "sector" ? (k: string) => k : countryName;
+  const rows = [...values.entries()]
+    .filter(([, value]) => value > 0)
+    .map(([key, value]) => ({ key, label: label(key), value, weight: total === 0 ? 0 : value / total }))
+    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
+  const rest = Math.max(0, unclassified);
   return {
-    sector: view(total, sectorValues, unclassified.sector, (k) => k),
-    country: view(total, countryValues, unclassified.country, countryName),
+    total,
+    classified: rows.reduce((t, r) => t + r.value, 0),
+    unclassified: { value: rest, weight: total === 0 ? 0 : rest / total },
+    rows,
     fundsWithoutData,
     oldestBreakdown: oldest,
   };
 }
 
 /** Drops empty weights and scales down a set that adds up to more than 100% (rounding in the data). */
-function normalise(parts: Parts): Parts {
+function normalise(parts: { key: string; fraction: number }[]) {
   const valid = parts.filter((p) => p.fraction > 0);
   const sum = valid.reduce((t, p) => t + p.fraction, 0);
   return sum > 1 ? valid.map((p) => ({ key: p.key, fraction: p.fraction / sum })) : valid;
-}
-
-function view(total: number, values: Map<string, number>, unclassifiedValue: number, label: (key: string) => string): ExposureView {
-  const rows = [...values.entries()]
-    .filter(([, value]) => value > 0)
-    .map(([key, value]) => ({ key, label: label(key), value, weight: total === 0 ? 0 : value / total }))
-    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
-  const classified = rows.reduce((t, r) => t + r.value, 0);
-  const rest = Math.max(0, unclassifiedValue);
-  return {
-    total,
-    classified,
-    unclassified: { value: rest, weight: total === 0 ? 0 : rest / total },
-    rows,
-  };
 }
