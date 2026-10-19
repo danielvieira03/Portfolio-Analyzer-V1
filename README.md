@@ -1,6 +1,6 @@
 # Portfolio Analyzer
 
-**Version 1.1** — A dark, terminal-style web app for analyzing an investment portfolio: allocation, sector tilts
+**Version 1.2** — A dark, terminal-style web app for analyzing an investment portfolio: allocation, sector tilts
 versus the S&P 500, a risk profile, and a full holdings ledger, with automatic prices and CSV / Excel / screenshot import.
 
 Each visitor's portfolio is saved **in their own browser**: no accounts, no login, and no server database, so
@@ -63,7 +63,8 @@ one call per holding for every open tab (plus 1 to 2 calls per ETF or bond fund 
 provider, and keep the link private if you don't want strangers using your keys.
 
 ## Releases
-Releases are tagged on GitHub. The current release is **v1.1**.
+Releases are tagged on GitHub. The current release is **v1.2**.
+- **v1.2** — ETF look-through: the equity sector chart, the Risk sector comparison and the country map now split each ETF across its underlying sectors and countries (bond funds count on the map too), with an "Unclassified" slice for missing data. Fund weights are saved in your browser and refreshed weekly.
 - **v1.1** — Country column for stocks (ETFs show "Diversified") and the **Individual Stock Exposure by Country** world map on the Dashboard; prices refresh every 2 minutes.
 - **v1.0** — browser-based private portfolios, automatic prices and autofill, the fund library, backup and restore, and the Risk Analysis tab.
 
