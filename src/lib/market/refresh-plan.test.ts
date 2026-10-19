@@ -62,19 +62,24 @@ describe("breakdownsDue", () => {
   const mine = [h("AAPL", "Equities", "Information Technology"), h("VOO", "Equities", "Diversified"), h("BND", "Fixed Income"), h("GLD", "Alternatives")];
 
   it("asks for equity ETFs and bond funds with nothing saved, not for stocks or alternatives", () => {
-    expect(breakdownsDue(mine, {}, now, 7)).toEqual(["VOO", "BND"]);
+    expect(breakdownsDue(mine, {}, now, 7)).toEqual([{ ticker: "VOO", sectors: true }, { ticker: "BND", sectors: false }]);
   });
   it("leaves funds alone until their data is a week old", () => {
     const fresh = { VOO: saved("2026-10-12T12:00:01.000Z"), BND: saved("2026-10-18T00:00:00.000Z") };
     expect(breakdownsDue(mine, fresh, now, 7)).toEqual([]);
     const old = { VOO: saved("2026-10-11T12:00:00.000Z"), BND: saved("2026-10-18T00:00:00.000Z") };
-    expect(breakdownsDue(mine, old, now, 7)).toEqual(["VOO"]);
+    expect(breakdownsDue(mine, old, now, 7)).toEqual([{ ticker: "VOO", sectors: true }]);
   });
   it("retries a 'no data' answer only after the same week", () => {
     expect(breakdownsDue(mine, { VOO: saved("2026-10-17T00:00:00.000Z", "none"), BND: saved("2026-10-17T00:00:00.000Z", "none") }, now, 7)).toEqual([]);
   });
+  it("a ticker held as both an equity ETF and a bond fund still gets its sectors", () => {
+    for (const list of [[h("X", "Fixed Income"), h("X", "Equities", "Diversified")], [h("X", "Equities", "Diversified"), h("X", "Fixed Income")]]) {
+      expect(breakdownsDue(list, {}, now, 7)).toEqual([{ ticker: "X", sectors: true }]);
+    }
+  });
   it("lists a ticker once and in upper case, and treats a damaged date as due", () => {
-    expect(breakdownsDue([h("voo", "Equities", "Diversified"), h("VOO", "Equities", "Diversified")], {}, now, 7)).toEqual(["VOO"]);
-    expect(breakdownsDue([h("VOO", "Equities", "Diversified")], { VOO: saved("not a date") }, now, 7)).toEqual(["VOO"]);
+    expect(breakdownsDue([h("voo", "Equities", "Diversified"), h("VOO", "Equities", "Diversified")], {}, now, 7)).toEqual([{ ticker: "VOO", sectors: true }]);
+    expect(breakdownsDue([h("VOO", "Equities", "Diversified")], { VOO: saved("not a date") }, now, 7)).toEqual([{ ticker: "VOO", sectors: true }]);
   });
 });

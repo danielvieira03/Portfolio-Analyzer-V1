@@ -2,6 +2,12 @@ import { countryByName } from "@/config/countries";
 import { FMP_SECTOR_MAP } from "@/config/market";
 import type { EtfBreakdown } from "@/lib/portfolio/types";
 
+/** One fund to look up. Bond funds skip the sector list (FMP only says "Cash & Others"), saving a call. */
+export interface FundRequest {
+  ticker: string;
+  sectors: boolean;
+}
+
 /** A weight from the provider as a fraction: 30.5 or "30.5%" gives 0.305. Null for anything unusable. */
 export function parseWeight(v: unknown): number | null {
   const n = typeof v === "number" ? v : typeof v === "string" ? Number(v.replace("%", "").trim()) : NaN;

@@ -2,8 +2,9 @@
 // the server only fetches prices for the tickers it is sent. Pure logic with the store and the
 // price fetch passed in, so it is tested without a browser or the network.
 
-import { BREAKDOWN_MAX_PER_REFRESH, BREAKDOWN_REFRESH_DAYS, BREAKDOWN_RETRY_MINUTES, PRICE_REFRESH_MINUTES } from "@/config/market";
+import { BREAKDOWN_MAX_PER_REFRESH, BREAKDOWN_REFRESH_DAYS, PRICE_REFRESH_MINUTES } from "@/config/market";
 import type { BreakdownStatus, FetchStatus } from "@/lib/market/fmp";
+import type { FundRequest } from "@/lib/market/breakdown";
 import type { MarketProfile } from "@/lib/market/profile";
 import { breakdownsDue, isStale, planPriceUpdates } from "@/lib/market/refresh-plan";
 import { applyBreakdowns, applyPrices } from "@/lib/portfolio/ledger";
@@ -38,9 +39,7 @@ export interface RefreshDeps {
   store: Pick<PortfolioStore, "getSnapshot" | "update">;
   fetchPrices: (tickers: string[]) => Promise<PriceFetchResult>;
   /** Looks up fund sector / country weights. Leave out to skip that part. */
-  fetchBreakdowns?: (tickers: string[]) => Promise<BreakdownFetchResult>;
-  /** Remembers (in memory) when the automatic refresh may try the fund lookup again after a problem. */
-  breakdownGate?: { notBefore: number };
+  fetchBreakdowns?: (funds: FundRequest[]) => Promise<BreakdownFetchResult>;
   now?: () => Date;
   minutes?: number;
 }
@@ -74,19 +73,17 @@ export async function runPriceRefresh(force: boolean, deps: RefreshDeps): Promis
   }
   const status = result.status === "ok" ? "updated" : result.status;
   // Fund weights only when prices just worked (a limit or an outage would only fail again).
-  const breakdown = result.status === "ok" ? await refreshBreakdowns(force, deps, now()) : "none";
+  const breakdown = result.status === "ok" ? await refreshBreakdowns(deps, now()) : "none";
   return { status, updated: plan.found.length, unavailable: plan.missing.length, breakdown };
 }
 
 /**
  * The weekly lookup of what each fund holds. Never throws and never erases anything: on a limit, a plan restriction
- * or a failure the saved weights stay as they are. After a problem the automatic refresh waits before trying again
- * (a manual refresh always tries).
+ * or a failure the saved weights stay as they are, and the next refresh simply tries again.
  */
-async function refreshBreakdowns(force: boolean, deps: RefreshDeps, now: Date): Promise<BreakdownOutcome> {
-  const { fetchBreakdowns, breakdownGate: gate } = deps;
+async function refreshBreakdowns(deps: RefreshDeps, now: Date): Promise<BreakdownOutcome> {
+  const { fetchBreakdowns } = deps;
   if (!fetchBreakdowns) return "none";
-  if (!force && gate && now.getTime() < gate.notBefore) return "none";
   const { doc } = deps.store.getSnapshot();
   const due = breakdownsDue(doc.holdings, doc.etfBreakdowns, now, BREAKDOWN_REFRESH_DAYS).slice(0, BREAKDOWN_MAX_PER_REFRESH);
   if (due.length === 0) return "none";
@@ -101,7 +98,6 @@ async function refreshBreakdowns(force: boolean, deps: RefreshDeps, now: Date): 
   if (result.status === "no_key") return "none";
 
   const problem = result.status === "limit" || result.status === "restricted" || result.status === "unreachable";
-  if (gate && (problem || due.some((t) => !(t in result.breakdowns)))) gate.notBefore = now.getTime() + BREAKDOWN_RETRY_MINUTES * 60_000;
   if (problem) return result.status as "limit" | "restricted" | "unreachable";
   return Object.keys(result.breakdowns).length > 0 ? "updated" : "none";
 }

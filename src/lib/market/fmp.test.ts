@@ -60,6 +60,7 @@ describe("fetchBreakdowns", () => {
   const sectors = [{ symbol: "VOO", sector: "Technology", weightPercentage: 38.72 }, { symbol: "VOO", sector: "Energy", weightPercentage: 3.48 }];
   const countries = [{ country: "United States", weightPercentage: "100%" }];
   const now = new Date("2026-10-18T12:00:00Z");
+  const eq = (...t: string[]) => t.map((ticker) => ({ ticker, sectors: true }));
   const answer = (map: Record<string, Response | (() => Response)>) =>
     vi.fn(async (url: string) => {
       const hit = Object.entries(map).find(([k]) => url.includes(k));
@@ -71,7 +72,7 @@ describe("fetchBreakdowns", () => {
     vi.stubEnv("FINANCIAL_MODELING_API_KEY", "");
     const spy = vi.fn();
     vi.stubGlobal("fetch", spy);
-    expect((await fetchBreakdowns(["VOO"], now)).status).toBe("no_key");
+    expect((await fetchBreakdowns(eq("VOO"), now)).status).toBe("no_key");
     expect(spy).not.toHaveBeenCalled();
   });
 
@@ -79,7 +80,7 @@ describe("fetchBreakdowns", () => {
     vi.stubEnv("FINANCIAL_MODELING_API_KEY", "secret-key");
     const spy = answer({ "sector-weightings": ok(sectors), "country-weightings": ok(countries) });
     vi.stubGlobal("fetch", spy);
-    const r = await fetchBreakdowns(["VOO"], now);
+    const r = await fetchBreakdowns(eq("VOO"), now);
     expect(spy).toHaveBeenCalledTimes(2);
     expect(r.status).toBe("ok");
     const b = r.breakdowns.get("VOO")!;
@@ -92,7 +93,7 @@ describe("fetchBreakdowns", () => {
   it("records 'none' for a fund the provider answers with nothing (404 or empty)", async () => {
     vi.stubEnv("FINANCIAL_MODELING_API_KEY", "secret-key");
     vi.stubGlobal("fetch", answer({ "sector-weightings": new Response("", { status: 404 }), "country-weightings": ok([]) }));
-    const r = await fetchBreakdowns(["XYZ"], now);
+    const r = await fetchBreakdowns(eq("XYZ"), now);
     expect(r.status).toBe("ok");
     expect(r.breakdowns.get("XYZ")?.status).toBe("none");
   });
@@ -101,7 +102,7 @@ describe("fetchBreakdowns", () => {
     vi.stubEnv("FINANCIAL_MODELING_API_KEY", "secret-key");
     const spy = vi.fn(async () => new Response("limit", { status: 429 }));
     vi.stubGlobal("fetch", spy);
-    const r = await fetchBreakdowns(Array.from({ length: 30 }, (_, i) => `T${i}`), now);
+    const r = await fetchBreakdowns(eq(...Array.from({ length: 30 }, (_, i) => `T${i}`)), now);
     expect(r.status).toBe("limit");
     expect(r.breakdowns.size).toBe(0);
     expect(spy.mock.calls.length).toBeLessThan(60);
@@ -110,7 +111,7 @@ describe("fetchBreakdowns", () => {
   it("reports a plan restriction without recording 'no data' (so saved data survives)", async () => {
     vi.stubEnv("FINANCIAL_MODELING_API_KEY", "secret-key");
     vi.stubGlobal("fetch", vi.fn(async () => new Response("upgrade", { status: 402 })));
-    const r = await fetchBreakdowns(["VOO", "QQQ"], now);
+    const r = await fetchBreakdowns(eq("VOO", "QQQ"), now);
     expect(r.status).toBe("restricted");
     expect(r.breakdowns.size).toBe(0);
   });
@@ -118,7 +119,7 @@ describe("fetchBreakdowns", () => {
   it("one restricted fund does not block the others", async () => {
     vi.stubEnv("FINANCIAL_MODELING_API_KEY", "secret-key");
     vi.stubGlobal("fetch", answer({ ODD: new Response("x", { status: 403 }), "sector-weightings": ok(sectors), "country-weightings": ok(countries) }));
-    const r = await fetchBreakdowns(["ODD", "VOO"], now);
+    const r = await fetchBreakdowns(eq("ODD", "VOO"), now);
     expect(r.status).toBe("ok");
     expect([...r.breakdowns.keys()]).toEqual(["VOO"]);
   });
@@ -126,8 +127,21 @@ describe("fetchBreakdowns", () => {
   it("survives network errors, never recording anything", async () => {
     vi.stubEnv("FINANCIAL_MODELING_API_KEY", "secret-key");
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("boom secret-key"); }));
-    const r = await fetchBreakdowns(["VOO"], now);
+    const r = await fetchBreakdowns(eq("VOO"), now);
     expect(r.status).toBe("unreachable");
     expect(r.breakdowns.size).toBe(0);
   });
+
+  it("skips the sector call for a bond fund (one call) and still saves its countries", async () => {
+    vi.stubEnv("FINANCIAL_MODELING_API_KEY", "secret-key");
+    const spy = answer({ "country-weightings": ok([{ country: "United States", weightPercentage: "93.29%" }, { country: "Supranational", weightPercentage: "1.41%" }]) });
+    vi.stubGlobal("fetch", spy);
+    const r = await fetchBreakdowns([{ ticker: "BND", sectors: false }, { ticker: "VOO", sectors: true }], now);
+    const urls = spy.mock.calls.map((c) => String(c[0]));
+    expect(urls.filter((u) => u.includes("BND") && u.includes("sector-weightings"))).toHaveLength(0);
+    expect(urls.filter((u) => u.includes("BND") && u.includes("country-weightings"))).toHaveLength(1);
+    expect(urls.filter((u) => u.includes("VOO"))).toHaveLength(2);
+    expect(r.breakdowns.get("BND")).toMatchObject({ status: "ok", sectors: [], countries: [{ code: "US", weight: expect.closeTo(0.9329) }] });
+  });
 });
+

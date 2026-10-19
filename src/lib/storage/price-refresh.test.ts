@@ -130,10 +130,13 @@ describe("runPriceRefresh: fund breakdowns", () => {
 
   it("looks up only the funds that are due (once per week) and saves the answers", async () => {
     const store = setup();
-    const fetchBreakdowns = vi.fn(async (t: string[]) => ({ status: "ok" as const, breakdowns: Object.fromEntries(t.map((x) => [x, bd()])) }));
+    const fetchBreakdowns = vi.fn(async (f: { ticker: string; sectors: boolean }[]) => ({ status: "ok" as const, breakdowns: Object.fromEntries(f.map((x) => [x.ticker, bd()])) }));
     const r = await runPriceRefresh(true, { store, fetchPrices: async () => answer(store), fetchBreakdowns, now: () => now });
     expect(r.breakdown).toBe("updated");
-    expect(fetchBreakdowns).toHaveBeenCalledWith(funds(store).map((t) => t.toUpperCase()));
+    expect((fetchBreakdowns.mock.calls[0][0]).map((f) => f.ticker)).toEqual(funds(store).map((t) => t.toUpperCase()));
+    const byTicker = Object.fromEntries(fetchBreakdowns.mock.calls[0][0].map((f) => [f.ticker, f.sectors]));
+    expect(byTicker.VOO).toBe(true); // equity ETF: sectors and countries
+    expect(byTicker.BND).toBe(false); // bond fund: countries only
     expect(Object.keys(store.getSnapshot().doc.etfBreakdowns).sort()).toEqual(funds(store).map((t) => t.toUpperCase()).sort());
     expect(store.getSnapshot().doc.isDemoData).toBe(true);
 
@@ -169,18 +172,14 @@ describe("runPriceRefresh: fund breakdowns", () => {
     expect(r).toMatchObject({ status: "updated", breakdown: "unreachable" });
   });
 
-  it("after a problem the automatic refresh waits, but the manual Refresh button still tries", async () => {
+  it("after a problem, the very next refresh (automatic or manual) tries again, with no pause", async () => {
     const store = setup();
-    const gate = { notBefore: 0 };
     const fetchBreakdowns = vi.fn(async () => ({ status: "limit" as const, breakdowns: {} }));
-    const deps = { store, fetchPrices: async () => answer(store), fetchBreakdowns, breakdownGate: gate, now: () => now, minutes: 0 };
+    const deps = { store, fetchPrices: async () => answer(store), fetchBreakdowns, now: () => now, minutes: 0 };
     await runPriceRefresh(false, deps);
-    expect(fetchBreakdowns).toHaveBeenCalledTimes(1);
-    expect(gate.notBefore).toBeGreaterThan(now.getTime());
     await runPriceRefresh(false, deps);
-    expect(fetchBreakdowns).toHaveBeenCalledTimes(1); // waiting
     await runPriceRefresh(true, deps);
-    expect(fetchBreakdowns).toHaveBeenCalledTimes(2); // manual always tries
+    expect(fetchBreakdowns).toHaveBeenCalledTimes(3);
   });
 
   it("does not look up funds when the price lookup itself failed, or when no lookup is given", async () => {
@@ -192,15 +191,15 @@ describe("runPriceRefresh: fund breakdowns", () => {
     expect((await runPriceRefresh(true, { store, fetchPrices: async () => answer(store), now: () => now })).breakdown).toBe("none");
   });
 
-  it("looks up at most 20 funds at a time", async () => {
+  it("looks up at most 50 funds at a time", async () => {
     const store = setup();
     store.update((d) => ({
       ...d,
-      holdings: Array.from({ length: 30 }, (_, i) => ({ ...d.holdings[0], id: `x${i}`, ticker: `ETF${i}`, assetClass: "Equities" as const, sector: "Diversified" })),
+      holdings: Array.from({ length: 70 }, (_, i) => ({ ...d.holdings[0], id: `x${i}`, ticker: `ETF${i}`, assetClass: "Equities" as const, sector: "Diversified" })),
     }));
     const fetchBreakdowns = vi.fn(async () => ({ status: "ok" as const, breakdowns: {} }));
     await runPriceRefresh(true, { store, fetchPrices: async () => answer(store), fetchBreakdowns, now: () => now });
-    expect((fetchBreakdowns.mock.calls[0] as unknown as [string[]])[0]).toHaveLength(20);
+    expect((fetchBreakdowns.mock.calls[0] as unknown as [unknown[]])[0]).toHaveLength(50);
   });
 
 });

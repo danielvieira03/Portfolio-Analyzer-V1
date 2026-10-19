@@ -3,7 +3,7 @@
 // The key is never logged and never part of anything returned.
 
 import type { EtfBreakdown } from "@/lib/portfolio/types";
-import { buildBreakdown } from "./breakdown";
+import { buildBreakdown, type FundRequest } from "./breakdown";
 import { parseProfile, type MarketProfile } from "./profile";
 
 const BASE = "https://financialmodelingprep.com/stable/profile";
@@ -96,24 +96,27 @@ async function fetchWeights(path: string, ticker: string, key: string): Promise<
 }
 
 /**
- * Look up the sector and country weights of many funds, a few at a time (2 calls per fund). A usage limit stops the
+ * Look up the sector and country weights of many funds, a few at a time (2 calls per equity ETF, 1 per bond fund). A usage limit stops the
  * run; a fund the plan doesn't cover, or that failed, is skipped (never recorded as "no data", so saved data stays).
  * Funds answered are always returned so they can be saved.
  */
-export async function fetchBreakdowns(tickers: string[], now: Date = new Date()): Promise<BreakdownResult> {
+export async function fetchBreakdowns(funds: FundRequest[], now: Date = new Date()): Promise<BreakdownResult> {
   const key = process.env.FINANCIAL_MODELING_API_KEY?.trim();
   const breakdowns = new Map<string, EtfBreakdown>();
   if (!key) return { status: "no_key", breakdowns };
 
-  const unique = [...new Set(tickers)];
+  const unique = [...new Map(funds.map((f) => [f.ticker, f])).values()];
   let next = 0;
   let limit = false;
   let restricted = 0;
   let errors = 0;
   const worker = async () => {
     while (!limit && next < unique.length) {
-      const ticker = unique[next++];
-      const [sectors, countries] = await Promise.all([fetchWeights("sector-weightings", ticker, key), fetchWeights("country-weightings", ticker, key)]);
+      const { ticker, sectors: wantSectors } = unique[next++];
+      const [sectors, countries] = await Promise.all([
+        wantSectors ? fetchWeights("sector-weightings", ticker, key) : Promise.resolve("empty" as const),
+        fetchWeights("country-weightings", ticker, key),
+      ]);
       const answers = [sectors, countries];
       if (answers.includes("limit")) limit = true;
       else if (answers.includes("restricted")) restricted++;

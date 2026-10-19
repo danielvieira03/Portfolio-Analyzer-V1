@@ -1,6 +1,7 @@
 // Decides what a price refresh changes. Pure: no network, no database.
 
 import type { EtfBreakdown, Position } from "@/lib/portfolio/types";
+import type { FundRequest } from "./breakdown";
 import type { MarketProfile } from "./profile";
 
 export interface PriceTarget {
@@ -49,22 +50,25 @@ export function isStale(lastUpdated: Date | null, now: Date, minutes: number): b
 /**
  * Funds whose sector / country weights should be looked up now: equity ETFs (sector "Diversified") and Fixed Income
  * funds that have no saved breakdown yet, or one `days` old or older (a "none" answer is retried only this often too).
- * Alternatives are not looked up (they are outside the exposure views). Upper-case tickers, no repeats.
+ * Alternatives are not looked up (they are outside the exposure views). Upper-case tickers, no repeats. Bond funds
+ * are asked for countries only (`sectors: false`).
  */
 export function breakdownsDue(
   holdings: Pick<Position, "ticker" | "assetClass" | "sector">[],
   saved: Record<string, EtfBreakdown>,
   now: Date,
   days: number,
-): string[] {
-  const due = new Set<string>();
+): FundRequest[] {
+  const due = new Map<string, FundRequest>();
   for (const h of holdings) {
     const isFund = h.assetClass === "Fixed Income" || (h.assetClass === "Equities" && h.sector === "Diversified");
     if (!isFund) continue;
     const ticker = h.ticker.toUpperCase();
     const b = saved[ticker];
     const age = b ? now.getTime() - Date.parse(b.updatedAt) : Infinity;
-    if (!(age < days * 86_400_000)) due.add(ticker);
+    if (age < days * 86_400_000) continue;
+    // A ticker held as an equity ETF anywhere still gets its sectors.
+    due.set(ticker, { ticker, sectors: h.assetClass === "Equities" || (due.get(ticker)?.sectors ?? false) });
   }
-  return [...due];
+  return [...due.values()];
 }
