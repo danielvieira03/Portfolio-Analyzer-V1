@@ -1,5 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { COUNTRIES, countryByCode, countryByNumeric, countryName } from "./countries";
+import { COUNTRIES, countryByCode, countryByName, countryByNumeric, countryName } from "./countries";
+
+describe("countryByName", () => {
+  it("finds the app's own names, ignoring case and accents", () => {
+    expect(countryByName("United States")?.code).toBe("US");
+    expect(countryByName("  germany ")?.code).toBe("DE");
+    expect(countryByName("Côte d'Ivoire")?.code).toBe("CI");
+    expect(countryByName("Curacao")?.code).toBe("CW");
+  });
+  it("understands the provider's alternative spellings", () => {
+    expect(countryByName("Korea")?.code).toBe("KR");
+    expect(countryByName("Korea (South)")?.code).toBe("KR");
+    expect(countryByName("Russian Federation")?.code).toBe("RU");
+    expect(countryByName("Hong Kong SAR")?.code).toBe("HK");
+    expect(countryByName("Czech Republic")?.code).toBe("CZ");
+    expect(countryByName("Türkiye")?.code).toBe("TR");
+    expect(countryByName("Taiwan, Province of China")?.code).toBe("TW");
+    expect(countryByName("Ivory Coast")?.code).toBe("CI");
+  });
+  it("gives nothing for things that are not countries", () => {
+    expect(countryByName("Supranational")).toBeUndefined();
+    expect(countryByName("Cash & Others")).toBeUndefined();
+    expect(countryByName("")).toBeUndefined();
+    expect(countryByName(null)).toBeUndefined();
+  });
+  it("every country's own name finds that country", () => {
+    for (const [code, , name] of COUNTRIES) expect(countryByName(name)?.code).toBe(code);
+  });
+});
 
 describe("COUNTRIES", () => {
   it("has the 249+ ISO countries with unique codes and ids", () => {

@@ -268,6 +268,67 @@ const BY_NUMERIC = new Map<number, Country>(COUNTRIES.map(([code, numeric, name]
 export const countryByCode = (code: string | null | undefined): Country | undefined =>
   code ? BY_CODE.get(code.toUpperCase()) : undefined;
 
+/** Other spellings the market data provider uses, mapped to a code (keys are already in `nameKey` form). */
+const NAME_ALIASES: Record<string, string> = {
+  korea: "KR",
+  "korea south": "KR",
+  "republic of korea": "KR",
+  "korea republic of": "KR",
+  "korea north": "KP",
+  "united states of america": "US",
+  usa: "US",
+  uk: "GB",
+  "great britain": "GB",
+  "russian federation": "RU",
+  "czech republic": "CZ",
+  turkiye: "TR",
+  "viet nam": "VN",
+  "hong kong sar": "HK",
+  "hong kong sar china": "HK",
+  "china hong kong": "HK",
+  macau: "MO",
+  "macau sar china": "MO",
+  "taiwan province of china": "TW",
+  "taiwan china": "TW",
+  uae: "AE",
+  "brunei": "BN",
+  "ivory coast": "CI",
+  "cote divoire": "CI",
+  "congo democratic republic": "CD",
+  "democratic republic of the congo": "CD",
+  "congo republic": "CG",
+  "republic of the congo": "CG",
+  burma: "MM",
+  swaziland: "SZ",
+  "cabo verde": "CV",
+  macedonia: "MK",
+  "the netherlands": "NL",
+  "netherlands the": "NL",
+  "vatican city state": "VA",
+  "holy see": "VA",
+  "palestinian territories": "PS",
+};
+
+/** Lower-case, no accents, letters and digits only (single spaces), so spellings compare equal. */
+const nameKey = (s: string): string =>
+  s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+const BY_NAME = new Map<string, string>(COUNTRIES.map(([code, , name]) => [nameKey(name), code]));
+
+/** A country by name as a data provider might write it (case, accents and common alternative spellings are tolerated). */
+export const countryByName = (name: string | null | undefined): Country | undefined => {
+  if (!name) return undefined;
+  const key = nameKey(name);
+  const code = BY_NAME.get(key) ?? NAME_ALIASES[key];
+  return code ? BY_CODE.get(code) : undefined;
+};
+
 /** A country by its ISO numeric id (as used by the world map data). */
 export const countryByNumeric = (id: number): Country | undefined => BY_NUMERIC.get(id);
 
