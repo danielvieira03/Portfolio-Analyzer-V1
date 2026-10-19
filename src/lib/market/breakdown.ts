@@ -1,5 +1,5 @@
 import { countryByName } from "@/config/countries";
-import { FMP_SECTOR_MAP } from "@/config/market";
+import { BREAKDOWN_MAPPING_VERSION, FMP_SECTOR_MAP } from "@/config/market";
 import type { EtfBreakdown } from "@/lib/portfolio/types";
 
 /** The sector translation, matched without regard to capital letters. */
@@ -53,5 +53,6 @@ export function buildBreakdown(sectorJson: unknown, countryJson: unknown, now: D
     countries,
     updatedAt: now.toISOString(),
     status: sectors.length > 0 || countries.length > 0 ? "ok" : "none",
+    mapping: BREAKDOWN_MAPPING_VERSION,
   };
 }

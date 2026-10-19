@@ -34,6 +34,8 @@ const breakdownSchema = z.object({
   countries: z.array(z.object({ code: z.string().regex(/^[A-Z]{2}$/), weight: z.number().finite().gt(0).max(1) })).max(300),
   updatedAt: isoTime,
   status: z.enum(["ok", "none"]),
+  // Added in v1.2.1: saves made before it have none, which counts as the first version.
+  mapping: z.number().int().min(1).max(1000).optional(),
 });
 const breakdownsSchema = z.record(z.string().min(1).max(12), breakdownSchema).refine((r) => Object.keys(r).length <= MAX_FUNDS, "Too many funds");
 

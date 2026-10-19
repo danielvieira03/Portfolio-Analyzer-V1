@@ -157,4 +157,12 @@ describe("fund breakdown compatibility", () => {
     const r = parseBackup(JSON.stringify(file));
     expect(r.ok && r.doc.etfBreakdowns).toEqual({});
   });
+  it("loads fund data saved before the translation version existed (counts as version 1) and keeps a saved version", () => {
+    const old = { ...doc(), etfBreakdowns: { VOO: saved } };
+    expect(parseStoredDoc(JSON.stringify(old))?.etfBreakdowns.VOO.mapping).toBeUndefined();
+    const withVersion = { ...doc(), etfBreakdowns: { VOO: { ...saved, mapping: 2 } } };
+    expect(parseStoredDoc(JSON.stringify(withVersion))?.etfBreakdowns.VOO.mapping).toBe(2);
+    const r = parseBackup(exportBackup(withVersion, now));
+    expect(r.ok && r.doc.etfBreakdowns.VOO.mapping).toBe(2);
+  });
 });

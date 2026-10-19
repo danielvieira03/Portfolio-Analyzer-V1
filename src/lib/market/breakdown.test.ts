@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { BREAKDOWN_MAPPING_VERSION } from "@/config/market";
 import { buildBreakdown, parseCountryWeights, parseSectorWeights, parseWeight } from "./breakdown";
 
 // Shapes copied from real FMP answers (VOO / VXUS / BND).
@@ -106,6 +107,7 @@ describe("buildBreakdown", () => {
     const b = buildBreakdown(vooSectors, vxusCountries, now);
     expect(b.status).toBe("ok");
     expect(b.updatedAt).toBe("2026-10-18T12:00:00.000Z");
+    expect(b.mapping).toBe(BREAKDOWN_MAPPING_VERSION);
     expect(b.sectors).toHaveLength(4);
     expect(b.countries).toHaveLength(3);
   });

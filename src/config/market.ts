@@ -45,8 +45,8 @@ export const FMP_SECTOR_MAP: Record<string, string> = {
 };
 
 /**
- * Saved fund breakdowns older than this are looked up again, even if they are less than a week old. Raise it
- * (to the current date and time) whenever the translation of the provider's sector or country names is
- * improved, so visitors don't keep a partly translated copy for a week.
+ * Version of the translation of the provider's sector and country names. Each saved fund breakdown records the
+ * version it was made with; one made with an older version is looked up again on the next refresh, even if it is
+ * under a week old. Add 1 whenever that translation is improved, so nobody keeps a partly translated copy.
  */
-export const BREAKDOWN_MAPPING_UPDATED = "2026-10-19T02:40:00.000Z";
+export const BREAKDOWN_MAPPING_VERSION = 2;

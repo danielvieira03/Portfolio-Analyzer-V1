@@ -16,6 +16,8 @@ export interface EtfBreakdown {
   /** ISO timestamp of the last lookup (used to refresh about weekly). */
   updatedAt: string;
   status: "ok" | "none";
+  /** Which version of the name translation made this (`BREAKDOWN_MAPPING_VERSION`). Missing = the first version. */
+  mapping?: number;
 }
 
 /** A position as the math functions see it — plain numbers, no database types. */
