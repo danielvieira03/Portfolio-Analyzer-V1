@@ -1,6 +1,6 @@
 # Portfolio Analyzer
 
-**Version 1.5** — A dark, terminal-style web app for analyzing an investment portfolio: allocation, sector tilts
+**Version 1.6** — A dark, terminal-style web app for analyzing an investment portfolio: allocation, sector tilts
 versus the S&P 500, a risk profile, and a full holdings ledger, with automatic prices and CSV / Excel / screenshot import.
 
 Each visitor's portfolio is saved **in their own browser**: no accounts, no login, and no server database, so
@@ -20,6 +20,7 @@ _Screenshots show the built-in demo portfolio (illustrative numbers, not advice)
 - **Automatic prices** — every holding's price refreshes from [Financial Modeling Prep](https://site.financialmodelingprep.com) (every 2 minutes while the app is open, or with the **Refresh** button). A ticker with no price keeps the value you entered and is quietly marked "manual".
 - **Autofill** — typing a ticker in the Add form fills the name and price (and refuses a ticker that belongs under another asset class, such as a stock typed under Fixed Income); for stocks also the sector (an ETF is filed under "Diversified"), and for bond and alternatives funds the maturity or type.
 - **Fund library** — a built-in list of 41 well-known bond and alternatives funds (maturity, duration, type) answers instantly and for free. Funds not in it are looked up by Claude with web search, and the answer is remembered in your browser.
+- **Income** — expected annual income (low / expected / high), average monthly income, portfolio yield, a Sankey of the top holdings behind it and a section per category, estimated from each holding's dividends (pre-tax, no reinvestment).
 - **Fixed Income Duration** — on Risk Analysis: the average duration of your bond funds and whether that is ultra-short, short, intermediate or long duration. A table beside it shows which funds contribute most to that number. Missing fund durations are looked up automatically.
 - **Risk Analysis** — a 1 to 5 Risk Profile meter (scored from what you hold: equity sector, each bond fund's duration, alternative type and cash; missing sectors, fund weights and durations are looked up automatically) and equity sector weights (ETFs included, split by sector) versus the S&P 500, with a plain-English over/underweight summary.
 - **Import** — CSV and Excel (flexible column matching, manual mapping) and screenshots or PDFs read by Claude, always with a preview before anything is saved. CSV/Excel files get an automatic Claude sanity check.
@@ -64,7 +65,8 @@ one call per holding for every open tab (plus 1 to 2 calls per ETF or bond fund 
 provider, and keep the link private if you don't want strangers using your keys.
 
 ## Releases
-Releases are tagged on GitHub. The current release is **v1.5**.
+Releases are tagged on GitHub. The current release is **v1.6**.
+- **v1.6** — new Income tab: expected annual income (with a low and high range) from stocks, equity ETFs, bond funds and income-paying alternatives, a Sankey of where it comes from, average monthly income, portfolio yield and a section per category.
 - **v1.5** — the Risk Profile meter is now scored from what you hold (equity sector, each bond fund's duration, alternative type, cash) instead of the asset-class mix. Missing stock sectors, equity-ETF sector weights and bond-fund durations are filled in automatically (market data first, then Claude).
 - **v1.4** — Risk Analysis gets a Fixed Income Duration card (average duration and whether it is ultra-short, short, intermediate or long) with a Duration Contributors table showing which bond funds drive it; missing fund durations are looked up automatically. The Add/Edit form now keeps asset classes apart (a stock under Fixed Income is refused).
 - **v1.3** — home page with three demo portfolios (Conservative Income, Global Diversified, Aggressive Growth) or upload your own; the Dashboard moves to `/dashboard`. Import now fills blank sectors, countries, maturities and types in the preview (market data first, then Claude). Fix: funds reported slightly over 100% in one country (India in INDA) now count correctly.
