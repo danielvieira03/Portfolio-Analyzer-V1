@@ -55,6 +55,7 @@ export function IncomeSummary({ income }: { income: PortfolioIncome }) {
       </div>
 
       <div className="mt-3 space-y-1 text-[11px] text-muted-foreground">
+        {flow.nodes.length > 0 && <p>The diagram shows each category&rsquo;s top 3 income holdings; the totals above and the sections below include every holding that pays income.</p>}
         <p>Cash interest is not included.</p>
         <p>
           An estimate, before tax and assuming no reinvestment, based on each holding&rsquo;s dividends per share over roughly the last year. One-time special

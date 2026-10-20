@@ -49,7 +49,7 @@ export function IncomeSankey({ nodes, links }: { nodes: FlowNode[]; links: FlowL
               {n.name}
             </text>
             <text x={x + width + 8} y={y + height / 2 + 12} textAnchor="start" fontSize={11} fill="var(--primary)" className="num">
-              {formatCurrency(n.value)}
+              {formatCurrency(n.amount ?? n.value)}
             </text>
           </>
         ) : (
