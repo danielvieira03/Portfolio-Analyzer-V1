@@ -121,8 +121,8 @@ export function portfolioIncome(positions: Position[], cash: number): PortfolioI
 export interface FlowNode {
   name: string;
   /** What the node is, for its colour and tooltip. */
-  kind: "holding" | "other" | "category" | "total";
-  /** The holding's full name, or how many holdings an "Other" ribbon groups. */
+  kind: "holding" | "category" | "total";
+  /** The holding's full name. */
   detail?: string;
   /** Expected annual income through this node, in dollars. */
   value: number;
@@ -138,9 +138,10 @@ export interface FlowLink {
 }
 
 /**
- * Sankey data: on the left the top income-producing holdings of each category (`topN`, default 3), plus one "Other [category]
- * holdings" ribbon for the rest of a category that has more than `topN` (so the category adds up to its income); in the middle
- * the categories that have income; on the right "Total Annual Income". A category with no income is left out.
+ * Sankey data: on the left the top income-producing holdings of each category (`topN`, default 3, individual holdings only,
+ * never grouped), in the middle the categories that have income, on the right "Total Annual Income". A category with no income
+ * is left out. A category's ribbon to the total carries its whole income, so the ribbons into it can add up to less (the
+ * holdings outside its top few are not drawn).
  */
 export function incomeFlow(result: PortfolioIncome, topN = INCOME_TOP_FLOW): { nodes: FlowNode[]; links: FlowLink[] } {
   const left: FlowNode[] = [];
@@ -154,12 +155,6 @@ export function incomeFlow(result: PortfolioIncome, topN = INCOME_TOP_FLOW): { n
     for (const h of top) {
       left.push({ name: h.ticker, kind: "holding", detail: h.name, value: h.annual });
       leftLinks.push({ from: left.length - 1, category: ci, value: h.annual });
-    }
-    const rest = c.contributors.slice(topN);
-    if (rest.length > 0) {
-      const value = rest.reduce((t, h) => t + h.annual, 0);
-      left.push({ name: `Other ${c.category} holdings`, kind: "other", detail: `${rest.length} ${rest.length === 1 ? "holding" : "holdings"}`, value });
-      leftLinks.push({ from: left.length - 1, category: ci, value });
     }
   });
 
