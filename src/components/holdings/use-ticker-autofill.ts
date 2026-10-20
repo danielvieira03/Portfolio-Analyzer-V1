@@ -16,7 +16,7 @@ interface AutofillFields {
   country: string;
 }
 
-export type LookupState = "idle" | "looking" | "found" | "none";
+export type LookupState = "idle" | "looking" | "found" | "none" | "wrong";
 
 type Key = "name" | "price" | "sector" | "subtype";
 
@@ -41,11 +41,27 @@ export function useTickerAutofill<F extends AutofillFields>(
   const [state, setState] = useState<LookupState>("idle");
   const last = useRef(initialTicker.trim().toUpperCase());
   const filled = useRef<Partial<Record<Key, string>>>({});
+  // The lookup in progress (so the form can wait for it before saving) and, when the ticker belongs to another class, why.
+  const inflight = useRef<Promise<void>>(Promise.resolve());
+  const [wrong, setWrongState] = useState<{ ticker: string; message: string } | null>(null);
+  const wrongRef = useRef<{ ticker: string; message: string } | null>(null);
+  const setWrong = (w: { ticker: string; message: string } | null) => {
+    wrongRef.current = w;
+    setWrongState(w);
+  };
 
-  const run = async (raw: string) => {
+  const run = (raw: string) => {
+    // Same ticker as the last lookup: nothing new to do, but hand back the one still running (if any).
+    if (raw.trim().toUpperCase() === last.current) return inflight.current;
+    inflight.current = lookUp(raw);
+    return inflight.current;
+  };
+
+  const lookUp = async (raw: string) => {
     const t = raw.trim().toUpperCase();
     if (t === last.current) return;
     last.current = t;
+    setWrong(null);
     if (!t) {
       setState("idle");
       return;
@@ -65,6 +81,7 @@ export function useTickerAutofill<F extends AutofillFields>(
       res = { found: false as const };
     }
     if (last.current !== t) return; // the ticker changed while we were looking
+    if (!res.found && res.wrongClass) setWrong({ ticker: t, message: res.wrongClass.message });
     if (!res.found) {
       // Nothing for this ticker: take back what an earlier ticker filled in, unless it was edited since.
       setForm((f) => {
@@ -79,7 +96,7 @@ export function useTickerAutofill<F extends AutofillFields>(
         return next;
       });
       filled.current = {};
-      setState("none");
+      setState(res.wrongClass ? "wrong" : "none");
       return;
     }
     const price = res.price === undefined ? undefined : String(res.price);
@@ -103,5 +120,14 @@ export function useTickerAutofill<F extends AutofillFields>(
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only a changed ticker should restart the timer
   }, [form.ticker]);
 
-  return { state, onBlur: () => run(form.ticker) };
+  return {
+    state,
+    onBlur: () => run(form.ticker),
+    /** Set while the typed ticker is known to belong to another asset class. */
+    wrong,
+    /** The message to refuse `ticker` with (upper-case, as typed), or null if it may be saved. Read after `finish()`. */
+    refusal: (ticker: string) => (wrongRef.current?.ticker === ticker ? wrongRef.current.message : null),
+    /** Resolves once the lookup for the ticker as typed has finished. */
+    finish: () => run(form.ticker),
+  };
 }

@@ -67,6 +67,25 @@ export async function fetchProfiles(tickers: string[]): Promise<FetchResult> {
 
 const ETF_BASE = "https://financialmodelingprep.com/stable/etf";
 
+/**
+ * The provider's own category for a fund ("Core Investment Grade Bond", "Commodities"), or null if it has none or anything
+ * goes wrong. One extra call, made only when the Add form looks up an ETF (never during the price refresh).
+ */
+export async function fetchFundCategory(ticker: string): Promise<string | null> {
+  const key = process.env.FINANCIAL_MODELING_API_KEY?.trim();
+  if (!key) return null;
+  try {
+    const url = `${ETF_BASE}/info?symbol=${encodeURIComponent(ticker)}&apikey=${encodeURIComponent(key)}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS), cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const category = Array.isArray(json) ? (json[0] as { assetClass?: unknown } | undefined)?.assetClass : null;
+    return typeof category === "string" && category.trim() ? category.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 export type BreakdownStatus =
   | "ok"
   | "no_key"

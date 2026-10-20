@@ -99,8 +99,15 @@ function FormBody({
   const isEquity = assetClass === "Equities";
   const subtypeLabel = hasSubtype(assetClass) ? SUBTYPE_LABEL[assetClass] : null;
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Let a lookup that is still running finish first, so a ticker from another asset class can't slip through.
+    const typed = form.ticker.trim().toUpperCase();
+    const refused = await autofill.finish().then(() => autofill.refusal(typed));
+    if (refused) {
+      setErrors({ ticker: refused });
+      return;
+    }
     const num = (s: string) => (s.trim() === "" ? NaN : Number(s));
     const values = {
       ticker: form.ticker,
@@ -231,18 +238,19 @@ function FormBody({
       <DialogHeader>
         <DialogTitle>{position ? `Edit ${position.ticker}` : `Add to ${assetClass}`}</DialogTitle>
         <DialogDescription>
-          Prices are entered by hand — update the price whenever you want fresh numbers.
+          Type the ticker and the information will fill automatically.
         </DialogDescription>
       </DialogHeader>
       <div className="grid grid-cols-2 gap-3">
-        {field("ticker", "Ticker", { placeholder: "AAPL", autoCapitalize: "characters", autoFocus: true, onBlur: autofill.onBlur })}
-        {field("name", "Name", { placeholder: "Apple Inc." })}
+        {field("ticker", "Ticker", { autoCapitalize: "characters", autoFocus: true, onBlur: autofill.onBlur })}
+        {field("name", "Name")}
       </div>
       {autofill.state !== "idle" && (
-        <p className="text-[11px] text-muted-foreground">
+        <p className={autofill.state === "wrong" ? "text-[12px] text-primary" : "text-[11px] text-muted-foreground"}>
           {autofill.state === "looking" && "Looking up…"}
           {autofill.state === "found" && "Filled in automatically"}
           {autofill.state === "none" && "No data found, enter it by hand"}
+          {autofill.state === "wrong" && (autofill.wrong?.message ?? "This ticker belongs under another asset class.")}
         </p>
       )}
       {isEquity && (
@@ -287,9 +295,9 @@ function FormBody({
         </div>
       )}
       <div className="grid grid-cols-3 gap-3">
-        {field("shares", "Shares", { inputMode: "decimal", placeholder: "100" })}
-        {field("cost", "Cost / share", { inputMode: "decimal", placeholder: "150.00" })}
-        {field("price", "Price", { inputMode: "decimal", placeholder: "200.00" })}
+        {field("shares", "Shares", { inputMode: "decimal" })}
+        {field("cost", "Cost / share", { inputMode: "decimal" })}
+        {field("price", "Price", { inputMode: "decimal" })}
       </div>
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={close}>Cancel</Button>

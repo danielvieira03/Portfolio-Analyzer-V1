@@ -11,6 +11,8 @@ export interface MarketProfile {
   isEtf: boolean;
   /** The company's headquarters country (ISO two-letter code); null for ETFs and funds, or when the provider has none. */
   country: string | null;
+  /** Funds only, and only when looked up for the Add form: the provider's own fund category ("Core Investment Grade Bond"). */
+  category?: string | null;
 }
 
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
@@ -43,4 +45,17 @@ export function stockSector(profile: MarketProfile | null): string | null {
 export function equitySector(profile: MarketProfile | null): string | null {
   if (!profile) return null;
   return profile.isEtf ? DIVERSIFIED : stockSector(profile);
+}
+
+/**
+ * Which asset class a fund belongs to, from the provider's category text ("Large Cap Equity", "Core Investment Grade Bond",
+ * "Commodities"...). Null when the category doesn't say clearly, so an unclear fund is never refused.
+ */
+export function fundAssetClass(category: string | null | undefined): "Equities" | "Fixed Income" | "Alternatives" | null {
+  const c = (category ?? "").toLowerCase();
+  if (!c || /allocation|balanced|hybrid|\bmix\b|multi/.test(c)) return null; // mixed funds are never refused
+  if (/bond|treasur|fixed income|credit|debt|mortgage|municipal|\btips\b/.test(c)) return "Fixed Income";
+  if (/commodit|real estate|reit|crypto|bitcoin|digital asset|currenc|alternative|precious|managed futures/.test(c)) return "Alternatives";
+  if (/equity|equities/.test(c)) return "Equities";
+  return null;
 }

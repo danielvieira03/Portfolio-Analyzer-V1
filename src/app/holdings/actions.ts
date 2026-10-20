@@ -6,7 +6,7 @@
 // from this app's own pages.)
 
 import { BREAKDOWN_MAX_PER_REFRESH } from "@/config/market";
-import { fetchBreakdowns, fetchProfiles, type BreakdownStatus, type FetchStatus } from "@/lib/market/fmp";
+import { fetchBreakdowns, fetchFundCategory, fetchProfiles, type BreakdownStatus, type FetchStatus } from "@/lib/market/fmp";
 import type { MarketProfile } from "@/lib/market/profile";
 import type { FundRequest } from "@/lib/market/breakdown";
 import type { EtfBreakdown } from "@/lib/portfolio/types";
@@ -41,7 +41,9 @@ export async function lookupProfileAction(ticker: string): Promise<MarketProfile
   const t = typeof ticker === "string" ? ticker.trim().toUpperCase() : "";
   if (!TICKER.test(t)) return null;
   const { profiles } = await fetchProfiles([t]);
-  return profiles.get(t) ?? null;
+  const profile = profiles.get(t) ?? null;
+  // A fund's category tells the form which asset class it belongs to (one extra call, funds only).
+  return profile?.isEtf ? { ...profile, category: await fetchFundCategory(t) } : profile;
 }
 
 export interface BreakdownFetchResult {
