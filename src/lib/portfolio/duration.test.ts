@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { displayDuration, durationBandIndex, durationType } from "./duration";
+import { displayDuration, durationBandIndex, durationType, topContributors } from "./duration";
 
 describe("durationType", () => {
   it("under 1 year is ultra-short", () => {
@@ -28,5 +28,33 @@ describe("durationType", () => {
   });
   it("gives the band position", () => {
     expect([0.5, 2, 5, 9].map(durationBandIndex)).toEqual([0, 1, 2, 3]);
+  });
+});
+
+describe("topContributors", () => {
+  const row = (ticker: string, value: number, years: number, total: number) => ({ ticker, name: ticker, value, years, weight: value / total, contribution: (years * value) / total });
+  const view = (rows: ReturnType<typeof row>[]) => ({ rows, average: rows.reduce((t, r) => t + r.contribution, 0) || null });
+  const seven = [row("A", 30, 0.1, 100), row("B", 25, 5.7, 100), row("C", 15, 14.9, 100), row("D", 10, 2.7, 100), row("E", 8, 6.2, 100), row("F", 7, 1.8, 100), row("G", 5, 6.4, 100)];
+
+  it("ranks by what a fund adds to the average, not by its size", () => {
+    const top = topContributors(view(seven));
+    expect(top.map((t) => t.ticker)).toEqual(["C", "B", "E", "G", "D"]); // C is 15% of the money but adds the most
+  });
+  it("shows only the top 5, or all of them when there are fewer", () => {
+    expect(topContributors(view(seven))).toHaveLength(5);
+    expect(topContributors(view(seven.slice(0, 3)))).toHaveLength(3);
+    expect(topContributors(view(seven), 3)).toHaveLength(3);
+  });
+  it("gives each fund's share of the average, adding up to 100% when all are shown", () => {
+    const all = topContributors(view(seven), 10);
+    expect(all.reduce((t, c) => t + c.shareOfDuration, 0)).toBeCloseTo(1);
+    expect(all[0].shareOfDuration).toBeCloseTo(0.15 * 14.9 / (view(seven).average ?? 1));
+  });
+  it("breaks ties by the bigger holding, then the ticker", () => {
+    const tie = topContributors(view([row("Z", 20, 5, 100), row("Y", 50, 2, 100), row("X", 20, 5, 100)]));
+    expect(tie.map((t) => t.ticker)).toEqual(["Y", "X", "Z"]); // Y and X/Z all add 1.0; Y is biggest, then X before Z
+  });
+  it("is empty when there is nothing to show", () => {
+    expect(topContributors({ rows: [], average: null })).toEqual([]);
   });
 });

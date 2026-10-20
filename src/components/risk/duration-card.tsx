@@ -17,7 +17,7 @@ export function DurationCard({ view, notFound = [] }: { view: DurationView; /** 
 
   if (total === 0) {
     return (
-      <Panel title="Fixed Income Duration">
+      <Panel title="Fixed Income Duration" className="h-full">
         <p className="py-8 text-center text-muted-foreground">No fixed income holdings yet.</p>
       </Panel>
     );
@@ -25,7 +25,7 @@ export function DurationCard({ view, notFound = [] }: { view: DurationView; /** 
 
   const active = average === null ? -1 : durationBandIndex(average);
   return (
-    <Panel title="Fixed Income Duration">
+    <Panel title="Fixed Income Duration" className="h-full">
       <div className="py-2">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h3 className="text-sm font-semibold tracking-tight">Average Duration</h3>

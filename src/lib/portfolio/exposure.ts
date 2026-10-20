@@ -37,6 +37,10 @@ export interface DurationRow {
   value: number;
   /** Duration in years. */
   years: number;
+  /** The fund's share of the bond funds that have a duration (a fraction; the rows add up to 1). */
+  weight: number;
+  /** What the fund adds to the average duration, in years (`years` x `weight`; the rows add up to the average). */
+  contribution: number;
 }
 
 export interface DurationView {
@@ -46,7 +50,7 @@ export interface DurationView {
   covered: number;
   /** Market-value-weighted average duration in years of the funds that have one; null when none does. */
   average: number | null;
-  /** The funds that have a duration, biggest first. */
+  /** The funds that have a duration, biggest (by market value) first. */
   rows: DurationRow[];
   /** Counted funds with no duration yet. */
   withoutDuration: { ticker: string; name: string }[];
@@ -101,7 +105,7 @@ export function lookThroughExposure(
  */
 function durationView(positions: Position[], durations: Record<string, number>, classes: readonly HoldingClass[]): DurationView {
   let total = 0;
-  const rows = new Map<string, DurationRow>();
+  const rows = new Map<string, Omit<DurationRow, "weight" | "contribution">>();
   const missing = new Map<string, { ticker: string; name: string }>();
   for (const p of positions) {
     if (!classes.includes(p.assetClass)) continue;
@@ -117,12 +121,16 @@ function durationView(positions: Position[], durations: Record<string, number>, 
       missing.set(ticker, { ticker, name: p.name });
     }
   }
-  const list = [...rows.values()].sort((a, b) => b.value - a.value || a.ticker.localeCompare(b.ticker));
-  const covered = list.reduce((t, r) => t + r.value, 0);
+  const sorted = [...rows.values()].sort((a, b) => b.value - a.value || a.ticker.localeCompare(b.ticker));
+  const covered = sorted.reduce((t, r) => t + r.value, 0);
+  const list = sorted.map((r) => {
+    const weight = covered > 0 ? r.value / covered : 0;
+    return { ...r, weight, contribution: r.years * weight };
+  });
   return {
     total,
     covered,
-    average: covered > 0 ? list.reduce((t, r) => t + r.years * r.value, 0) / covered : null,
+    average: covered > 0 ? list.reduce((t, r) => t + r.contribution, 0) : null,
     rows: list,
     withoutDuration: [...missing.values()],
   };

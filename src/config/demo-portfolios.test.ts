@@ -4,7 +4,7 @@ import { holdingSchema } from "@/lib/holdings/schema";
 import { allocationByClass, summarize } from "@/lib/portfolio/calc";
 import { countryExposure } from "@/lib/portfolio/country-exposure";
 import { lookThroughExposure } from "@/lib/portfolio/exposure";
-import { durationType } from "@/lib/portfolio/duration";
+import { durationType, topContributors } from "@/lib/portfolio/duration";
 import { demoDoc, libraryFunds } from "@/lib/portfolio/ledger";
 import { displayScore, riskLabel, riskScore } from "@/lib/portfolio/risk";
 import { equitySectorAllocation } from "@/lib/portfolio/sector-allocation";
@@ -106,5 +106,28 @@ describe("the demo portfolios' bond fund durations", () => {
     expect(durationType(conservative)).toBe("Intermediate Duration");
     expect(durationType(global)).toBe("Intermediate Duration");
     expect(durationType(growth)).toBe("Ultra-Short Duration");
+  });
+});
+
+describe("the demo portfolios' duration contributors", () => {
+  const top = (id: DemoId) => {
+    const d = demoDoc(id);
+    const bonds = d.holdings.filter((h) => h.assetClass === "Fixed Income");
+    const durations = fundDurations(d.holdings, libraryFunds(d, bonds.map((h) => h.ticker)), d.durations);
+    return topContributors(lookThroughExposure(d.holdings, d.etfBreakdowns, { durations }).duration);
+  };
+  it("Conservative Income: the 20+ year Treasury fund adds the most (about 39% of the duration from 13% of the bonds)", () => {
+    const t = top("conservative");
+    expect(t).toHaveLength(5);
+    expect(t[0].ticker).toBe("TLT");
+    expect(t[0].shareOfDuration).toBeGreaterThan(0.37);
+    expect(t[0].shareOfDuration).toBeLessThan(0.41);
+    expect(t[0].weight).toBeGreaterThan(0.12);
+    expect(t[0].weight).toBeLessThan(0.14);
+  });
+  it("Aggressive Growth: its single bond fund is 100% of the duration", () => {
+    const t = top("growth");
+    expect(t).toHaveLength(1);
+    expect(t[0].shareOfDuration).toBeCloseTo(1);
   });
 });

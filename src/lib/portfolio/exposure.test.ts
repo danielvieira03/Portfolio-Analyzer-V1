@@ -175,3 +175,18 @@ describe("lookThroughExposure: duration view", () => {
     expect(r.country.total).toBe(15_000);
   });
 });
+
+describe("lookThroughExposure: duration contributions", () => {
+  const bond = (ticker: string, value: number) => pos(ticker, value, { assetClass: "Fixed Income" });
+  it("splits the average into what each fund adds", () => {
+    // $60,000 at 2 years (weight 0.6, adds 1.2) and $40,000 at 7 years (weight 0.4, adds 2.8): average 4.0
+    const d = lookThroughExposure([bond("A", 60_000), bond("B", 40_000)], {}, { durations: { A: 2, B: 7 } }).duration;
+    expect(d.rows.map((r) => [r.ticker, r.weight, r.contribution])).toEqual([["A", expect.closeTo(0.6), expect.closeTo(1.2)], ["B", expect.closeTo(0.4), expect.closeTo(2.8)]]);
+    expect(d.rows.reduce((t, r) => t + r.contribution, 0)).toBeCloseTo(d.average!);
+    expect(d.rows.reduce((t, r) => t + r.weight, 0)).toBeCloseTo(1);
+  });
+  it("takes the weights from the funds that have a duration only", () => {
+    const d = lookThroughExposure([bond("A", 60_000), bond("B", 40_000), bond("C", 100_000)], {}, { durations: { A: 2, B: 7 } }).duration;
+    expect(d.rows.map((r) => r.weight)).toEqual([expect.closeTo(0.6), expect.closeTo(0.4)]);
+  });
+});
