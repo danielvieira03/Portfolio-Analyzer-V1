@@ -7,6 +7,7 @@ import { formatCurrency } from "@/lib/format";
 import type { FlowLink, FlowNode } from "@/lib/portfolio/income";
 
 const AMBER = "var(--primary)";
+const MUTED = "var(--muted-foreground)";
 const MARGIN = { top: 18, right: 135, bottom: 10, left: 175 };
 
 interface NodeShape {
@@ -38,7 +39,7 @@ export function IncomeSankey({ nodes, links }: { nodes: FlowNode[]; links: FlowL
     const isCategory = n.kind === "category";
     return (
       <g>
-        <rect x={x} y={y} width={width} height={Math.max(height, 1)} rx={2} fill={AMBER} fillOpacity={isTotal || isCategory ? 1 : 0.85} />
+        <rect x={x} y={y} width={width} height={Math.max(height, 1)} rx={2} fill={n.kind === "other" ? MUTED : AMBER} fillOpacity={isTotal || isCategory ? 1 : 0.85} />
         {isCategory ? (
           <text x={x + width / 2} y={y - 6} textAnchor="middle" fontSize={11} fontWeight={600} fill="var(--foreground)">
             {n.name}
@@ -49,7 +50,7 @@ export function IncomeSankey({ nodes, links }: { nodes: FlowNode[]; links: FlowL
               {n.name}
             </text>
             <text x={x + width + 8} y={y + height / 2 + 12} textAnchor="start" fontSize={11} fill="var(--primary)" className="num">
-              {formatCurrency(n.amount ?? n.value)}
+              {formatCurrency(n.value)}
             </text>
           </>
         ) : (
@@ -95,6 +96,7 @@ export function IncomeSankey({ nodes, links }: { nodes: FlowNode[]; links: FlowL
             linkCurvature={0.5}
             margin={MARGIN}
             iterations={64}
+            sort={false}
           >
             <Tooltip content={<FlowTooltip nodes={nodes} />} />
           </Sankey>

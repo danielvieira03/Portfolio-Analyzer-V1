@@ -121,14 +121,12 @@ export function portfolioIncome(positions: Position[], cash: number): PortfolioI
 export interface FlowNode {
   name: string;
   /** What the node is, for its colour and tooltip. */
-  kind: "holding" | "category" | "total";
-  /** The holding's full name. */
+  kind: "holding" | "other" | "category" | "total";
+  /** The holding's full name, or how many holdings an "Other" ribbon groups. */
   detail?: string;
-  /** The size of this node in the drawing, in dollars: what flows through it (the top holdings shown). */
+  /** Expected annual income through this node, in dollars. */
   value: number;
-  /** The real expected annual income this node stands for (a category's or the total's includes holdings not drawn); defaults to `value`. */
-  amount?: number;
-  /** Low / expected / high of the real income, on the category and total nodes. */
+  /** Low / expected / high, on the category and total nodes. */
   range?: IncomeRange;
 }
 
@@ -140,35 +138,36 @@ export interface FlowLink {
 }
 
 /**
- * Sankey data: on the left the top income-producing holdings of each category (`topN`, default 3, individual holdings only,
- * never grouped), in the middle the categories that have income, on the right "Total Annual Income". A category with no income
- * is left out. The drawing adds up on its own terms (each block is exactly as big as the ribbons that flow into it), so it connects
- * cleanly; the real totals, which include every holding that pays, are carried in `amount` / `range` for the labels and tooltips.
+ * Sankey data: on the left, for each category, its top income-producing holdings (`topN`, default 3) and then, fourth, one
+ * "Other [category] holdings" ribbon for the rest of THAT category (only when it has more than `topN`), so at most 12 on the left;
+ * in the middle the categories that have income; on the right "Total Annual Income". A category with no income is left out.
+ * Every block is exactly as big as the ribbons flowing into it, and the categories add up to the total.
  */
 export function incomeFlow(result: PortfolioIncome, topN = INCOME_TOP_FLOW): { nodes: FlowNode[]; links: FlowLink[] } {
   const left: FlowNode[] = [];
   const middle: FlowNode[] = [];
   const leftLinks: { from: number; category: number; value: number }[] = [];
-  const middleValues: number[] = [];
   const active = result.categories.filter((c) => c.income.expected > 0);
 
   active.forEach((c, ci) => {
-    const top = c.contributors.slice(0, topN);
-    for (const h of top) {
+    middle.push({ name: c.category, kind: "category", value: c.income.expected, range: c.income });
+    for (const h of c.contributors.slice(0, topN)) {
       left.push({ name: h.ticker, kind: "holding", detail: h.name, value: h.annual });
       leftLinks.push({ from: left.length - 1, category: ci, value: h.annual });
     }
-    const shown = top.reduce((t, h) => t + h.annual, 0);
-    middleValues.push(shown);
-    middle.push({ name: c.category, kind: "category", value: shown, amount: c.income.expected, range: c.income });
+    const rest = c.contributors.slice(topN);
+    if (rest.length > 0) {
+      const value = rest.reduce((t, h) => t + h.annual, 0);
+      left.push({ name: `Other ${c.category} holdings`, kind: "other", detail: `${rest.length} ${rest.length === 1 ? "holding" : "holdings"}`, value });
+      leftLinks.push({ from: left.length - 1, category: ci, value });
+    }
   });
 
-  const drawn = middleValues.reduce((t, v) => t + v, 0);
-  const nodes: FlowNode[] = [...left, ...middle, { name: "Total Annual Income", kind: "total", value: drawn, amount: result.total.expected, range: result.total }];
+  const nodes: FlowNode[] = [...left, ...middle, { name: "Total Annual Income", kind: "total", value: result.total.expected, range: result.total }];
   const totalIndex = nodes.length - 1;
   const links: FlowLink[] = [
     ...leftLinks.map((l) => ({ source: l.from, target: left.length + l.category, value: l.value })),
-    ...active.map((_, ci) => ({ source: left.length + ci, target: totalIndex, value: middleValues[ci] })),
+    ...active.map((c, ci) => ({ source: left.length + ci, target: totalIndex, value: c.income.expected })),
   ];
   return { nodes: active.length > 0 ? nodes : [], links: active.length > 0 ? links : [] };
 }

@@ -122,49 +122,39 @@ describe("portfolioIncome: empty and cash-only portfolios", () => {
 
 describe("incomeFlow", () => {
   const many = (cls: HoldingClass, n: number, base = 1) => Array.from({ length: n }, (_, i) => pos(`${cls[0]}${i}`, cls, 100, 10, base + i * 0.1));
-  it("shows only the top 3 holdings of each category, so at most 9 individual holdings and never a group", () => {
-    const r = income([...many("Equities", 5), ...many("Fixed Income", 4), ...many("Alternatives", 3)]);
+  const names = (flow: ReturnType<typeof incomeFlow>) => flow.nodes.map((n) => n.name);
+  it("shows each category's top 3, then fourth one 'Other' ribbon for the rest of THAT category: at most 12 on the left", () => {
+    const r = income([...many("Equities", 5), ...many("Fixed Income", 4), ...many("Alternatives", 6)]);
     const flow = incomeFlow(r);
-    const holdings = flow.nodes.filter((n) => n.kind === "holding");
-    expect(holdings).toHaveLength(9);
-    expect(flow.nodes.every((n) => !/other/i.test(n.name))).toBe(true);
-    // the biggest three of Equities (E4, E3, E2) and nothing smaller
-    const equitiesIn = flow.links.filter((l) => flow.nodes[l.target].name === "Equities").map((l) => flow.nodes[l.source].name).sort();
-    expect(equitiesIn).toEqual(["E2", "E3", "E4"]);
+    const left = flow.nodes.filter((n) => n.kind === "holding" || n.kind === "other");
+    expect(left).toHaveLength(12);
+    // order on the left: Equities' top 3 then its Other, Fixed Income's top 3 then its Other, then Alternatives'
+    expect(names(flow).slice(0, 12)).toEqual(["E4", "E3", "E2", "Other Equities holdings", "F3", "F2", "F1", "Other Fixed Income holdings", "A5", "A4", "A3", "Other Alternatives holdings"]);
   });
-  it("shows fewer than 3 when a category has fewer income-producing holdings", () => {
-    const flow = incomeFlow(income([...many("Equities", 2), ...many("Fixed Income", 1)]));
-    expect(flow.nodes.filter((n) => n.kind === "holding")).toHaveLength(3);
+  it("the Other ribbon is the rest of its own category only, and says how many holdings it groups", () => {
+    const flow = incomeFlow(income([...many("Equities", 5), ...many("Fixed Income", 4)]));
+    const otherEq = flow.nodes.find((n) => n.name === "Other Equities holdings")!;
+    expect(otherEq.detail).toBe("2 holdings"); // E0 and E1
+    expect(otherEq.value).toBeCloseTo(100 * 1 + 100 * 1.1);
+    expect(flow.nodes.find((n) => n.name === "Other Fixed Income holdings")!.detail).toBe("1 holding");
+  });
+  it("has no Other ribbon when a category has 3 or fewer income-producing holdings", () => {
+    const flow = incomeFlow(income([...many("Equities", 3), ...many("Fixed Income", 1)]));
+    expect(flow.nodes.some((n) => n.kind === "other")).toBe(false);
   });
   it("leaves out a category with no income, and holdings that pay nothing", () => {
     const flow = incomeFlow(income([pos("A", "Equities", 100, 10, 1), pos("GLD", "Alternatives", 10, 300, 0), pos("B", "Fixed Income", 10, 10, null)]));
-    expect(flow.nodes.map((n) => n.name)).toEqual(["A", "Equities", "Total Annual Income"]);
+    expect(names(flow)).toEqual(["A", "Equities", "Total Annual Income"]);
   });
-  it("is drawn so every block is exactly as big as the ribbons that flow into it (it connects cleanly)", () => {
+  it("conserves the dollars: ribbons into a category add up to it, and the categories add up to the total", () => {
     const r = income([...many("Equities", 5), ...many("Fixed Income", 4), pos("VNQ", "Alternatives", 100, 90, 3.6)]);
     const { nodes, links } = incomeFlow(r);
+    const total = nodes.length - 1;
     for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].kind === "holding") continue;
-      const into = links.filter((l) => l.target === i).reduce((t, l) => t + l.value, 0);
-      expect(into).toBeCloseTo(nodes[i].value);
-      if (nodes[i].kind === "category") expect(links.filter((l) => l.source === i).reduce((t, l) => t + l.value, 0)).toBeCloseTo(nodes[i].value);
+      if (nodes[i].kind !== "category") continue;
+      expect(links.filter((l) => l.target === i).reduce((t, l) => t + l.value, 0)).toBeCloseTo(nodes[i].value);
     }
-  });
-  it("still carries the real income of each category and of the total for the labels and tooltips", () => {
-    const r = income([...many("Equities", 5), ...many("Fixed Income", 4), pos("VNQ", "Alternatives", 100, 90, 3.6)]);
-    const { nodes } = incomeFlow(r);
-    const equities = nodes.find((n) => n.name === "Equities")!;
-    expect(equities.amount).toBeCloseTo(r.categories[0].income.expected);
-    expect(equities.range).toEqual(r.categories[0].income);
-    expect(equities.value).toBeLessThan(equities.amount!); // only its top 3 are drawn
-    const total = nodes.find((n) => n.kind === "total")!;
-    expect(total.amount).toBeCloseTo(r.total.expected);
-    expect(total.range).toEqual(r.total);
-  });
-  it("a category with 3 or fewer paying holdings is drawn at its full size", () => {
-    const { nodes } = incomeFlow(income(many("Equities", 3)));
-    const eq = nodes.find((n) => n.name === "Equities")!;
-    expect(eq.value).toBeCloseTo(eq.amount!);
+    expect(links.filter((l) => l.target === total).reduce((t, l) => t + l.value, 0)).toBeCloseTo(r.total.expected);
   });
   it("is empty when nothing pays income", () => {
     expect(incomeFlow(income([pos("GLD", "Alternatives", 10, 300, 0)]))).toEqual({ nodes: [], links: [] });
