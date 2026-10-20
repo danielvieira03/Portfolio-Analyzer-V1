@@ -84,3 +84,19 @@ export async function lookupSectorsWithClaude(items: { ticker: string; name: str
   });
   return r.found;
 }
+
+/**
+ * Ask Claude (with web search, the same lookup as maturity / type) for the duration in years of bond funds.
+ * Returns the durations it read, by upper-case ticker; a fund it found none for is simply missing.
+ */
+export async function lookupDurationsWithClaude(items: { ticker: string; name: string }[]): Promise<Record<string, number>> {
+  const r = await postAndParse<{ ok: true; durations?: Record<string, number> }>("/api/holdings/classify", {
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ items: items.map((i) => ({ ticker: i.ticker, name: i.name, assetClass: "Fixed Income" })) }),
+  });
+  const out: Record<string, number> = {};
+  for (const [key, years] of Object.entries(r.durations ?? {})) {
+    if (typeof years === "number" && years > 0) out[key.replace(/^Fixed Income:/, "").toUpperCase()] = years;
+  }
+  return out;
+}

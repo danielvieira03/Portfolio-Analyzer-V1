@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { fundDurations } from "@/lib/funds/duration";
 import { holdingSchema } from "@/lib/holdings/schema";
 import { allocationByClass, summarize } from "@/lib/portfolio/calc";
 import { countryExposure } from "@/lib/portfolio/country-exposure";
-import { demoDoc } from "@/lib/portfolio/ledger";
+import { lookThroughExposure } from "@/lib/portfolio/exposure";
+import { durationType } from "@/lib/portfolio/duration";
+import { demoDoc, libraryFunds } from "@/lib/portfolio/ledger";
 import { displayScore, riskLabel, riskScore } from "@/lib/portfolio/risk";
 import { equitySectorAllocation } from "@/lib/portfolio/sector-allocation";
 import { subtypeAllocation } from "@/lib/portfolio/subtype-allocation";
@@ -77,5 +80,31 @@ describe("the demo portfolios", () => {
     const topSector = sectors.slices.find((s) => s.kind === "sector")!;
     expect(topSector.label).toBe("Information Technology");
     expect(topSector.weight).toBeGreaterThan(0.3);
+  });
+});
+
+describe("the demo portfolios' bond fund durations", () => {
+  const durationOf = (id: DemoId) => {
+    const d = demoDoc(id);
+    const bonds = d.holdings.filter((h) => h.assetClass === "Fixed Income");
+    const durations = fundDurations(d.holdings, libraryFunds(d, bonds.map((h) => h.ticker)), d.durations);
+    return { bonds, view: lookThroughExposure(d.holdings, d.etfBreakdowns, { durations }).duration };
+  };
+  it("every demo bond fund has a duration in the built-in library, so a demo never needs a lookup", () => {
+    for (const p of DEMO_PORTFOLIOS) {
+      const { bonds, view } = durationOf(p.id);
+      expect(view.withoutDuration, p.id).toEqual([]);
+      expect(view.rows.length, p.id).toBe(bonds.length);
+    }
+  });
+  it("show a different duration type each", () => {
+    const conservative = durationOf("conservative").view.average!;
+    const global = durationOf("global").view.average!;
+    const growth = durationOf("growth").view.average!;
+    expect(conservative).toBeGreaterThan(5);
+    expect(conservative).toBeLessThan(5.3);
+    expect(durationType(conservative)).toBe("Intermediate Duration");
+    expect(durationType(global)).toBe("Intermediate Duration");
+    expect(durationType(growth)).toBe("Ultra-Short Duration");
   });
 });

@@ -50,6 +50,8 @@ export const FUND_LIBRARY: LibraryFund[] = [
   bond("BLV", "Vanguard Long-Term Bond ETF", "Long-term", 12.4),
   bond("VCLT", "Vanguard Long-Term Corporate Bond ETF", "Long-term", 11.6),
   bond("TLT", "iShares 20+ Year Treasury Bond ETF", "Long-term", 14.85),
+  // iShares product page, Oct 16, 2026: effective duration 6.32 yrs, weighted average maturity 10.48 yrs (over 10, so Long-term).
+  bond("EMB", "iShares J.P. Morgan USD Emerging Markets Bond ETF", "Long-term", 6.32),
 
   // Commodities
   alt("GLD", "SPDR Gold Shares", "Commodities"),

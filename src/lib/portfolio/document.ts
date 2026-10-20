@@ -39,6 +39,10 @@ const breakdownSchema = z.object({
 });
 const breakdownsSchema = z.record(z.string().min(1).max(12), breakdownSchema).refine((r) => Object.keys(r).length <= MAX_FUNDS, "Too many funds");
 
+const durationsSchema = z
+  .record(z.string().min(1).max(12), z.object({ years: z.number().finite().min(0).max(60).nullable(), checkedAt: isoTime }))
+  .refine((r) => Object.keys(r).length <= MAX_FUNDS, "Too many funds");
+
 const storedHolding = z.object({
   id: z.string().min(1),
   ticker: z.string().min(1).max(12),
@@ -65,6 +69,8 @@ const storedDoc = z.object({
   // Added after v1.1: older saved portfolios have none, so it defaults to "nothing looked up yet". It is only a
   // saved copy of provider data, so if it is ever damaged it is dropped (and looked up again), never the portfolio.
   etfBreakdowns: breakdownsSchema.catch({}),
+  // Added after v1.3: older saved portfolios have none. Like the fund weights it is only looked-up data: if damaged it is dropped.
+  durations: durationsSchema.catch({}),
 });
 
 /** Parse what the browser had saved. Returns null for anything missing, damaged or from an unknown version. */
@@ -89,6 +95,7 @@ const backupFile = z.object({
   holdings: z.array(z.unknown()).max(MAX_HOLDINGS),
   learnedFunds: z.array(fundSchema).max(MAX_FUNDS).optional(),
   etfBreakdowns: breakdownsSchema.catch({}),
+  durations: durationsSchema.catch({}),
 });
 
 /** The text of a backup file for this portfolio. */
@@ -114,6 +121,7 @@ export function exportBackup(doc: PortfolioDoc, now: Date): string {
       })),
       learnedFunds: doc.learnedFunds,
       etfBreakdowns: doc.etfBreakdowns,
+      durations: doc.durations,
     },
     null,
     2,
@@ -169,6 +177,7 @@ export function parseBackup(text: string, newId: () => string = () => globalThis
       pricesUpdatedAt: file.data.pricesUpdatedAt ?? null,
       learnedFunds,
       etfBreakdowns: file.data.etfBreakdowns,
+      durations: file.data.durations,
     },
   };
 }

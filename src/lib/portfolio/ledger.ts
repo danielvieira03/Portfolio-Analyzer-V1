@@ -10,7 +10,7 @@ import type { HoldingInput } from "@/lib/holdings/schema";
 import type { FundRecord } from "@/lib/funds/library";
 import type { PricePlan } from "@/lib/market/refresh-plan";
 import { mergePositions } from "./calc";
-import type { EtfBreakdown, Position } from "./types";
+import type { DurationRecord, EtfBreakdown, Position } from "./types";
 
 export const DOC_VERSION = 1;
 
@@ -29,6 +29,8 @@ export interface PortfolioDoc {
   learnedFunds: FundRecord[];
   /** What each fund (ETF) holds by sector and country, keyed by upper-case ticker (see `EtfBreakdown`). Added after v1.1: older saves have none. */
   etfBreakdowns: Record<string, EtfBreakdown>;
+  /** Bond-fund durations looked up for this visitor, keyed by upper-case ticker (see `DurationRecord`). Added after v1.3: older saves have none. */
+  durations: Record<string, DurationRecord>;
 }
 
 type IdMaker = () => string;
@@ -57,7 +59,7 @@ const fromInput = (h: HoldingInput, id: string, noLivePrice = false): Position =
 
 /** A portfolio with nothing in it (a visitor who starts with their own file, or whose saved copy was damaged). */
 export function emptyDoc(): PortfolioDoc {
-  return { version: DOC_VERSION, holdings: [], cash: 0, isDemoData: false, seeded: true, pricesUpdatedAt: null, learnedFunds: [], etfBreakdowns: {} };
+  return { version: DOC_VERSION, holdings: [], cash: 0, isDemoData: false, seeded: true, pricesUpdatedAt: null, learnedFunds: [], etfBreakdowns: {}, durations: {} };
 }
 
 /** One of the demo portfolios as a saved portfolio: marked as demo data, with the demo funds' weights already in. */
@@ -214,6 +216,23 @@ export function applyPrices(doc: PortfolioDoc, plan: PricePlan, stamp: boolean, 
 export function applyBreakdowns(doc: PortfolioDoc, fresh: Record<string, EtfBreakdown>): PortfolioDoc {
   if (Object.keys(fresh).length === 0) return doc;
   return { ...doc, etfBreakdowns: { ...doc.etfBreakdowns, ...fresh } };
+}
+
+/**
+ * Save bond-fund durations Claude just looked up. `found` has the years it read (keyed by ticker); `tried` lists every ticker it
+ * looked up, so one with no answer is recorded as tried (and not asked again for a while). Never overwrites a duration already found,
+ * and is not an edit: it never changes whether the portfolio counts as demo data.
+ */
+export function applyDurations(doc: PortfolioDoc, found: Record<string, number>, tried: string[], now: Date): PortfolioDoc {
+  if (tried.length === 0 && Object.keys(found).length === 0) return doc;
+  const next = { ...doc.durations };
+  for (const raw of tried) {
+    const t = raw.toUpperCase();
+    if (next[t]?.years != null) continue;
+    const years = found[t] ?? found[raw];
+    next[t] = { years: typeof years === "number" && years > 0 ? years : null, checkedAt: now.toISOString() };
+  }
+  return { ...doc, durations: next };
 }
 
 /**

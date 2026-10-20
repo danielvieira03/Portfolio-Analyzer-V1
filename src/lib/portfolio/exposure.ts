@@ -30,9 +30,32 @@ export interface ExposureView {
   oldestBreakdown: string | null;
 }
 
+/** One bond fund's part of the duration view. */
+export interface DurationRow {
+  ticker: string;
+  name: string;
+  value: number;
+  /** Duration in years. */
+  years: number;
+}
+
+export interface DurationView {
+  /** Market value of every holding counted in this view (bond funds), with a duration or not. */
+  total: number;
+  /** The part of `total` whose fund has a duration. */
+  covered: number;
+  /** Market-value-weighted average duration in years of the funds that have one; null when none does. */
+  average: number | null;
+  /** The funds that have a duration, biggest first. */
+  rows: DurationRow[];
+  /** Counted funds with no duration yet. */
+  withoutDuration: { ticker: string; name: string }[];
+}
+
 export interface LookThroughExposure {
   sector: ExposureView;
   country: ExposureView;
+  duration: DurationView;
 }
 
 export interface ExposureOptions {
@@ -40,6 +63,10 @@ export interface ExposureOptions {
   sectorClasses?: readonly HoldingClass[];
   /** Asset classes counted in the country view. Default: Equities and Fixed Income (bond funds have a country split). */
   countryClasses?: readonly HoldingClass[];
+  /** Duration in years by upper-case ticker (see `fundDurations`). Without it no fund has a duration. */
+  durations?: Record<string, number>;
+  /** Asset classes counted in the duration view. Default: Fixed Income only. */
+  durationClasses?: readonly HoldingClass[];
 }
 
 type Dimension = "sector" | "country";
@@ -64,6 +91,40 @@ export function lookThroughExposure(
   return {
     sector: dimensionView(positions, breakdowns, "sector", opts.sectorClasses ?? ["Equities"]),
     country: dimensionView(positions, breakdowns, "country", opts.countryClasses ?? ["Equities", "Fixed Income"]),
+    duration: durationView(positions, opts.durations ?? {}, opts.durationClasses ?? ["Fixed Income"]),
+  };
+}
+
+/**
+ * Average duration of the holdings in scope: each fund's duration weighted by its market value. A fund with no duration
+ * is left out of the average (and listed in `withoutDuration`), so the average is never dragged down by a missing number.
+ */
+function durationView(positions: Position[], durations: Record<string, number>, classes: readonly HoldingClass[]): DurationView {
+  let total = 0;
+  const rows = new Map<string, DurationRow>();
+  const missing = new Map<string, { ticker: string; name: string }>();
+  for (const p of positions) {
+    if (!classes.includes(p.assetClass)) continue;
+    const value = marketValue(p);
+    if (!(value > 0)) continue;
+    total += value;
+    const ticker = p.ticker.toUpperCase();
+    const years = durations[ticker];
+    if (typeof years === "number" && years > 0) {
+      const row = rows.get(ticker);
+      rows.set(ticker, { ticker, name: p.name, value: (row?.value ?? 0) + value, years });
+    } else if (!missing.has(ticker)) {
+      missing.set(ticker, { ticker, name: p.name });
+    }
+  }
+  const list = [...rows.values()].sort((a, b) => b.value - a.value || a.ticker.localeCompare(b.ticker));
+  const covered = list.reduce((t, r) => t + r.value, 0);
+  return {
+    total,
+    covered,
+    average: covered > 0 ? list.reduce((t, r) => t + r.years * r.value, 0) / covered : null,
+    rows: list,
+    withoutDuration: [...missing.values()],
   };
 }
 

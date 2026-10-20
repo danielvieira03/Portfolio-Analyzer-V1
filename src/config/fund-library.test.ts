@@ -3,8 +3,8 @@ import { FUND_LIBRARY } from "./fund-library";
 import { isValidSubtype } from "./subtypes";
 
 describe("FUND_LIBRARY", () => {
-  it("has 20 bond and 20 alternatives funds", () => {
-    expect(FUND_LIBRARY.filter((f) => f.assetClass === "Fixed Income")).toHaveLength(20);
+  it("has 21 bond and 20 alternatives funds", () => {
+    expect(FUND_LIBRARY.filter((f) => f.assetClass === "Fixed Income")).toHaveLength(21);
     expect(FUND_LIBRARY.filter((f) => f.assetClass === "Alternatives")).toHaveLength(20);
   });
   it("has unique upper-case tickers", () => {

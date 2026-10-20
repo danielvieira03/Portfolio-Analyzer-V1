@@ -12,6 +12,39 @@ const doc = (): PortfolioDoc => ({
 });
 const now = new Date("2026-10-18T15:00:00Z");
 
+describe("bond-fund durations in the saved portfolio and backup", () => {
+  // A portfolio saved by v1.3 or earlier, before bond-fund durations existed: it must load unchanged.
+  const oldSample = JSON.stringify({
+    version: 1,
+    holdings: [{ id: "a", ticker: "BND", name: "Vanguard Total Bond", assetClass: "Fixed Income", sector: null, subtype: "Medium-term", shares: 10, costBasisPerShare: 70, currentPrice: 71, noLivePrice: false, country: null }],
+    cash: 5, isDemoData: false, seeded: true, pricesUpdatedAt: null, learnedFunds: [], etfBreakdowns: {},
+  });
+  it("an old saved portfolio without durations still loads, with none looked up", () => {
+    const d = parseStoredDoc(oldSample);
+    expect(d?.durations).toEqual({});
+    expect(d?.holdings).toHaveLength(1);
+  });
+  it("saves and reloads looked-up durations, including a 'tried, found none' record", () => {
+    const d = { ...doc(), durations: { EMB: { years: 6.3, checkedAt: "2026-10-18T12:00:00.000Z" }, XYZ: { years: null, checkedAt: "2026-10-18T12:00:00.000Z" } } };
+    expect(parseStoredDoc(JSON.stringify(d))?.durations).toEqual(d.durations);
+  });
+  it("drops damaged durations instead of the whole portfolio", () => {
+    const d = { ...doc(), durations: { EMB: { years: "six", checkedAt: "x" } } };
+    const parsed = parseStoredDoc(JSON.stringify(d));
+    expect(parsed).not.toBeNull();
+    expect(parsed?.durations).toEqual({});
+  });
+  it("travel in the backup file, and an old backup without them restores with none", () => {
+    const d = { ...doc(), durations: { EMB: { years: 6.3, checkedAt: "2026-10-18T12:00:00.000Z" } } };
+    const r = parseBackup(exportBackup(d, now));
+    expect(r.ok && r.doc.durations).toEqual(d.durations);
+    const old = JSON.parse(exportBackup(doc(), now));
+    delete old.durations;
+    const r2 = parseBackup(JSON.stringify(old));
+    expect(r2.ok && r2.doc.durations).toEqual({});
+  });
+});
+
 describe("parseStoredDoc", () => {
   it("round-trips a saved portfolio", () => {
     const d = doc();

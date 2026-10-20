@@ -3,7 +3,7 @@ import { DEMO_PORTFOLIOS, demoById } from "@/config/demo-portfolios";
 import type { HoldingInput } from "@/lib/holdings/schema";
 import {
   addHolding, addLearnedFunds, applyBreakdowns, applyPrices, clearDemo, fillSubtypes, importHoldings, libraryFunds,
-  demoDoc, emptyDoc, removeHolding, saveHolding, setCash, type PortfolioDoc,
+  applyDurations, demoDoc, emptyDoc, removeHolding, saveHolding, setCash, type PortfolioDoc,
 } from "./ledger";
 
 let n = 0;
@@ -13,7 +13,7 @@ const input = (o: Partial<HoldingInput> = {}): HoldingInput => ({
   shares: 10, costBasisPerShare: 100, currentPrice: 150, ...o,
 });
 const empty = (o: Partial<PortfolioDoc> = {}): PortfolioDoc => ({
-  version: 1, holdings: [], cash: 0, isDemoData: false, seeded: true, pricesUpdatedAt: null, learnedFunds: [], etfBreakdowns: {}, ...o,
+  version: 1, holdings: [], cash: 0, isDemoData: false, seeded: true, pricesUpdatedAt: null, learnedFunds: [], etfBreakdowns: {}, durations: {}, ...o,
 });
 const withApple = () => addHolding(empty(), input(), undefined, id).doc;
 
@@ -298,5 +298,27 @@ describe("applyBreakdowns", () => {
     const d = demoDoc("global", id);
     expect(applyBreakdowns(d, {})).toBe(d);
     expect(applyBreakdowns(d, { VOO: bd("2026-10-18T00:00:00.000Z") }).isDemoData).toBe(true);
+  });
+});
+
+describe("applyDurations", () => {
+  const now = new Date("2026-10-20T12:00:00Z");
+  it("saves durations found and records every fund tried, found or not", () => {
+    const d = applyDurations(empty(), { EMB: 6.3 }, ["EMB", "XYZ"], now);
+    expect(d.durations).toEqual({ EMB: { years: 6.3, checkedAt: now.toISOString() }, XYZ: { years: null, checkedAt: now.toISOString() } });
+  });
+  it("never replaces a duration already found, but a fund tried with no answer can be filled in later", () => {
+    const first = applyDurations(empty(), { EMB: 6.3 }, ["EMB", "XYZ"], now);
+    const second = applyDurations(first, { EMB: 9, XYZ: 4.2 }, ["EMB", "XYZ"], new Date("2026-11-01T00:00:00Z"));
+    expect(second.durations.EMB.years).toBe(6.3);
+    expect(second.durations.XYZ.years).toBe(4.2);
+  });
+  it("changes nothing when there is nothing to save, and is never an edit of demo data", () => {
+    const demo = demoDoc("global", id);
+    expect(applyDurations(demo, {}, [], now)).toBe(demo);
+    expect(applyDurations(demo, { ZZZ: 3 }, ["ZZZ"], now).isDemoData).toBe(true);
+  });
+  it("ignores an unusable number", () => {
+    expect(applyDurations(empty(), { ABC: -2, DEF: Number.NaN }, ["ABC", "DEF"], now).durations).toMatchObject({ ABC: { years: null }, DEF: { years: null } });
   });
 });

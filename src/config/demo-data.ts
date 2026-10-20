@@ -47,7 +47,7 @@ export const GLOBAL_HOLDINGS: DemoHolding[] = [
   { ticker: "TM", name: "Toyota Motor Corporation", assetClass: "Equities", sector: "Consumer Discretionary", country: "JP", shares: 26, cost: 174.65, price: 194.06 },
   { ticker: "BND", name: "Vanguard Total Bond Market ETF", assetClass: "Fixed Income", sector: null, subtype: "Medium-term", shares: 992, cost: 73.42, price: 70.6 },
   { ticker: "BNDX", name: "Vanguard Total International Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Medium-term", shares: 1488, cost: 49.38, price: 47.03 },
-  { ticker: "EMB", name: "iShares J.P. Morgan USD Emerging Markets Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Medium-term", shares: 439, cost: 91.09, price: 91.09 },
+  { ticker: "EMB", name: "iShares J.P. Morgan USD Emerging Markets Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Long-term", shares: 439, cost: 91.09, price: 91.09 },
   { ticker: "VCSH", name: "Vanguard Short-Term Corporate Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Short-term", shares: 258, cost: 77.4, price: 77.4 },
   { ticker: "IEF", name: "iShares 7-10 Year Treasury Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Medium-term", shares: 278, cost: 94.58, price: 90.08 },
   { ticker: "GLD", name: "SPDR Gold Shares", assetClass: "Alternatives", sector: null, subtype: "Commodities", shares: 92, cost: 227.81, price: 379.69 },

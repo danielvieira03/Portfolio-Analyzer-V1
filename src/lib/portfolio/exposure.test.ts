@@ -134,3 +134,44 @@ describe("lookThroughExposure", () => {
     expect(empty.sector).toEqual({ total: 0, classified: 0, unclassified: { value: 0, weight: 0 }, rows: [], fundsWithoutData: 0, oldestBreakdown: null });
   });
 });
+
+describe("lookThroughExposure: duration view", () => {
+  const bond = (ticker: string, value: number) => pos(ticker, value, { assetClass: "Fixed Income" });
+  it("is the market-value-weighted average duration of the bond funds that have one", () => {
+    // $60,000 at 2 years, $40,000 at 7 years: (60*2 + 40*7) / 100 = 4.0
+    const d = lookThroughExposure([bond("A", 60_000), bond("B", 40_000)], {}, { durations: { A: 2, B: 7 } }).duration;
+    expect(d.average).toBeCloseTo(4.0);
+    expect(d.total).toBe(100_000);
+    expect(d.covered).toBe(100_000);
+    expect(d.rows.map((r) => [r.ticker, r.years])).toEqual([["A", 2], ["B", 7]]);
+    expect(d.withoutDuration).toEqual([]);
+  });
+  it("leaves a fund with no duration out of the average and lists it", () => {
+    const d = lookThroughExposure([bond("A", 60_000), bond("B", 40_000)], {}, { durations: { A: 2 } }).duration;
+    expect(d.average).toBeCloseTo(2);
+    expect(d.covered).toBe(60_000);
+    expect(d.total).toBe(100_000);
+    expect(d.withoutDuration).toEqual([{ ticker: "B", name: "B" }]);
+  });
+  it("counts only Fixed Income: stocks, ETFs, alternatives and cash are not part of it", () => {
+    const positions = [bond("A", 50_000), pos("VOO", 100_000, { sector: "Diversified" }), pos("GLD", 30_000, { assetClass: "Alternatives" })];
+    const d = lookThroughExposure(positions, {}, { durations: { A: 3, VOO: 9, GLD: 9 } }).duration;
+    expect(d.total).toBe(50_000);
+    expect(d.average).toBeCloseTo(3);
+  });
+  it("has no average when there are no bond funds, or none has a duration", () => {
+    expect(lookThroughExposure([pos("AAPL", 10_000)], {}, { durations: { AAPL: 5 } }).duration).toMatchObject({ average: null, total: 0, rows: [] });
+    const none = lookThroughExposure([bond("A", 10_000)], {}).duration;
+    expect(none.average).toBeNull();
+    expect(none.withoutDuration).toHaveLength(1);
+  });
+  it("can be pointed at another scope through the option", () => {
+    const d = lookThroughExposure([pos("GLD", 30_000, { assetClass: "Alternatives" })], {}, { durations: { GLD: 4 }, durationClasses: ["Alternatives"] }).duration;
+    expect(d.average).toBeCloseTo(4);
+  });
+  it("leaves the sector and country views as they were", () => {
+    const r = lookThroughExposure([pos("AAPL", 10_000, { sector: "Information Technology", country: "US" }), bond("A", 5_000)], {}, { durations: { A: 3 } });
+    expect(r.sector.total).toBe(10_000);
+    expect(r.country.total).toBe(15_000);
+  });
+});

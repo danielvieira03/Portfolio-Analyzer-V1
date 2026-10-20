@@ -20,6 +20,16 @@ export interface EtfBreakdown {
   mapping?: number;
 }
 
+/**
+ * A bond fund's duration (years) as found for this visitor by a lookup, saved in the browser per ticker. `years` null = the
+ * lookup found none (tried again only after a week). The built-in fund library's durations are not saved here.
+ */
+export interface DurationRecord {
+  years: number | null;
+  /** ISO time of the lookup. */
+  checkedAt: string;
+}
+
 /** A position as the math functions see it — plain numbers, no database types. */
 export interface Position {
   id: string;

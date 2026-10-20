@@ -19,3 +19,14 @@ export const RISK_LABELS: Record<number, string> = {
   4: "Moderately Aggressive",
   5: "Aggressive",
 };
+
+/**
+ * Duration types by average duration in years, shortest first. A band holds durations below `below`; the last one has no top.
+ * The comparison uses the average as displayed (one decimal), so 3.0 is intermediate and 7.0 is long.
+ */
+export const DURATION_BANDS = [
+  { below: 1, label: "Ultra-Short Duration", range: "Under 1 year" },
+  { below: 3, label: "Short Duration", range: "1 to 3 years" },
+  { below: 7, label: "Intermediate Duration", range: "3 to 7 years" },
+  { below: Infinity, label: "Long Duration", range: "7 years and over" },
+] as const;
