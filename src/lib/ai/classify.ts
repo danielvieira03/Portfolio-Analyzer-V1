@@ -28,7 +28,7 @@ const resultSchema = z.object({
       durationYears: z
         .number()
         .nullable()
-        .describe("Fixed Income only: the fund's average or effective duration in years, if the page states it; otherwise null"),
+        .describe("Fixed Income only: the fund's average or effective duration in years as a page states it (the tracked index's, if the fund's own is not given, noted in basis); otherwise null"),
       basis: z.string().describe("One short phrase: what you found and where"),
     }),
   ),
@@ -43,7 +43,7 @@ ${MATURITY_HELP} Use the fund's average maturity or duration. Use "Not specified
 Alternatives holdings get a type: ${ALT_TYPES.join(", ")}.
 Commodities = gold, silver, oil, metals, agriculture or broad commodity funds. REITs = real estate funds. Crypto = bitcoin/ether and other crypto trusts or ETFs. Infrastructure = infrastructure funds. Other = anything else (hedge-fund style, managed futures, private equity...).
 
-For Fixed Income holdings also report the fund's average or effective duration in years (a number such as 6.2) if the page you read states it; otherwise null. Never estimate it.
+For Fixed Income holdings also report the fund's average or effective duration in years (a number such as 6.2) as the page you read states it. If the fund's own duration is not stated but the page gives the duration of the index the fund tracks, report the index's duration and say so in "basis". If neither is stated, null. Never estimate, calculate or guess a duration.
 
 Return one result per holding, using the exact ticker and asset class you were given and one of the allowed values. If a search fails or you cannot read any result for a holding, leave that holding OUT of the results (it will be retried later) instead of guessing. Never invent facts: if you read the fund's page but it does not say, answer "${SUBTYPE_FALLBACK["Fixed Income"]}" (Fixed Income) or "${SUBTYPE_FALLBACK.Alternatives}" (Alternatives).`;
 

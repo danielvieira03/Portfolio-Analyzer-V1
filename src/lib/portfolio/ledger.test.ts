@@ -3,7 +3,7 @@ import { DEMO_PORTFOLIOS, demoById } from "@/config/demo-portfolios";
 import type { HoldingInput } from "@/lib/holdings/schema";
 import {
   addHolding, addLearnedFunds, applyBreakdowns, applyPrices, clearDemo, fillSubtypes, importHoldings, libraryFunds,
-  applyDurations, demoDoc, emptyDoc, removeHolding, saveHolding, setCash, type PortfolioDoc,
+  applyClaudeBreakdowns, applyClaudeSectors, applyDurations, demoDoc, emptyDoc, removeHolding, saveHolding, setCash, type PortfolioDoc,
 } from "./ledger";
 
 let n = 0;
@@ -13,7 +13,7 @@ const input = (o: Partial<HoldingInput> = {}): HoldingInput => ({
   shares: 10, costBasisPerShare: 100, currentPrice: 150, ...o,
 });
 const empty = (o: Partial<PortfolioDoc> = {}): PortfolioDoc => ({
-  version: 1, holdings: [], cash: 0, isDemoData: false, seeded: true, pricesUpdatedAt: null, learnedFunds: [], etfBreakdowns: {}, durations: {}, ...o,
+  version: 1, holdings: [], cash: 0, isDemoData: false, seeded: true, pricesUpdatedAt: null, learnedFunds: [], etfBreakdowns: {}, durations: {}, sectorTries: {}, ...o,
 });
 const withApple = () => addHolding(empty(), input(), undefined, id).doc;
 
@@ -339,5 +339,48 @@ describe("applyPrices: a blank sector", () => {
   it("stays blank when the plan has no sector", () => {
     const d = { ...empty(), holdings: [{ id: "a", ticker: "AAA", name: "A", assetClass: "Equities" as const, sector: null, subtype: null, shares: 1, costBasisPerShare: 1, currentPrice: 1, noLivePrice: false, country: null }] };
     expect(applyPrices(d, { found: [{ id: "a", price: 5 }], missing: [] }, true, now).holdings[0].sector).toBeNull();
+  });
+});
+
+describe("Claude-filled data", () => {
+  const now = new Date("2026-10-20T12:00:00Z");
+  const stockDoc = () => ({
+    ...empty(),
+    holdings: [
+      { id: "a", ticker: "AAA", name: "A", assetClass: "Equities" as const, sector: null, subtype: null, shares: 1, costBasisPerShare: 1, currentPrice: 1, noLivePrice: false, country: null },
+      { id: "b", ticker: "BBB", name: "B", assetClass: "Equities" as const, sector: "Energy", subtype: null, shares: 1, costBasisPerShare: 1, currentPrice: 1, noLivePrice: false, country: null },
+    ],
+  });
+  const bd = (status: "ok" | "none", o = {}) => ({ sectors: status === "ok" ? [{ name: "Energy", weight: 1 }] : [], countries: [], updatedAt: "2026-10-01T00:00:00.000Z", status, ...o });
+
+  it("applyClaudeSectors fills a blank sector, never replaces a set one, and records every try", () => {
+    const r = applyClaudeSectors(stockDoc(), { AAA: "Utilities", BBB: "Materials" }, ["AAA", "BBB", "ZZZ"], now);
+    expect(r.holdings.map((h) => h.sector)).toEqual(["Utilities", "Energy"]);
+    expect(Object.keys(r.sectorTries).sort()).toEqual(["AAA", "BBB", "ZZZ"]);
+  });
+  it("applyClaudeSectors does nothing when nothing was tried, and is not an edit of demo data", () => {
+    const d = stockDoc();
+    expect(applyClaudeSectors(d, {}, [], now)).toBe(d);
+    expect(applyClaudeSectors({ ...d, isDemoData: true }, { AAA: "Energy" }, ["AAA"], now).isDemoData).toBe(true);
+  });
+  it("applyClaudeBreakdowns saves weights read by Claude, keeping the market data's countries", () => {
+    const d = { ...empty(), etfBreakdowns: { ETF: bd("none", { countries: [{ code: "US", weight: 1 }] }) } };
+    const r = applyClaudeBreakdowns(d, { ETF: [{ name: "Energy", weight: 0.6 }, { name: "Materials", weight: 0.4 }] }, ["ETF"], now, 3);
+    expect(r.etfBreakdowns.ETF).toMatchObject({ status: "ok", source: "claude", mapping: 3, countries: [{ code: "US", weight: 1 }] });
+    expect(r.etfBreakdowns.ETF.sectors).toHaveLength(2);
+  });
+  it("applyClaudeBreakdowns records a fund Claude found nothing for as tried", () => {
+    const r = applyClaudeBreakdowns(empty(), {}, ["ETF"], now, 3);
+    expect(r.etfBreakdowns.ETF).toMatchObject({ status: "none", source: "claude", sectors: [], updatedAt: now.toISOString() });
+  });
+  it("applyBreakdowns: the market data's weights replace Claude's, but 'no data' never erases them", () => {
+    const claude = { ...bd("ok"), source: "claude" as const };
+    const d = { ...empty(), etfBreakdowns: { ETF: claude } };
+    expect(applyBreakdowns(d, { ETF: bd("none") })).toBe(d);
+    const replaced = applyBreakdowns(d, { ETF: bd("ok", { sectors: [{ name: "Materials", weight: 1 }] }) });
+    expect(replaced.etfBreakdowns.ETF.source).toBeUndefined();
+    expect(replaced.etfBreakdowns.ETF.sectors[0].name).toBe("Materials");
+    // an ordinary 'none' still replaces an ordinary record, as before
+    expect(applyBreakdowns({ ...empty(), etfBreakdowns: { X: bd("ok") } }, { X: bd("none") }).etfBreakdowns.X.status).toBe("none");
   });
 });

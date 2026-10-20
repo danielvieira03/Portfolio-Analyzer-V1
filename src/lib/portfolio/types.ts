@@ -18,6 +18,8 @@ export interface EtfBreakdown {
   status: "ok" | "none";
   /** Which version of the name translation made this (`BREAKDOWN_MAPPING_VERSION`). Missing = the first version. */
   mapping?: number;
+  /** "claude" when Claude read these weights from a fund page because the market data had none (the market data's own replace them later). */
+  source?: "claude";
 }
 
 /**

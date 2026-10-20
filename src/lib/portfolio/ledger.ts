@@ -32,6 +32,8 @@ export interface PortfolioDoc {
   etfBreakdowns: Record<string, EtfBreakdown>;
   /** Bond-fund durations looked up for this visitor, keyed by upper-case ticker (see `DurationRecord`). Added after v1.3: older saves have none. */
   durations: Record<string, DurationRecord>;
+  /** When Claude was last asked for a stock's sector, by upper-case ticker (so it is asked again only after a week). Added after v1.4. */
+  sectorTries: Record<string, string>;
 }
 
 type IdMaker = () => string;
@@ -60,7 +62,7 @@ const fromInput = (h: HoldingInput, id: string, noLivePrice = false): Position =
 
 /** A portfolio with nothing in it (a visitor who starts with their own file, or whose saved copy was damaged). */
 export function emptyDoc(): PortfolioDoc {
-  return { version: DOC_VERSION, holdings: [], cash: 0, isDemoData: false, seeded: true, pricesUpdatedAt: null, learnedFunds: [], etfBreakdowns: {}, durations: {} };
+  return { version: DOC_VERSION, holdings: [], cash: 0, isDemoData: false, seeded: true, pricesUpdatedAt: null, learnedFunds: [], etfBreakdowns: {}, durations: {}, sectorTries: {} };
 }
 
 /** One of the demo portfolios as a saved portfolio: marked as demo data, with the demo funds' weights already in. */
@@ -222,8 +224,56 @@ export function applyPrices(doc: PortfolioDoc, plan: PricePlan, stamp: boolean, 
  * changes whether the portfolio counts as demo data.
  */
 export function applyBreakdowns(doc: PortfolioDoc, fresh: Record<string, EtfBreakdown>): PortfolioDoc {
-  if (Object.keys(fresh).length === 0) return doc;
-  return { ...doc, etfBreakdowns: { ...doc.etfBreakdowns, ...fresh } };
+  const next = { ...doc.etfBreakdowns };
+  let changed = false;
+  for (const [ticker, b] of Object.entries(fresh)) {
+    // Weights Claude read are replaced by the market data's, but the market data saying "nothing for this fund" never erases them.
+    if (next[ticker]?.source === "claude" && next[ticker].status === "ok" && b.status !== "ok") continue;
+    next[ticker] = b;
+    changed = true;
+  }
+  return changed ? { ...doc, etfBreakdowns: next } : doc;
+}
+
+/**
+ * Save sectors Claude read for stocks that had none: `found` (by upper-case ticker) fills a blank sector, never replaces one that
+ * is set. Every ticker asked is recorded as tried. Not an edit: it never changes whether the portfolio counts as demo data.
+ */
+export function applyClaudeSectors(doc: PortfolioDoc, found: Record<string, string>, tried: string[], now: Date): PortfolioDoc {
+  if (tried.length === 0) return doc;
+  const tries = { ...doc.sectorTries };
+  for (const t of tried) tries[t.toUpperCase()] = now.toISOString();
+  const holdings = doc.holdings.map((h) => {
+    const sector = found[h.ticker.toUpperCase()];
+    return h.assetClass === "Equities" && !h.sector && sector ? { ...h, sector } : h;
+  });
+  return { ...doc, holdings, sectorTries: tries };
+}
+
+/**
+ * Save sector weights Claude read for equity ETFs the market data had none for (`found`: by upper-case ticker, fractions).
+ * A fund Claude found nothing for is recorded as tried ("none", read by Claude), so it is asked again only after a week.
+ * The fund's country weights from the market data, if any, are kept. Not an edit.
+ */
+export function applyClaudeBreakdowns(
+  doc: PortfolioDoc,
+  found: Record<string, { name: string; weight: number }[]>,
+  tried: string[],
+  now: Date,
+  mapping: number,
+): PortfolioDoc {
+  if (tried.length === 0) return doc;
+  const next = { ...doc.etfBreakdowns };
+  for (const raw of tried) {
+    const t = raw.toUpperCase();
+    const sectors = found[t];
+    const countries = next[t]?.countries ?? [];
+    next[t] =
+      sectors && sectors.length > 0
+        ? { sectors, countries, updatedAt: now.toISOString(), status: "ok", mapping, source: "claude" }
+        : { sectors: [], countries, updatedAt: now.toISOString(), status: "none", mapping, source: "claude" };
+  }
+  return { ...doc, etfBreakdowns: next };
 }
 
 /**

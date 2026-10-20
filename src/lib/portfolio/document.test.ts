@@ -45,6 +45,33 @@ describe("bond-fund durations in the saved portfolio and backup", () => {
   });
 });
 
+describe("looked-up bookkeeping from v1.5 (sector tries, Claude-read fund weights)", () => {
+  // A portfolio saved by v1.4: no sectorTries, no source on fund weights. It must load unchanged.
+  const v14 = JSON.stringify({
+    version: 1,
+    holdings: [{ id: "a", ticker: "VOO", name: "Vanguard S&P 500", assetClass: "Equities", sector: "Diversified", subtype: null, shares: 1, costBasisPerShare: 1, currentPrice: 1, noLivePrice: false, country: null }],
+    cash: 0, isDemoData: false, seeded: true, pricesUpdatedAt: null, learnedFunds: [], durations: {},
+    etfBreakdowns: { VOO: { sectors: [{ name: "Energy", weight: 1 }], countries: [], updatedAt: "2026-10-01T00:00:00.000Z", status: "ok", mapping: 3 } },
+  });
+  it("a v1.4 saved portfolio still loads, with no tries", () => {
+    const d = parseStoredDoc(v14);
+    expect(d?.sectorTries).toEqual({});
+    expect(d?.etfBreakdowns.VOO.source).toBeUndefined();
+  });
+  it("keeps sector tries and Claude-read fund weights through save and backup", () => {
+    const d = { ...doc(), sectorTries: { AAA: "2026-10-18T12:00:00.000Z" }, etfBreakdowns: { ETF: { sectors: [{ name: "Energy", weight: 1 }], countries: [], updatedAt: "2026-10-18T12:00:00.000Z", status: "ok" as const, source: "claude" as const } } };
+    expect(parseStoredDoc(JSON.stringify(d))).toEqual(d);
+    const r = parseBackup(exportBackup(d, now));
+    expect(r.ok && r.doc.sectorTries).toEqual(d.sectorTries);
+    expect(r.ok && r.doc.etfBreakdowns.ETF.source).toBe("claude");
+  });
+  it("drops damaged tries instead of the whole portfolio", () => {
+    const parsed = parseStoredDoc(JSON.stringify({ ...doc(), sectorTries: { AAA: "not a date" } }));
+    expect(parsed).not.toBeNull();
+    expect(parsed?.sectorTries).toEqual({});
+  });
+});
+
 describe("parseStoredDoc", () => {
   it("round-trips a saved portfolio", () => {
     const d = doc();

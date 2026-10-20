@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { TopBar } from "@/components/layout/top-bar";
 import { PortfolioGate } from "@/components/providers/portfolio-gate";
 import { StorageGuard } from "@/components/providers/storage-guard";
-import { DurationAutoFill } from "@/components/shared/duration-auto-fill";
+import { DataAutoFill } from "@/components/shared/data-auto-fill";
 import { PriceAutoRefresh } from "@/components/shared/price-auto-refresh";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { APP_NAME } from "@/config/nav";
@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <TooltipProvider>
           <TopBar />
           <PriceAutoRefresh />
-          <DurationAutoFill />
+          <DataAutoFill />
           <main className="min-h-screen px-4 pb-8 pt-24 md:px-6">
             <div className="mx-auto max-w-[1400px]">
               <StorageGuard />

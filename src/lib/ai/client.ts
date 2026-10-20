@@ -100,3 +100,15 @@ export async function lookupDurationsWithClaude(items: { ticker: string; name: s
   }
   return out;
 }
+
+/**
+ * Ask Claude (with web search) to read the sector weights of equity ETFs the market data has none for.
+ * Returns believable weights by upper-case ticker (fractions); a fund it could not read is simply missing.
+ */
+export async function lookupBreakdownsWithClaude(items: { ticker: string; name: string }[]): Promise<Record<string, { name: string; weight: number }[]>> {
+  const r = await postAndParse<{ ok: true; found: Record<string, { name: string; weight: number }[]> }>("/api/holdings/breakdown", {
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+  return r.found ?? {};
+}
