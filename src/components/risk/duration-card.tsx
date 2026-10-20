@@ -7,12 +7,11 @@ import { cn } from "@/lib/utils";
 
 const SHORT_NAMES = ["Ultra-Short", "Short", "Intermediate", "Long"];
 
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 const tickers = (list: { ticker: string }[]) => list.map((f) => f.ticker).join(", ");
 
 /** Average duration of the bond holdings and which duration type that is, on a four-step scale. */
 export function DurationCard({ view, notFound = [] }: { view: DurationView; /** Tickers Claude already looked up and found no duration for (tried again after a week). */ notFound?: string[] }) {
-  const { average, rows, withoutDuration, total } = view;
+  const { average, withoutDuration, total } = view;
   const gaveUp = withoutDuration.filter((f) => notFound.includes(f.ticker));
   const waiting = withoutDuration.filter((f) => !notFound.includes(f.ticker));
 
@@ -53,12 +52,12 @@ export function DurationCard({ view, notFound = [] }: { view: DurationView; /** 
         <p className="mt-5 text-[12px] text-muted-foreground">
           Duration measures how much a bond fund&rsquo;s price moves when interest rates change: the longer the duration, the more sensitive it is.
         </p>
-        <p className="mt-1.5 text-[11px] text-muted-foreground">
-          {rows.length > 0 && <>Weighted by market value across {plural(rows.length, "bond fund", "bond funds")} ({tickers(rows)}). </>}
-          {waiting.length > 0 && <>Looking up the duration of {tickers(waiting)}; check back shortly. </>}
-          {gaveUp.length > 0 && <>No duration could be found for {tickers(gaveUp)}, so {gaveUp.length === 1 ? "it is" : "they are"} left out of the average; we will try again later. </>}
-          Fund durations come from the issuers&rsquo; fund pages.
-        </p>
+        {(waiting.length > 0 || gaveUp.length > 0) && (
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            {waiting.length > 0 && <>Looking up the duration of {tickers(waiting)}; check back shortly. </>}
+            {gaveUp.length > 0 && <>No duration could be found for {tickers(gaveUp)}, so {gaveUp.length === 1 ? "it is" : "they are"} left out of the average; we will try again later.</>}
+          </p>
+        )}
       </div>
     </Panel>
   );
