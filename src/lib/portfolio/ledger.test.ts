@@ -322,3 +322,22 @@ describe("applyDurations", () => {
     expect(applyDurations(empty(), { ABC: -2, DEF: Number.NaN }, ["ABC", "DEF"], now).durations).toMatchObject({ ABC: { years: null }, DEF: { years: null } });
   });
 });
+
+describe("applyPrices: a blank sector", () => {
+  const now = new Date("2026-10-20T12:00:00Z");
+  it("is filled from the plan, and a sector that is set is never replaced", () => {
+    const d = {
+      ...empty(),
+      holdings: [
+        { id: "a", ticker: "AAA", name: "A", assetClass: "Equities" as const, sector: null, subtype: null, shares: 1, costBasisPerShare: 1, currentPrice: 1, noLivePrice: false, country: null },
+        { id: "b", ticker: "BBB", name: "B", assetClass: "Equities" as const, sector: "Energy", subtype: null, shares: 1, costBasisPerShare: 1, currentPrice: 1, noLivePrice: false, country: null },
+      ],
+    };
+    const r = applyPrices(d, { found: [{ id: "a", price: 5, sector: "Utilities" }, { id: "b", price: 5, sector: "Utilities" }], missing: [] }, true, now);
+    expect(r.holdings.map((h) => h.sector)).toEqual(["Utilities", "Energy"]);
+  });
+  it("stays blank when the plan has no sector", () => {
+    const d = { ...empty(), holdings: [{ id: "a", ticker: "AAA", name: "A", assetClass: "Equities" as const, sector: null, subtype: null, shares: 1, costBasisPerShare: 1, currentPrice: 1, noLivePrice: false, country: null }] };
+    expect(applyPrices(d, { found: [{ id: "a", price: 5 }], missing: [] }, true, now).holdings[0].sector).toBeNull();
+  });
+});

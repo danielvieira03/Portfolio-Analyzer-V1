@@ -55,7 +55,7 @@ export async function runPriceRefresh(force: boolean, deps: RefreshDeps): Promis
   if (!force && !isStale(last, now(), deps.minutes ?? PRICE_REFRESH_MINUTES)) {
     return { status: "fresh", updated: 0, unavailable: 0, breakdown: "none" };
   }
-  const targets = doc.holdings.map((h) => ({ id: h.id, ticker: h.ticker, assetClass: h.assetClass }));
+  const targets = doc.holdings.map((h) => ({ id: h.id, ticker: h.ticker, assetClass: h.assetClass, sector: h.sector }));
   if (targets.length === 0) return { status: "fresh", updated: 0, unavailable: 0, breakdown: "none" };
 
   const result = await deps.fetchPrices(targets.map((t) => t.ticker));

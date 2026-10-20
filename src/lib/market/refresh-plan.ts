@@ -3,17 +3,26 @@
 import { BREAKDOWN_MAPPING_VERSION } from "@/config/market";
 import type { EtfBreakdown, Position } from "@/lib/portfolio/types";
 import type { FundRequest } from "./breakdown";
-import type { MarketProfile } from "./profile";
+import { equitySector, type MarketProfile } from "./profile";
 
 export interface PriceTarget {
   id: string;
   ticker: string;
   assetClass: string;
+  /** The holding's sector as saved (Equities): a blank one is filled from the market profile. */
+  sector?: string | null;
 }
 
 export interface PricePlan {
   /** Holdings that got a price: save it and clear any "manual" flag. */
-  found: { id: string; price: number; /** Stocks only: headquarters country, when the provider gave one. */ country?: string | null }[];
+  found: {
+    id: string;
+    price: number;
+    /** Stocks only: headquarters country, when the provider gave one. */
+    country?: string | null;
+    /** Equities with no sector saved: the stock's sector in the app's names, or "Diversified" for an ETF. */
+    sector?: string;
+  }[];
   /** Holdings the provider answered for but has no price: keep the manual price, flag it. */
   missing: string[];
 }
@@ -27,7 +36,8 @@ export function planPriceUpdates(targets: PriceTarget[], profiles: Map<string, M
   for (const t of targets) {
     if (!profiles.has(t.ticker)) continue;
     const p = profiles.get(t.ticker);
-    if (p) plan.found.push({ id: t.id, price: p.price, ...(t.assetClass === "Equities" && p.country ? { country: p.country } : {}) });
+    const sector = t.assetClass === "Equities" && !t.sector && p ? equitySector(p) : null;
+    if (p) plan.found.push({ id: t.id, price: p.price, ...(t.assetClass === "Equities" && p.country ? { country: p.country } : {}), ...(sector ? { sector } : {}) });
     else plan.missing.push(t.id);
   }
   return plan;

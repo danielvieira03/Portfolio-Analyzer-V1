@@ -90,3 +90,27 @@ describe("breakdownsDue", () => {
     expect(breakdownsDue([h("VOO", "Equities", "Diversified")], { VOO: saved("not a date") }, now, 7, 1)).toEqual([{ ticker: "VOO", sectors: true }]);
   });
 });
+
+describe("planPriceUpdates: filling a blank sector", () => {
+  const withSector = (price: number, sector: string | null, isEtf = false) => ({ name: "n", price, sector, isEtf, country: null });
+  const eq = (id: string, ticker: string, sector: string | null, assetClass = "Equities") => ({ id, ticker, assetClass, sector });
+  it("gives a stock with no sector its translated sector", () => {
+    const plan = planPriceUpdates([eq("a", "AAPL", null)], new Map([["AAPL", withSector(300, "Technology")]]));
+    expect(plan.found).toEqual([{ id: "a", price: 300, sector: "Information Technology" }]);
+  });
+  it("files an ETF with no sector under Diversified", () => {
+    const plan = planPriceUpdates([eq("a", "VOO", null)], new Map([["VOO", withSector(700, "Financial Services", true)]]));
+    expect(plan.found[0].sector).toBe("Diversified");
+  });
+  it("never offers a replacement for a sector that is already set", () => {
+    const plan = planPriceUpdates([eq("a", "AAPL", "Energy")], new Map([["AAPL", withSector(300, "Technology")]]));
+    expect(plan.found[0].sector).toBeUndefined();
+  });
+  it("leaves bonds and alternatives alone, and a sector name it can't translate stays blank", () => {
+    const plan = planPriceUpdates(
+      [eq("b", "BND", null, "Fixed Income"), eq("g", "GLD", null, "Alternatives"), eq("w", "WEIRD", null)],
+      new Map([["BND", withSector(70, "Financial Services", true)], ["GLD", withSector(300, null, true)], ["WEIRD", withSector(10, "Strange Sector")]]),
+    );
+    expect(plan.found.map((f) => f.sector)).toEqual([undefined, undefined, undefined]);
+  });
+});

@@ -200,7 +200,14 @@ export function applyPrices(doc: PortfolioDoc, plan: PricePlan, stamp: boolean, 
     ...doc,
     holdings: doc.holdings.map((h) =>
       found.has(h.id)
-        ? { ...h, currentPrice: found.get(h.id)!.price, noLivePrice: false, country: h.assetClass === "Equities" ? (found.get(h.id)!.country ?? h.country ?? null) : h.country }
+        ? {
+            ...h,
+            currentPrice: found.get(h.id)!.price,
+            noLivePrice: false,
+            country: h.assetClass === "Equities" ? (found.get(h.id)!.country ?? h.country ?? null) : h.country,
+            // A blank sector is filled from the market profile; a sector that is set is never replaced.
+            sector: h.assetClass === "Equities" && !h.sector ? (found.get(h.id)!.sector ?? h.sector) : h.sector,
+          }
         : missing.has(h.id)
           ? { ...h, noLivePrice: true }
           : h,
