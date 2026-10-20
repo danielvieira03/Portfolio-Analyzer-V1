@@ -9,7 +9,7 @@ import { displayScore, riskLabel, riskPosition } from "@/lib/portfolio/risk";
 
 const TICKS = Array.from({ length: RISK_MAX - RISK_MIN + 1 }, (_, i) => RISK_MIN + i);
 
-export function RiskProfile({ score, allocation }: { score: number; allocation: AllocationSlice[] }) {
+export function RiskProfile({ score, allocation, note }: { score: number; allocation: AllocationSlice[]; /** The small print under the mix line. */ note: string }) {
   const shown = displayScore(score);
   const label = riskLabel(score);
   const position = riskPosition(score) * 100;
@@ -79,7 +79,7 @@ export function RiskProfile({ score, allocation }: { score: number; allocation: 
           ))}
         </p>
 
-        <p className="mt-4 text-center text-[13px] text-muted-foreground">Risk based on asset-class mix only</p>
+        <p className="mt-4 text-center text-[13px] text-muted-foreground">{note}</p>
         </div>
       </div>
     </Panel>

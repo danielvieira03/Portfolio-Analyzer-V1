@@ -12,12 +12,11 @@ import { LoadingPage } from "@/components/shared/loading-page";
 import { PageHeader } from "@/components/shared/page-header";
 import { SP500_AS_OF, SP500_SECTOR_WEIGHTS } from "@/config/sp500-sectors";
 import { allocationByClass, compareSectors } from "@/lib/portfolio/calc";
-import { fundDurations } from "@/lib/funds/duration";
 import { lookThroughExposure } from "@/lib/portfolio/exposure";
 import { topContributors } from "@/lib/portfolio/duration";
-import { libraryFunds } from "@/lib/portfolio/ledger";
+import { bondDurations as durationsOf } from "@/lib/portfolio/ledger";
 import { fundDataNote, unclassifiedNote } from "@/lib/portfolio/exposure-notes";
-import { riskScore } from "@/lib/portfolio/risk";
+import { portfolioRisk, riskNote } from "@/lib/portfolio/risk";
 
 export function RiskView() {
   const state = usePortfolio();
@@ -25,9 +24,10 @@ export function RiskView() {
   const { holdings: positions, cash, isDemoData, etfBreakdowns, durations } = state.doc;
 
   const allocation = allocationByClass(positions, cash);
-  const score = riskScore(allocation);
   const sectorRows = compareSectors(positions, SP500_SECTOR_WEIGHTS, etfBreakdowns);
-  const bondDurations = fundDurations(positions, libraryFunds(state.doc, positions.map((p) => p.ticker)), durations);
+  const bondDurations = durationsOf(state.doc);
+  const risk = portfolioRisk(positions, cash, etfBreakdowns, bondDurations);
+  const score = risk.score;
   const { sector, duration } = lookThroughExposure(positions, etfBreakdowns, { durations: bondDurations });
   const dataNote = [unclassifiedNote(sector.unclassified.weight, "sector"), fundDataNote(sector.oldestBreakdown, sector.fundsWithoutData)].filter(Boolean).join(" ");
   const contributors = topContributors(duration, 5);
@@ -41,7 +41,7 @@ export function RiskView() {
         <EmptyState title="No holdings yet" description="Upload your positions to see your Risk Profile." />
       ) : (
         <>
-          <RiskProfile score={score} allocation={allocation} />
+          <RiskProfile score={score} allocation={allocation} note={riskNote(risk)} />
           {hasSectorData ? (
             <div className="grid gap-3 xl:grid-cols-5">
               <div className="min-w-0 xl:col-span-3">

@@ -5,8 +5,8 @@ import { allocationByClass, summarize } from "@/lib/portfolio/calc";
 import { countryExposure } from "@/lib/portfolio/country-exposure";
 import { lookThroughExposure } from "@/lib/portfolio/exposure";
 import { durationType, topContributors } from "@/lib/portfolio/duration";
-import { demoDoc, libraryFunds } from "@/lib/portfolio/ledger";
-import { displayScore, riskLabel, riskScore } from "@/lib/portfolio/risk";
+import { bondDurations, demoDoc, libraryFunds } from "@/lib/portfolio/ledger";
+import { displayScore, portfolioRisk, riskLabel } from "@/lib/portfolio/risk";
 import { equitySectorAllocation } from "@/lib/portfolio/sector-allocation";
 import { subtypeAllocation } from "@/lib/portfolio/subtype-allocation";
 import { DEMO_PORTFOLIOS, type DemoId } from "./demo-portfolios";
@@ -15,7 +15,7 @@ const look = (id: DemoId) => {
   const d = demoDoc(id);
   const alloc = allocationByClass(d.holdings, d.cash);
   const share = (c: string) => alloc.find((s) => s.assetClass === c)?.weight ?? 0;
-  const score = riskScore(alloc)!;
+  const score = portfolioRisk(d.holdings, d.cash, d.etfBreakdowns, bondDurations(d)).score!;
   return { d, share, score, countries: countryExposure(d.holdings, d.etfBreakdowns), sectors: equitySectorAllocation(d.holdings, d.etfBreakdowns) };
 };
 const near = (a: number, b: number, tol = 0.02) => expect(Math.abs(a - b)).toBeLessThanOrEqual(tol);
@@ -70,10 +70,12 @@ describe("the demo portfolios", () => {
     expect(countries.rows[0].weight).toBeLessThan(0.6);
   });
 
-  it("Aggressive Growth: 85% stocks, aggressive score, tech-heavy, and the biggest economies on the map", () => {
+  it("Aggressive Growth: 85% stocks, high score, tech-heavy, and the biggest economies on the map", () => {
     const { share, score, countries, sectors } = look("growth");
     near(share("Equities"), 0.85);
-    expect(riskLabel(score)).toBe("Aggressive");
+    // Scored by sector, an all-stock portfolio tops out around 4.2-4.3 unless it is mostly Information Technology / Energy / crypto.
+    expect(riskLabel(score)).toBe("Moderately Aggressive");
+    expect(displayScore(score)).toBeGreaterThan(4.1);
     const biggest = ["United States", "China", "Japan", "India", "Germany", "United Kingdom"];
     const named = countries.rows.map((r) => r.name);
     for (const c of biggest) expect(named, c).toContain(c);

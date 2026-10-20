@@ -7,6 +7,7 @@ import { DEMO_BREAKDOWNS } from "@/config/demo-data";
 import { FUND_LIBRARY } from "@/config/fund-library";
 import { isValidSubtype } from "@/config/subtypes";
 import type { HoldingInput } from "@/lib/holdings/schema";
+import { fundDurations } from "@/lib/funds/duration";
 import type { FundRecord } from "@/lib/funds/library";
 import type { PricePlan } from "@/lib/market/refresh-plan";
 import { mergePositions } from "./calc";
@@ -272,6 +273,11 @@ export function libraryFunds(doc: PortfolioDoc, tickers: string[]): FundRecord[]
     out.push(f);
   }
   return out;
+}
+
+/** Duration in years of every bond fund in the portfolio that has one (built-in library, then looked up for this visitor). */
+export function bondDurations(doc: PortfolioDoc): Record<string, number> {
+  return fundDurations(doc.holdings, libraryFunds(doc, doc.holdings.map((h) => h.ticker)), doc.durations);
 }
 
 /** Remember funds Claude looked up. An existing entry (built-in or learned) is never overwritten. */

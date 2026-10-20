@@ -19,15 +19,15 @@ import { Button } from "@/components/ui/button";
 import { DEMO_PORTFOLIOS, demoById, type DemoId, type DemoPortfolio } from "@/config/demo-portfolios";
 import { formatPercent } from "@/lib/format";
 import { allocationByClass } from "@/lib/portfolio/calc";
-import { demoDoc } from "@/lib/portfolio/ledger";
-import { displayScore, riskLabel, riskScore } from "@/lib/portfolio/risk";
+import { bondDurations, demoDoc } from "@/lib/portfolio/ledger";
+import { displayScore, portfolioRisk, riskLabel } from "@/lib/portfolio/risk";
 import { startDemoPortfolio, startEmptyPortfolio } from "@/lib/storage/browser";
 
 /** The numbers on a demo's card, worked out from the demo itself with the app's own functions. */
 function cardFacts(demo: DemoPortfolio) {
   const d = demoDoc(demo.id);
   const slices = allocationByClass(d.holdings, d.cash);
-  const score = riskScore(slices) ?? 0;
+  const score = portfolioRisk(d.holdings, d.cash, d.etfBreakdowns, bondDurations(d)).score ?? 0;
   return { slices, score: displayScore(score), label: riskLabel(score) };
 }
 
