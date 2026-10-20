@@ -15,7 +15,9 @@ import { AI_ACCEPT_ATTR, IMAGE_TYPES, MAX_UPLOAD_BYTES } from "@/config/ai";
 import { holdingSchema } from "@/lib/holdings/schema";
 import { importIntoPortfolio } from "@/lib/storage/browser";
 import { hasSubtype } from "@/config/subtypes";
-import { lookupSubtypesWithClaude, readWithClaude, reviewWithClaude } from "@/lib/ai/client";
+import { fetchPricesAction } from "@/app/holdings/actions";
+import { lookupSectorsWithClaude, lookupSubtypesWithClaude, readWithClaude, reviewWithClaude } from "@/lib/ai/client";
+import { addClaudeSectors, marketExtras, marketLookupTickers, sectorsForClaude, stillBlank, withExtras, type ExtrasMap } from "@/lib/import/enrich";
 import { matchColumns, missingRequired, type ColumnMap } from "@/lib/import/columns";
 import { parseImportRows } from "@/lib/import/normalize";
 import { ACCEPT_ATTR, ACCEPTED_EXTENSIONS, readSpreadsheet } from "@/lib/import/parse-file";
@@ -87,9 +89,10 @@ function ImportBody({
   const [review, setReview] = useState<ReviewState>({ status: "idle" });
   // The automatic Claude check runs once per loaded CSV/Excel file.
   const autoChecked = useRef(false);
-  // Maturities / types Claude looked up for bond and alternatives rows, keyed "Asset Class:TICKER".
-  const autoLookedUp = useRef(false);
-  const [subtypes, setSubtypes] = useState<Record<string, string>>({});
+  // What was looked up for rows the file left blank (sector, country, maturity / type), keyed "Asset Class:TICKER".
+  // `looked` = rows already asked about, so each row is looked up once however often the preview changes.
+  const looked = useRef<Set<string>>(new Set());
+  const [extras, setExtras] = useState<ExtrasMap>({});
   const [lookingUp, setLookingUp] = useState(false);
 
   const existingMap = useMemo(() => new Map(existing.map((e) => [lotKey(e.assetClass, e.ticker), e])), [existing]);
@@ -109,8 +112,8 @@ function ImportBody({
     setAiIssues([]);
     setReview({ status: "idle" });
     autoChecked.current = false;
-    autoLookedUp.current = false;
-    setSubtypes({});
+    looked.current = new Set();
+    setExtras({});
     setLookingUp(false);
     if (fileRef.current) fileRef.current.value = "";
     if (aiRef.current) aiRef.current.value = "";
@@ -178,30 +181,59 @@ function ImportBody({
     void onReview();
   });
 
-  // Bond and alternatives rows with no maturity/type get one looked up (quietly, once per file).
-  const lookUpSubtypes = async () => {
+  // Fill what the file left blank before anything is saved: the market data provider first (stock sector and
+  // country, ETFs as "Diversified"), then Claude for whatever it couldn't answer (sectors; maturity / type for
+  // bond and alternatives funds, where the browser's fund library answers first). Quiet when something fails.
+  const lookUpMissing = async () => {
     if (!parsed) return;
-    const items = parsed.rows
-      .filter((r) => r.status !== "error" && r.holding && hasSubtype(r.holding.assetClass) && !r.holding.subtype)
-      .map((r) => r.holding!)
-      .filter((h) => mode === "replace" || !existingMap.get(lotKey(h.assetClass, h.ticker))?.subtype)
-      .map((h) => ({ ticker: h.ticker, name: h.name, assetClass: h.assetClass as "Fixed Income" | "Alternatives" }));
-    if (items.length === 0) return;
+    const rows = parsed.rows.filter((r) => r.status !== "error" && r.holding).map((r) => r.holding!);
+    const fresh = rows.filter((h) => !looked.current.has(lotKey(h.assetClass, h.ticker)));
+    if (fresh.length === 0) return;
+    for (const h of fresh) looked.current.add(lotKey(h.assetClass, h.ticker));
     setLookingUp(true);
-    const found: Record<string, string> = {};
+    let next: ExtrasMap = {};
     try {
-      for (let i = 0; i < items.length; i += 20) Object.assign(found, await lookupSubtypesWithClaude(items.slice(i, i + 20)));
-    } catch {
-      // Quiet failure: the import still works, and values can be looked up later on the Holdings page.
+      const tickers = marketLookupTickers(fresh);
+      if (tickers.length > 0) {
+        try {
+          const res = await fetchPricesAction(tickers);
+          next = marketExtras(fresh, res.profiles);
+        } catch {
+          // Market data unavailable: Claude below fills what it can.
+        }
+      }
+      const needSector = sectorsForClaude(
+        fresh.filter((h) => mode === "replace" || !existingMap.get(lotKey(h.assetClass, h.ticker))?.sector),
+        next,
+      );
+      for (let i = 0; i < needSector.length; i += 20) {
+        try {
+          next = addClaudeSectors(fresh, next, await lookupSectorsWithClaude(needSector.slice(i, i + 20)));
+        } catch {
+          // Quiet: those rows stay blank and can be set on the Holdings page.
+        }
+      }
+      const items = fresh
+        .filter((h) => hasSubtype(h.assetClass) && !h.subtype)
+        .filter((h) => mode === "replace" || !existingMap.get(lotKey(h.assetClass, h.ticker))?.subtype)
+        .map((h) => ({ ticker: h.ticker, name: h.name, assetClass: h.assetClass as "Fixed Income" | "Alternatives" }));
+      for (let i = 0; i < items.length; i += 20) {
+        try {
+          const found = await lookupSubtypesWithClaude(items.slice(i, i + 20));
+          for (const [key, subtype] of Object.entries(found)) next = { ...next, [key]: { ...next[key], subtype } };
+        } catch {
+          // Quiet: the Look up button on the Holdings page can fill these later.
+        }
+      }
+    } finally {
+      setExtras((prev) => ({ ...prev, ...next }));
+      setLookingUp(false);
     }
-    setSubtypes(found);
-    setLookingUp(false);
   };
 
   useEffect(() => {
-    if (step !== "preview" || autoLookedUp.current || !parsed) return;
-    autoLookedUp.current = true;
-    void lookUpSubtypes();
+    if (step !== "preview" || lookingUp || !parsed) return;
+    void lookUpMissing();
   });
 
   const onFile = async (file: File | undefined) => {
@@ -231,7 +263,7 @@ function ImportBody({
     if (!view) return;
     const valid = [];
     for (const h of view.holdings) {
-      const parsed = holdingSchema.safeParse({ ...h, subtype: h.subtype ?? subtypes[lotKey(h.assetClass, h.ticker)] ?? null });
+      const parsed = holdingSchema.safeParse(withExtras(h, extras[lotKey(h.assetClass, h.ticker)]));
       if (!parsed.success) {
         setError("Some rows are invalid — please re-check the file.");
         return;
@@ -385,8 +417,9 @@ function ImportBody({
           aiIssues={aiIssues}
           review={review}
           onReview={onReview}
-          subtypes={subtypes}
+          extras={extras}
           lookingUp={lookingUp}
+          blankCount={stillBlank(view.holdings, extras)}
           error={error}
           defaultClass={defaultClass}
           setDefaultClass={setDefaultClass}
@@ -399,10 +432,10 @@ function ImportBody({
         {step === "preview" && view && (
           <Button
             onClick={save}
-            disabled={nothingToImport}
+            disabled={nothingToImport || lookingUp}
             variant={mode === "replace" ? "destructive" : "default"}
           >
-            {`${mode === "replace" ? "Replace with" : "Import"} ${view.holdings.length} ${view.holdings.length === 1 ? "holding" : "holdings"}`}
+            {lookingUp ? "Looking up sector, maturity and type…" : `${mode === "replace" ? "Replace with" : "Import"} ${view.holdings.length} ${view.holdings.length === 1 ? "holding" : "holdings"}`}
           </Button>
         )}
       </DialogFooter>

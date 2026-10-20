@@ -10,6 +10,7 @@ import type { ParsedImport, ParsedRow } from "@/lib/import/normalize";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { HOLDING_CLASSES, type HoldingClass } from "@/lib/portfolio/types";
 import type { Review } from "@/lib/ai/schema";
+import { lotKey, type ExtrasMap } from "@/lib/import/enrich";
 import { cn } from "@/lib/utils";
 
 export type ReviewState =
@@ -31,7 +32,7 @@ export interface ExistingLot {
   costBasisPerShare: number;
 }
 
-export const lotKey = (assetClass: string, ticker: string) => `${assetClass}:${ticker}`;
+export { lotKey };
 
 /** Rows with their final fate once the user's choices are applied. `excluded` holds repeated tickers the user unticked. */
 export function classify(parsed: ParsedImport, existing: Map<string, ExistingLot>, mode: Mode, excluded: Set<string>) {
@@ -79,8 +80,9 @@ export function ImportPreview({
   aiIssues,
   review,
   onReview,
-  subtypes,
+  extras,
   lookingUp,
+  blankCount,
 }: {
   parsed: ParsedImport;
   existing: Map<string, ExistingLot>;
@@ -97,9 +99,11 @@ export function ImportPreview({
   aiIssues: string[];
   review: ReviewState;
   onReview: () => void;
-  /** Maturities / types Claude looked up, keyed "Asset Class:TICKER". */
-  subtypes: Record<string, string>;
+  /** Sector / country / maturity / type looked up for blanks in the file, keyed "Asset Class:TICKER". */
+  extras: ExtrasMap;
   lookingUp: boolean;
+  /** Rows still without a sector (equities) or maturity / type (bonds, alternatives) once the lookups are done. */
+  blankCount: number;
 }) {
   const { isDuplicate, isLeftOut, counts, cashAmount } = view;
   const showCheck = counts.duplicates > 0;
@@ -133,7 +137,12 @@ export function ImportPreview({
       )}
       {lookingUp && (
         <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
-          <Loader2 className="size-3.5 animate-spin" /> Claude is looking up maturities and types…
+          <Loader2 className="size-3.5 animate-spin" /> Looking up sectors, maturities and types for what the file left blank…
+        </p>
+      )}
+      {!lookingUp && blankCount > 0 && (
+        <p className="text-[12px] text-muted-foreground">
+          {blankCount} {blankCount === 1 ? "row has" : "rows have"} no sector, maturity or type yet. You can still import and fill them in on the Holdings page.
         </p>
       )}
       {review.status === "loading" && (
@@ -244,11 +253,11 @@ export function ImportPreview({
                         </span>
                       </p>
                     )}
-                    {h && hasSubtype(h.assetClass) && (h.subtype || subtypes[key] || lookingUp) && (
+                    {h && hasSubtype(h.assetClass) && (h.subtype || extras[key]?.subtype || lookingUp) && (
                       <p className="text-[11px] text-muted-foreground">
                         {SUBTYPE_LABEL[h.assetClass]}:{" "}
-                        {h.subtype ?? subtypes[key] ?? "looking up…"}
-                        {!h.subtype && subtypes[key] ? " · found by Claude" : ""}
+                        {h.subtype ?? extras[key]?.subtype ?? "looking up…"}
+                        {!h.subtype && extras[key]?.subtype ? " · looked up" : ""}
                       </p>
                     )}
                     {r.messages.map((m) => (
@@ -257,7 +266,10 @@ export function ImportPreview({
                       </p>
                     ))}
                   </td>
-                  <td className="px-2 py-1.5 text-muted-foreground">{h?.sector ?? "—"}</td>
+                  <td className="px-2 py-1.5 text-muted-foreground">
+                    {h?.sector ?? extras[key]?.sector ?? (h?.assetClass === "Equities" && lookingUp ? "looking up…" : "—")}
+                    {h && !h.sector && extras[key]?.sector ? <span className="block text-[11px]">looked up</span> : null}
+                  </td>
                   <td className="num px-2 py-1.5">{h ? formatShares(h.shares) : "—"}</td>
                   <td className="num px-2 py-1.5">{h ? formatPrice(h.costBasisPerShare) : "—"}</td>
                   <td className="num px-2 py-1.5">{h ? formatPrice(h.currentPrice) : "—"}</td>

@@ -75,3 +75,12 @@ export async function lookupSubtypesWithClaude(items: ClassifyInput[]): Promise<
   });
   return res.found;
 }
+
+/** Ask Claude for the sector of equity holdings the market data had none for. Returns sectors by upper-case ticker. */
+export async function lookupSectorsWithClaude(items: { ticker: string; name: string }[]): Promise<Record<string, string>> {
+  const r = await postAndParse<{ ok: true; found: Record<string, string> }>("/api/holdings/sector", {
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+  return r.found;
+}

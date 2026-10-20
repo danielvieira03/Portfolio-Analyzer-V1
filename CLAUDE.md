@@ -31,7 +31,7 @@ SheetJS `xlsx` (Excel) · Anthropic SDK (screenshot/PDF import, optional review)
 - `src/lib/storage/` — the browser store (`portfolio-store.ts`, saves to localStorage, works with `useSyncExternalStore`), the screens' change functions (`browser.ts`, BROWSER ONLY), price refresh and ticker lookup logic
 - `src/components/providers/` — `usePortfolio()` hook (null until the browser data is read) and `StorageGuard` (tab sync, notices); `src/components/views/` — Dashboard/Holdings/Risk screens
 - `src/lib/holdings/` — validation (zod) shared by the form, the import and the backup
-- `src/lib/import/` — CSV/Excel parsing, flexible column matching, row cleanup + warnings
+- `src/lib/import/` — CSV/Excel parsing, flexible column matching, row cleanup + warnings; `enrich.ts` = what the import preview fills in when the file left it blank (sector/country from market data, then Claude via `src/lib/ai/sector.ts`; maturity/type via the fund library + Claude), before anything is saved
 - `src/lib/ai/` — Claude calls: `claude.ts` is SERVER ONLY (reads the API key); `to-rows.ts` feeds AI output into the same importer; `client.ts` is the browser-side fetch helper
 - `src/app/api/import/` — route handlers `extract` (screenshot/PDF) and `review` (double-check)
 - `src/config/countries.ts` — ISO country codes, numeric ids (for the map) and names; `src/lib/map/` — `world.ts` turns the Natural Earth 110m data (`world-atlas`, lazy-loaded) into SVG paths with d3-geo, `shade.ts` is the amber scale; `src/lib/portfolio/country-exposure.ts` (the map card's numbers) and `country-label.ts` (what the Country column shows); `src/components/dashboard/country-exposure-card.tsx` is the map card

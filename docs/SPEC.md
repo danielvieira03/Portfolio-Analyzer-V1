@@ -48,6 +48,7 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
   and Screenshot/PDF (read by Claude). The first step of Import is choosing "Add additional holdings" or "New portfolio". The
   preview looks like the Holdings table; in Add mode repeated tickers are flagged, averaged by default, and can be
   unticked. CSV/Excel files get an automatic "Claude check" (parsed rows only, text, no file) that flags data mistakes only; it never blocks the import.
+  When the preview opens, whatever the file left blank is looked up before anything is saved: a stock's sector and country from market data (an ETF becomes "Diversified"), then Claude for what market data can't answer (sectors; maturity / type for bond and alternatives funds, the fund library first). Looked-up values are marked "looked up", the Import button waits until the lookups finish, and a quiet note counts rows still blank. Values in the file are never replaced.
 - **Backup** (button on Holdings) — because the portfolio lives in one browser, you can download it as a file and restore it
   later, or move it to another browser or device. Restoring replaces the current portfolio after a confirm step.
 - A demo portfolio (~$500K) shown to every new visitor, clearly badged and removable.
