@@ -4,7 +4,7 @@ import type { MarketProfile } from "@/lib/market/profile";
 import { addClaudeSectors, checkSector, marketExtras, marketLookupTickers, sectorsForClaude, stillBlank, withExtras } from "./enrich";
 
 const row = (o: Partial<HoldingInput> & { ticker: string }): HoldingInput => ({
-  name: o.ticker, assetClass: "Equities", sector: null, subtype: null, country: null, shares: 1, costBasisPerShare: 1, currentPrice: 1, ...o,
+  name: o.ticker, assetClass: "Equities", sector: null, subtype: null, country: null, dividend: null, shares: 1, costBasisPerShare: 1, currentPrice: 1, ...o,
 });
 const profile = (o: Partial<MarketProfile>): MarketProfile => ({ name: "X", price: 10, sector: null, isEtf: false, country: null, ...o });
 

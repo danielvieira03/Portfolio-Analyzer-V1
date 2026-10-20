@@ -102,7 +102,7 @@ describe("runPriceRefresh", () => {
   it("keeps two visitors apart: one visitor's refresh does not touch the other's portfolio", async () => {
     const a = setup();
     const b = setup();
-    b.update((d) => addHolding(d, { ticker: "BOB", name: "Bob Co", assetClass: "Equities", sector: "Energy", subtype: null, country: null, shares: 1, costBasisPerShare: 1, currentPrice: 5 }).doc);
+    b.update((d) => addHolding(d, { ticker: "BOB", name: "Bob Co", assetClass: "Equities", sector: "Energy", subtype: null, country: null, dividend: null, shares: 1, costBasisPerShare: 1, currentPrice: 5 }).doc);
     const bBefore = JSON.stringify(b.getSnapshot().doc);
     await runPriceRefresh(true, { store: a, fetchPrices: async () => answer(a, 999), now: () => now });
     expect(JSON.stringify(b.getSnapshot().doc)).toBe(bBefore);

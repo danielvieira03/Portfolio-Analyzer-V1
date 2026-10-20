@@ -72,6 +72,39 @@ describe("looked-up bookkeeping from v1.5 (sector tries, Claude-read fund weight
   });
 });
 
+describe("dividends in the saved portfolio and backup (added after v1.5)", () => {
+  // A portfolio saved by v1.5 or earlier: holdings have no dividend field. It must load unchanged, with the dividend "not known yet".
+  const v15 = JSON.stringify({
+    version: 1,
+    holdings: [{ id: "a", ticker: "KO", name: "Coca-Cola", assetClass: "Equities", sector: "Consumer Staples", subtype: null, shares: 10, costBasisPerShare: 50, currentPrice: 60, noLivePrice: false, country: "US" }],
+    cash: 0, isDemoData: false, seeded: true, pricesUpdatedAt: null, learnedFunds: [], durations: {}, sectorTries: {}, etfBreakdowns: {},
+  });
+  it("a v1.5 saved portfolio still loads, with the dividend not known yet", () => {
+    expect(parseStoredDoc(v15)?.holdings[0].dividend).toBeNull();
+  });
+  it("saves and reloads dividends, including a real zero", () => {
+    const d = doc();
+    d.holdings[0] = { ...d.holdings[0], dividend: 1.06 };
+    d.holdings[1] = { ...d.holdings[1], dividend: 0 };
+    const back = parseStoredDoc(JSON.stringify(d));
+    expect(back?.holdings.slice(0, 2).map((h) => h.dividend)).toEqual([1.06, 0]);
+  });
+  it("travel in the backup file, and an old backup without them restores as not known", () => {
+    const d = doc();
+    d.holdings[0] = { ...d.holdings[0], dividend: 2.5 };
+    const r = parseBackup(exportBackup(d, now));
+    expect(r.ok && r.doc.holdings[0].dividend).toBe(2.5);
+    const old = JSON.parse(exportBackup(doc(), now));
+    for (const h of old.holdings) delete h.dividend;
+    const r2 = parseBackup(JSON.stringify(old));
+    expect(r2.ok && r2.doc.holdings.every((h) => h.dividend === null)).toBe(true);
+  });
+  it("a damaged dividend is refused like any damaged holding", () => {
+    const d = doc();
+    expect(parseStoredDoc(JSON.stringify({ ...d, holdings: [{ ...d.holdings[0], dividend: -3 }] }))).toBeNull();
+  });
+});
+
 describe("parseStoredDoc", () => {
   it("round-trips a saved portfolio", () => {
     const d = doc();

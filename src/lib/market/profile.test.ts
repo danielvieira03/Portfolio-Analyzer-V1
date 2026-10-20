@@ -6,7 +6,12 @@ const etf = [{ symbol: "BND", companyName: "Vanguard Total Bond Market ETF", pri
 
 describe("parseProfile", () => {
   it("reads name, price, sector and the ETF flag", () => {
-    expect(parseProfile(aapl)).toEqual({ name: "Apple Inc.", price: 343.46, sector: "Technology", isEtf: false, country: null });
+    expect(parseProfile(aapl)).toEqual({ name: "Apple Inc.", price: 343.46, sector: "Technology", isEtf: false, country: null, dividend: null });
+  });
+  it("reads the last-year dividend per share: a number, zero for a non-payer, null when missing or unusable", () => {
+    expect(parseProfile([{ ...aapl[0], lastDividend: 1.06 }])?.dividend).toBe(1.06);
+    expect(parseProfile([{ ...aapl[0], lastDividend: 0 }])?.dividend).toBe(0);
+    for (const bad of [undefined, null, "1.06", -2, Number.NaN]) expect(parseProfile([{ ...aapl[0], lastDividend: bad }])?.dividend).toBeNull();
   });
   it("treats a fund flag as an ETF too", () => {
     expect(parseProfile([{ ...etf[0], isEtf: false, isFund: true }])?.isEtf).toBe(true);

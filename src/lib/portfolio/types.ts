@@ -48,4 +48,6 @@ export interface Position {
   noLivePrice?: boolean;
   /** Individual stocks only: the company's headquarters country (ISO two-letter code), from market data. Null = not known. */
   country?: string | null;
+  /** Dividend per share over roughly the last year, from market data (0 = pays none). Null or missing = not known yet (never guessed). */
+  dividend?: number | null;
 }

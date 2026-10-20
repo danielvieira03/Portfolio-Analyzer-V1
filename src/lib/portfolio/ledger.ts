@@ -58,6 +58,7 @@ const fromInput = (h: HoldingInput, id: string, noLivePrice = false): Position =
   currentPrice: h.currentPrice,
   noLivePrice,
   country: h.country,
+  dividend: h.dividend ?? null,
 });
 
 /** A portfolio with nothing in it (a visitor who starts with their own file, or whose saved copy was damaged). */
@@ -79,6 +80,7 @@ export function demoDoc(id: DemoId, newId: IdMaker = defaultId): PortfolioDoc {
       sector: h.sector,
       subtype: h.subtype ?? null,
       country: h.country ?? null,
+      dividend: h.dividend,
       shares: h.shares,
       costBasisPerShare: h.cost,
       currentPrice: h.price,
@@ -115,7 +117,7 @@ export function addHolding(
   if (!onDuplicate) return { doc, outcome: "duplicate" };
   const updated: Position =
     onDuplicate === "replace"
-      ? { ...fromInput(input, existing.id), noLivePrice: existing.noLivePrice, country: input.country ?? existing.country ?? null }
+      ? { ...fromInput(input, existing.id), noLivePrice: existing.noLivePrice, country: input.country ?? existing.country ?? null, dividend: existing.dividend ?? null }
       : { ...existing, ...mergePositions(existing, input), country: existing.country ?? input.country };
   return {
     doc: leaveDemo({ ...doc, holdings: doc.holdings.map((h) => (h.id === existing.id ? updated : h)) }),
@@ -132,7 +134,8 @@ export function saveHolding(
   const current = doc.holdings.find((h) => h.id === id);
   if (!current) return { ok: false, error: "not_found" };
   if (doc.holdings.some((h) => h.id !== id && sameFund(h, input))) return { ok: false, error: "duplicate" };
-  const updated = fromInput(input, id, current.noLivePrice);
+  // The dividend comes from market data, not the form: keep it unless the ticker itself was changed.
+  const updated = { ...fromInput(input, id, current.noLivePrice), dividend: input.ticker === current.ticker ? (current.dividend ?? null) : null };
   return { ok: true, doc: leaveDemo({ ...doc, holdings: doc.holdings.map((h) => (h.id === id ? updated : h)) }) };
 }
 
@@ -177,7 +180,7 @@ export function importHoldings(
     } else if (onDuplicate === "skip") {
       result.skipped++;
     } else if (onDuplicate === "replace") {
-      holdings[at] = { ...fromInput(h, holdings[at].id), noLivePrice: holdings[at].noLivePrice, country: h.country ?? holdings[at].country ?? null };
+      holdings[at] = { ...fromInput(h, holdings[at].id), noLivePrice: holdings[at].noLivePrice, country: h.country ?? holdings[at].country ?? null, dividend: holdings[at].dividend ?? null };
       result.replaced++;
     } else {
       holdings[at] = { ...holdings[at], ...mergePositions(holdings[at], h), country: holdings[at].country ?? h.country };
@@ -209,6 +212,8 @@ export function applyPrices(doc: PortfolioDoc, plan: PricePlan, stamp: boolean, 
             country: h.assetClass === "Equities" ? (found.get(h.id)!.country ?? h.country ?? null) : h.country,
             // A blank sector is filled from the market profile; a sector that is set is never replaced.
             sector: h.assetClass === "Equities" && !h.sector ? (found.get(h.id)!.sector ?? h.sector) : h.sector,
+            // The dividend follows the latest market data; if the profile had none, the saved one stays.
+            dividend: found.get(h.id)!.dividend ?? h.dividend ?? null,
           }
         : missing.has(h.id)
           ? { ...h, noLivePrice: true }

@@ -1,6 +1,6 @@
 // GENERATED ONCE from Financial Modeling Prep on 2026-10-20 (prices and fund weights as of that day), then shipped as plain data.
 // The three demo portfolios' holdings and the fund weights that make their sector / country views work with no lookup.
-// Demo prices and costs are illustrative; after the first live refresh the app uses real prices and weights.
+// Dividends are the profile's last-year dividend per share from the same capture. Demo prices and costs are illustrative; after the first live refresh the app uses real prices and weights.
 
 import type { EtfBreakdown, HoldingClass } from "@/lib/portfolio/types";
 
@@ -14,69 +14,71 @@ export interface DemoHolding {
   shares: number;
   cost: number;
   price: number;
+  /** Dividend per share over the last year (from the same capture as the price; 0 = pays none). */
+  dividend: number;
 }
 
 export const CONSERVATIVE_CASH = 75000;
 export const CONSERVATIVE_HOLDINGS: DemoHolding[] = [
-  { ticker: "VOO", name: "Vanguard S&P 500 ETF", assetClass: "Equities", sector: "Diversified", shares: 35, cost: 549.59, price: 704.6 },
-  { ticker: "JNJ", name: "Johnson & Johnson", assetClass: "Equities", sector: "Health Care", country: "US", shares: 39, cost: 258.87, price: 253.79 },
-  { ticker: "PG", name: "The Procter & Gamble Company", assetClass: "Equities", sector: "Consumer Staples", country: "US", shares: 51, cost: 146.65, price: 157.69 },
-  { ticker: "KO", name: "The Coca-Cola Company", assetClass: "Equities", sector: "Consumer Staples", country: "US", shares: 75, cost: 84.08, price: 93.42 },
-  { ticker: "BND", name: "Vanguard Total Bond Market ETF", assetClass: "Fixed Income", sector: null, subtype: "Medium-term", shares: 1275, cost: 73.42, price: 70.6 },
-  { ticker: "TIP", name: "iShares TIPS Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Medium-term", shares: 333, cost: 108.42, price: 105.26 },
-  { ticker: "VCSH", name: "Vanguard Short-Term Corporate Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Short-term", shares: 775, cost: 77.4, price: 77.4 },
-  { ticker: "SGOV", name: "iShares 0-3 Month Treasury Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Short-term", shares: 497, cost: 100.59, price: 100.59 },
-  { ticker: "VGSH", name: "Vanguard Short-Term Treasury ETF", assetClass: "Fixed Income", sector: null, subtype: "Short-term", shares: 434, cost: 58.22, price: 57.64 },
-  { ticker: "TLT", name: "iShares 20+ Year Treasury Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Long-term", shares: 503, cost: 89, price: 79.46 },
-  { ticker: "GLD", name: "SPDR Gold Shares", assetClass: "Alternatives", sector: null, subtype: "Commodities", shares: 119, cost: 220.22, price: 379.69 },
-  { ticker: "VNQ", name: "Vanguard Real Estate ETF", assetClass: "Alternatives", sector: null, subtype: "REITs", shares: 331, cost: 87.08, price: 90.71 },
+  { ticker: "VOO", name: "Vanguard S&P 500 ETF", assetClass: "Equities", sector: "Diversified", shares: 35, cost: 549.59, price: 704.6, dividend: 7.4282 },
+  { ticker: "JNJ", name: "Johnson & Johnson", assetClass: "Equities", sector: "Health Care", country: "US", shares: 39, cost: 258.87, price: 253.79, dividend: 5.28 },
+  { ticker: "PG", name: "The Procter & Gamble Company", assetClass: "Equities", sector: "Consumer Staples", country: "US", shares: 51, cost: 146.65, price: 157.69, dividend: 4.3223 },
+  { ticker: "KO", name: "The Coca-Cola Company", assetClass: "Equities", sector: "Consumer Staples", country: "US", shares: 75, cost: 84.08, price: 93.42, dividend: 2.1 },
+  { ticker: "BND", name: "Vanguard Total Bond Market ETF", assetClass: "Fixed Income", sector: null, subtype: "Medium-term", shares: 1275, cost: 73.42, price: 70.6, dividend: 2.93862 },
+  { ticker: "TIP", name: "iShares TIPS Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Medium-term", shares: 333, cost: 108.42, price: 105.26, dividend: 5.32139 },
+  { ticker: "VCSH", name: "Vanguard Short-Term Corporate Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Short-term", shares: 775, cost: 77.4, price: 77.4, dividend: 3.5258 },
+  { ticker: "SGOV", name: "iShares 0-3 Month Treasury Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Short-term", shares: 497, cost: 100.59, price: 100.59, dividend: 3.66554 },
+  { ticker: "VGSH", name: "Vanguard Short-Term Treasury ETF", assetClass: "Fixed Income", sector: null, subtype: "Short-term", shares: 434, cost: 58.22, price: 57.64, dividend: 2.1789 },
+  { ticker: "TLT", name: "iShares 20+ Year Treasury Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Long-term", shares: 503, cost: 89, price: 79.46, dividend: 3.8914 },
+  { ticker: "GLD", name: "SPDR Gold Shares", assetClass: "Alternatives", sector: null, subtype: "Commodities", shares: 119, cost: 220.22, price: 379.69, dividend: 0 },
+  { ticker: "VNQ", name: "Vanguard Real Estate ETF", assetClass: "Alternatives", sector: null, subtype: "REITs", shares: 331, cost: 87.08, price: 90.71, dividend: 3.4062 },
 ];
 
 export const GLOBAL_CASH = 25000;
 export const GLOBAL_HOLDINGS: DemoHolding[] = [
-  { ticker: "VOO", name: "Vanguard S&P 500 ETF", assetClass: "Equities", sector: "Diversified", shares: 35, cost: 563.68, price: 704.6 },
-  { ticker: "VXUS", name: "Vanguard Total International Stock ETF", assetClass: "Equities", sector: "Diversified", shares: 480, cost: 70.8, price: 83.29 },
-  { ticker: "VWO", name: "Vanguard FTSE Emerging Markets ETF", assetClass: "Equities", sector: "Diversified", shares: 431, cost: 52.23, price: 58.03 },
-  { ticker: "VGK", name: "Vanguard FTSE Europe ETF", assetClass: "Equities", sector: "Diversified", shares: 231, cost: 70.87, price: 86.43 },
-  { ticker: "EWJ", name: "iShares MSCI Japan ETF", assetClass: "Equities", sector: "Diversified", shares: 158, cost: 83.59, price: 94.99 },
-  { ticker: "INDA", name: "iShares MSCI India ETF", assetClass: "Equities", sector: "Diversified", shares: 253, cost: 45.03, price: 47.4 },
-  { ticker: "MCHI", name: "iShares MSCI China ETF", assetClass: "Equities", sector: "Diversified", shares: 157, cost: 60.03, price: 50.87 },
-  { ticker: "ASML", name: "ASML Holding N.V.", assetClass: "Equities", sector: "Information Technology", country: "NL", shares: 6, cost: 1021.21, price: 1647.12 },
-  { ticker: "TSM", name: "Taiwan Semiconductor Manufacturing Company Limited", assetClass: "Equities", sector: "Information Technology", country: "TW", shares: 24, cost: 210.11, price: 420.22 },
-  { ticker: "NVO", name: "Novo Nordisk A/S", assetClass: "Equities", sector: "Health Care", country: "DK", shares: 130, cost: 61.47, price: 38.42 },
-  { ticker: "TM", name: "Toyota Motor Corporation", assetClass: "Equities", sector: "Consumer Discretionary", country: "JP", shares: 26, cost: 174.65, price: 194.06 },
-  { ticker: "BND", name: "Vanguard Total Bond Market ETF", assetClass: "Fixed Income", sector: null, subtype: "Medium-term", shares: 992, cost: 73.42, price: 70.6 },
-  { ticker: "BNDX", name: "Vanguard Total International Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Medium-term", shares: 1488, cost: 49.38, price: 47.03 },
-  { ticker: "EMB", name: "iShares J.P. Morgan USD Emerging Markets Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Long-term", shares: 439, cost: 91.09, price: 91.09 },
-  { ticker: "VCSH", name: "Vanguard Short-Term Corporate Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Short-term", shares: 258, cost: 77.4, price: 77.4 },
-  { ticker: "IEF", name: "iShares 7-10 Year Treasury Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Medium-term", shares: 278, cost: 94.58, price: 90.08 },
-  { ticker: "GLD", name: "SPDR Gold Shares", assetClass: "Alternatives", sector: null, subtype: "Commodities", shares: 92, cost: 227.81, price: 379.69 },
-  { ticker: "VNQI", name: "Vanguard Global ex-U.S. Real Estate ETF", assetClass: "Alternatives", sector: null, subtype: "REITs", shares: 713, cost: 43.34, price: 42.08 },
-  { ticker: "DBC", name: "Invesco DB Commodity Index Tracking Fund", assetClass: "Alternatives", sector: null, subtype: "Commodities", shares: 297, cost: 35.36, price: 33.68 },
+  { ticker: "VOO", name: "Vanguard S&P 500 ETF", assetClass: "Equities", sector: "Diversified", shares: 35, cost: 563.68, price: 704.6, dividend: 7.4282 },
+  { ticker: "VXUS", name: "Vanguard Total International Stock ETF", assetClass: "Equities", sector: "Diversified", shares: 480, cost: 70.8, price: 83.29, dividend: 2.1884 },
+  { ticker: "VWO", name: "Vanguard FTSE Emerging Markets ETF", assetClass: "Equities", sector: "Diversified", shares: 431, cost: 52.23, price: 58.03, dividend: 1.383 },
+  { ticker: "VGK", name: "Vanguard FTSE Europe ETF", assetClass: "Equities", sector: "Diversified", shares: 231, cost: 70.87, price: 86.43, dividend: 2.582 },
+  { ticker: "EWJ", name: "iShares MSCI Japan ETF", assetClass: "Equities", sector: "Diversified", shares: 158, cost: 83.59, price: 94.99, dividend: 3.56234 },
+  { ticker: "INDA", name: "iShares MSCI India ETF", assetClass: "Equities", sector: "Diversified", shares: 253, cost: 45.03, price: 47.4, dividend: 0 },
+  { ticker: "MCHI", name: "iShares MSCI China ETF", assetClass: "Equities", sector: "Diversified", shares: 157, cost: 60.03, price: 50.87, dividend: 1.09631 },
+  { ticker: "ASML", name: "ASML Holding N.V.", assetClass: "Equities", sector: "Information Technology", country: "NL", shares: 6, cost: 1021.21, price: 1647.12, dividend: 9.07618 },
+  { ticker: "TSM", name: "Taiwan Semiconductor Manufacturing Company Limited", assetClass: "Equities", sector: "Information Technology", country: "TW", shares: 24, cost: 210.11, price: 420.22, dividend: 3.49569 },
+  { ticker: "NVO", name: "Novo Nordisk A/S", assetClass: "Equities", sector: "Health Care", country: "DK", shares: 130, cost: 61.47, price: 38.42, dividend: 1.16351 },
+  { ticker: "TM", name: "Toyota Motor Corporation", assetClass: "Equities", sector: "Consumer Discretionary", country: "JP", shares: 26, cost: 174.65, price: 194.06, dividend: 6.28614 },
+  { ticker: "BND", name: "Vanguard Total Bond Market ETF", assetClass: "Fixed Income", sector: null, subtype: "Medium-term", shares: 992, cost: 73.42, price: 70.6, dividend: 2.93862 },
+  { ticker: "BNDX", name: "Vanguard Total International Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Medium-term", shares: 1488, cost: 49.38, price: 47.03, dividend: 2.1966 },
+  { ticker: "EMB", name: "iShares J.P. Morgan USD Emerging Markets Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Long-term", shares: 439, cost: 91.09, price: 91.09, dividend: 4.93326 },
+  { ticker: "VCSH", name: "Vanguard Short-Term Corporate Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Short-term", shares: 258, cost: 77.4, price: 77.4, dividend: 3.5258 },
+  { ticker: "IEF", name: "iShares 7-10 Year Treasury Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Medium-term", shares: 278, cost: 94.58, price: 90.08, dividend: 3.7141 },
+  { ticker: "GLD", name: "SPDR Gold Shares", assetClass: "Alternatives", sector: null, subtype: "Commodities", shares: 92, cost: 227.81, price: 379.69, dividend: 0 },
+  { ticker: "VNQI", name: "Vanguard Global ex-U.S. Real Estate ETF", assetClass: "Alternatives", sector: null, subtype: "REITs", shares: 713, cost: 43.34, price: 42.08, dividend: 2.1561 },
+  { ticker: "DBC", name: "Invesco DB Commodity Index Tracking Fund", assetClass: "Alternatives", sector: null, subtype: "Commodities", shares: 297, cost: 35.36, price: 33.68, dividend: 0.74424 },
 ];
 
 export const GROWTH_CASH = 25000;
 export const GROWTH_HOLDINGS: DemoHolding[] = [
-  { ticker: "NVDA", name: "NVIDIA Corporation", assetClass: "Equities", sector: "Information Technology", country: "US", shares: 253, cost: 65.13, price: 217.09 },
-  { ticker: "MSFT", name: "Microsoft Corporation", assetClass: "Equities", sector: "Information Technology", country: "US", shares: 75, cost: 330.78, price: 533.52 },
-  { ticker: "AAPL", name: "Apple Inc.", assetClass: "Equities", sector: "Information Technology", country: "US", shares: 102, cost: 188.62, price: 342.94 },
-  { ticker: "AMZN", name: "Amazon.com, Inc.", assetClass: "Equities", sector: "Consumer Discretionary", country: "US", shares: 95, cost: 183.71, price: 262.45 },
-  { ticker: "META", name: "Meta Platforms, Inc.", assetClass: "Equities", sector: "Communication Services", country: "US", shares: 35, cost: 423.26, price: 705.44 },
-  { ticker: "TSLA", name: "Tesla, Inc.", assetClass: "Equities", sector: "Consumer Discretionary", country: "US", shares: 54, cost: 478.48, price: 368.06 },
-  { ticker: "GOOGL", name: "Alphabet Inc.", assetClass: "Equities", sector: "Communication Services", country: "US", shares: 58, cost: 240.93, price: 344.18 },
-  { ticker: "AVGO", name: "Broadcom Inc.", assetClass: "Equities", sector: "Information Technology", country: "US", shares: 60, cost: 150.57, price: 334.59 },
-  { ticker: "TSM", name: "Taiwan Semiconductor Manufacturing Company Limited", assetClass: "Equities", sector: "Information Technology", country: "TW", shares: 59, cost: 210.11, price: 420.22 },
-  { ticker: "ASML", name: "ASML Holding N.V.", assetClass: "Equities", sector: "Information Technology", country: "NL", shares: 9, cost: 1152.98, price: 1647.12 },
-  { ticker: "SAP", name: "SAP SE", assetClass: "Equities", sector: "Information Technology", country: "DE", shares: 44, cost: 203.43, price: 226.03 },
-  { ticker: "BABA", name: "Alibaba Group Holding Limited", assetClass: "Equities", sector: "Consumer Discretionary", country: "CN", shares: 138, cost: 130.28, price: 108.57 },
-  { ticker: "QQQ", name: "Invesco QQQ Trust, Series 1", assetClass: "Equities", sector: "Diversified", shares: 28, cost: 517.22, price: 718.36 },
-  { ticker: "MCHI", name: "iShares MSCI China ETF", assetClass: "Equities", sector: "Diversified", shares: 491, cost: 58.5, price: 50.87 },
-  { ticker: "INDA", name: "iShares MSCI India ETF", assetClass: "Equities", sector: "Diversified", shares: 527, cost: 45.98, price: 47.4 },
-  { ticker: "EWJ", name: "iShares MSCI Japan ETF", assetClass: "Equities", sector: "Diversified", shares: 211, cost: 80.74, price: 94.99 },
-  { ticker: "EWG", name: "iShares MSCI Germany ETF", assetClass: "Equities", sector: "Diversified", shares: 365, cost: 36.94, price: 41.04 },
-  { ticker: "EWU", name: "iShares MSCI United Kingdom ETF", assetClass: "Equities", sector: "Diversified", shares: 317, cost: 43.55, price: 47.34 },
-  { ticker: "SGOV", name: "iShares 0-3 Month Treasury Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Short-term", shares: 249, cost: 100.59, price: 100.59 },
-  { ticker: "IBIT", name: "iShares Bitcoin Trust ETF", assetClass: "Alternatives", sector: null, subtype: "Crypto", shares: 540, cost: 50.93, price: 46.3 },
+  { ticker: "NVDA", name: "NVIDIA Corporation", assetClass: "Equities", sector: "Information Technology", country: "US", shares: 253, cost: 65.13, price: 217.09, dividend: 0.28 },
+  { ticker: "MSFT", name: "Microsoft Corporation", assetClass: "Equities", sector: "Information Technology", country: "US", shares: 75, cost: 330.78, price: 533.52, dividend: 3.64 },
+  { ticker: "AAPL", name: "Apple Inc.", assetClass: "Equities", sector: "Information Technology", country: "US", shares: 102, cost: 188.62, price: 342.94, dividend: 1.06 },
+  { ticker: "AMZN", name: "Amazon.com, Inc.", assetClass: "Equities", sector: "Consumer Discretionary", country: "US", shares: 95, cost: 183.71, price: 262.45, dividend: 0 },
+  { ticker: "META", name: "Meta Platforms, Inc.", assetClass: "Equities", sector: "Communication Services", country: "US", shares: 35, cost: 423.26, price: 705.44, dividend: 2.1 },
+  { ticker: "TSLA", name: "Tesla, Inc.", assetClass: "Equities", sector: "Consumer Discretionary", country: "US", shares: 54, cost: 478.48, price: 368.06, dividend: 0 },
+  { ticker: "GOOGL", name: "Alphabet Inc.", assetClass: "Equities", sector: "Communication Services", country: "US", shares: 58, cost: 240.93, price: 344.18, dividend: 0.86 },
+  { ticker: "AVGO", name: "Broadcom Inc.", assetClass: "Equities", sector: "Information Technology", country: "US", shares: 60, cost: 150.57, price: 334.59, dividend: 2.6 },
+  { ticker: "TSM", name: "Taiwan Semiconductor Manufacturing Company Limited", assetClass: "Equities", sector: "Information Technology", country: "TW", shares: 59, cost: 210.11, price: 420.22, dividend: 3.49569 },
+  { ticker: "ASML", name: "ASML Holding N.V.", assetClass: "Equities", sector: "Information Technology", country: "NL", shares: 9, cost: 1152.98, price: 1647.12, dividend: 9.07618 },
+  { ticker: "SAP", name: "SAP SE", assetClass: "Equities", sector: "Information Technology", country: "DE", shares: 44, cost: 203.43, price: 226.03, dividend: 2.94073 },
+  { ticker: "BABA", name: "Alibaba Group Holding Limited", assetClass: "Equities", sector: "Consumer Discretionary", country: "CN", shares: 138, cost: 130.28, price: 108.57, dividend: 1.05 },
+  { ticker: "QQQ", name: "Invesco QQQ Trust, Series 1", assetClass: "Equities", sector: "Diversified", shares: 28, cost: 517.22, price: 718.36, dividend: 3.09182 },
+  { ticker: "MCHI", name: "iShares MSCI China ETF", assetClass: "Equities", sector: "Diversified", shares: 491, cost: 58.5, price: 50.87, dividend: 1.09631 },
+  { ticker: "INDA", name: "iShares MSCI India ETF", assetClass: "Equities", sector: "Diversified", shares: 527, cost: 45.98, price: 47.4, dividend: 0 },
+  { ticker: "EWJ", name: "iShares MSCI Japan ETF", assetClass: "Equities", sector: "Diversified", shares: 211, cost: 80.74, price: 94.99, dividend: 3.56234 },
+  { ticker: "EWG", name: "iShares MSCI Germany ETF", assetClass: "Equities", sector: "Diversified", shares: 365, cost: 36.94, price: 41.04, dividend: 0.83158 },
+  { ticker: "EWU", name: "iShares MSCI United Kingdom ETF", assetClass: "Equities", sector: "Diversified", shares: 317, cost: 43.55, price: 47.34, dividend: 1.49536 },
+  { ticker: "SGOV", name: "iShares 0-3 Month Treasury Bond ETF", assetClass: "Fixed Income", sector: null, subtype: "Short-term", shares: 249, cost: 100.59, price: 100.59, dividend: 3.66554 },
+  { ticker: "IBIT", name: "iShares Bitcoin Trust ETF", assetClass: "Alternatives", sector: null, subtype: "Crypto", shares: 540, cost: 50.93, price: 46.3, dividend: 0 },
 ];
 
 /** What each demo fund holds (sector and country weights), keyed by ticker. */

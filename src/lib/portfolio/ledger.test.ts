@@ -9,7 +9,7 @@ import {
 let n = 0;
 const id = () => `id${++n}`;
 const input = (o: Partial<HoldingInput> = {}): HoldingInput => ({
-  ticker: "AAPL", name: "Apple Inc.", assetClass: "Equities", sector: "Information Technology", subtype: null, country: null,
+  ticker: "AAPL", name: "Apple Inc.", assetClass: "Equities", sector: "Information Technology", subtype: null, country: null, dividend: null,
   shares: 10, costBasisPerShare: 100, currentPrice: 150, ...o,
 });
 const empty = (o: Partial<PortfolioDoc> = {}): PortfolioDoc => ({
@@ -382,5 +382,31 @@ describe("Claude-filled data", () => {
     expect(replaced.etfBreakdowns.ETF.sectors[0].name).toBe("Materials");
     // an ordinary 'none' still replaces an ordinary record, as before
     expect(applyBreakdowns({ ...empty(), etfBreakdowns: { X: bd("ok") } }, { X: bd("none") }).etfBreakdowns.X.status).toBe("none");
+  });
+});
+
+describe("dividends on holdings", () => {
+  const now = new Date("2026-10-20T12:00:00Z");
+  const held = (o: object = {}) => ({ id: "a", ticker: "AAA", name: "A", assetClass: "Equities" as const, sector: "Energy", subtype: null, shares: 10, costBasisPerShare: 5, currentPrice: 5, noLivePrice: false, country: null, dividend: null, ...o });
+  it("a new holding has no dividend yet (unavailable until a refresh)", () => {
+    expect(addHolding(empty(), input({ ticker: "NEW" }), undefined, id).doc.holdings[0].dividend).toBeNull();
+  });
+  it("applyPrices saves the dividend, keeps the old one when the plan has none, and zero is a real value", () => {
+    const d = { ...empty(), holdings: [held({ dividend: 2 })] };
+    expect(applyPrices(d, { found: [{ id: "a", price: 6, dividend: 3 }], missing: [] }, true, now).holdings[0].dividend).toBe(3);
+    expect(applyPrices(d, { found: [{ id: "a", price: 6 }], missing: [] }, true, now).holdings[0].dividend).toBe(2);
+    expect(applyPrices(d, { found: [{ id: "a", price: 6, dividend: 0 }], missing: [] }, true, now).holdings[0].dividend).toBe(0);
+  });
+  it("editing a holding keeps its dividend, unless its ticker was changed", () => {
+    const d = { ...empty(), holdings: [held({ dividend: 2 })] };
+    const kept = saveHolding(d, "a", input({ ticker: "AAA", shares: 20 }));
+    expect(kept.ok && kept.doc.holdings[0].dividend).toBe(2);
+    const changed = saveHolding(d, "a", input({ ticker: "BBB" }));
+    expect(changed.ok && changed.doc.holdings[0].dividend).toBeNull();
+  });
+  it("replacing or importing over a holding keeps its dividend", () => {
+    const d = { ...empty(), holdings: [held({ dividend: 2 })] };
+    expect(addHolding(d, input({ ticker: "AAA", sector: "Energy" }), "replace", id).doc.holdings[0].dividend).toBe(2);
+    expect(importHoldings(d, "add", [input({ ticker: "AAA", sector: "Energy" })], undefined, "replace", id).doc.holdings[0].dividend).toBe(2);
   });
 });
