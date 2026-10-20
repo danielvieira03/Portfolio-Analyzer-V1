@@ -23,12 +23,12 @@ _Screenshots show the built-in demo portfolio (illustrative numbers, not advice)
 - **Risk Analysis** — a 1 to 5 Risk Profile meter (scored from the asset-class mix) and equity sector weights (ETFs included, split by sector) versus the S&P 500, with a plain-English over/underweight summary.
 - **Import** — CSV and Excel (flexible column matching, manual mapping) and screenshots or PDFs read by Claude, always with a preview before anything is saved. CSV/Excel files get an automatic Claude sanity check.
 - **Backup** — download your portfolio as a file and restore it later or on another browser or device.
-- **Demo portfolio** — every new visitor starts with a ~$500K sample portfolio, clearly badged and removable in one click.
+- **Home page with three demo portfolios** — a short intro, then pick *Conservative Income*, *Global Diversified* or *Aggressive Growth* (each built to show a different part of the analyzer), or upload your own. Demos are clearly badged and removable in one click.
 
 ## How your data is stored
 Your holdings, cash and prices live in your browser's own storage on the device you use. The server never stores
 them. Because of that:
-- Clearing your browser data, or opening the app in another browser or device, starts you on a fresh demo portfolio. **Use Backup** (Holdings page) to keep a copy or move it.
+- Clearing your browser data, or opening the app in another browser or device, takes you back to the home page to pick a demo or upload again. **Use Backup** (Holdings page) to keep a copy or move it.
 - Some browsers (for example Safari on iPhone) can clear a site's saved data after a week or so of not visiting, so keep a backup file of anything you care about.
 - The only things that leave your browser are the tickers sent for price lookups, and anything you ask Claude to read or look up (a screenshot, a fund name).
 

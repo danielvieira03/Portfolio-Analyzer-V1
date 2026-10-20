@@ -32,6 +32,7 @@ export function ImportDialog({
   buttonLabel = "Import",
   prominent = false,
   buttonClassName,
+  defaultOpen = false,
 }: {
   /** Current holdings, used to flag repeated tickers, show the averaged result and warn before replacing. */
   existing: ExistingLot[];
@@ -40,8 +41,10 @@ export function ImportDialog({
   /** Filled amber button (for the empty dashboard) instead of the small outline one. */
   prominent?: boolean;
   buttonClassName?: string;
+  /** Open as soon as the page shows (used when arriving from "Upload your own"). */
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <>
       <Button

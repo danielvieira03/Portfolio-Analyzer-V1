@@ -8,7 +8,7 @@ export interface NavItem {
 
 // Add future tabs here — the top-bar tabs render whatever is in this list.
 export const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Holdings", href: "/holdings", icon: Table2 },
   { label: "Risk Analysis", href: "/risk", icon: ShieldAlert },
 ];

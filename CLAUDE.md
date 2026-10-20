@@ -24,7 +24,8 @@ SheetJS `xlsx` (Excel) · Anthropic SDK (screenshot/PDF import, optional review)
 - `npm test` — unit tests · `npm run typecheck` · `npm run lint` · `npm run build`
 
 ## Folder map
-- `src/app/` — routes (Dashboard `/`, Holdings `/holdings`, Risk Analysis `/risk`) and layout shell
+- `src/app/` — routes (Home `/`, Dashboard `/dashboard`, Holdings `/holdings`, Risk Analysis `/risk`) and layout shell
+- Home page: `src/components/views/home-view.tsx` (intro, three demo portfolios, "Upload your own"); the demos are `src/config/demo-portfolios.ts` (names, what each shows) + `demo-data.ts` (holdings and fund weights, captured once from market data; plain data) and become a saved portfolio through `demoDoc` in `ledger.ts` / `startDemoPortfolio` in `browser.ts`. A first-time visitor has NO portfolio until they choose (`chosen` on the store state); `src/components/providers/portfolio-gate.tsx` sends inner pages to `/` until then
 - `src/components/layout/` top bar with horizontal tabs · `shared/` Panel, Num, PageHeader · `ui/` shadcn primitives
 - `src/lib/portfolio/` — ALL portfolio math as pure, tested functions (value, cost, gain/loss, weights; `exposure.ts` = `lookThroughExposure`, the ONE function for sector/country exposure of stocks and funds); `ledger.ts` = every rule for changing a saved portfolio (add/edit/remove/import/prices/fund library); `document.ts` = reading the saved portfolio and the backup file safely
 - `src/lib/market/` — market data: `fmp.ts` is SERVER ONLY (reads the key); `profile.ts` (parse + sector), `breakdown.ts` (parse a fund's sector/country weights from FMP), `refresh-plan.ts` (incl. which funds are due for a weekly lookup) are pure and tested
@@ -51,7 +52,7 @@ SheetJS `xlsx` (Excel) · Anthropic SDK (screenshot/PDF import, optional review)
   the same file). If a change alters what is saved (renamed, removed or newly required fields, a different shape), STOP and tell Daniel
   first, then: add an upgrade step that converts the old saved data to the new shape (and the same for old backup files), bump the
   version, and add tests that load a real sample of the OLD format. Adding an optional field with a default (like `noLivePrice`) is
-  safe. Today an unreadable or unknown-version document is replaced by the demo portfolio (the unreadable copy is kept under
+  safe. Today an unreadable or unknown-version document is replaced by an empty portfolio (the unreadable copy is kept under
   `portfolio-analyzer:v1:unreadable`), which for a real visitor means losing their portfolio from view; treat that as a bug, not a plan.
 - Pushing to `main` deploys the live site automatically (Vercel). Run tests, typecheck, lint and build before Daniel is asked to push.
 - Keep files small. Math lives only in `src/lib/portfolio`, with tests beside it (`*.test.ts`).

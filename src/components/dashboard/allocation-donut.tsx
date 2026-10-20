@@ -2,7 +2,7 @@ import { DonutPanel } from "@/components/dashboard/donut-panel";
 import type { AllocationSlice } from "@/lib/portfolio/calc";
 import type { AssetClass } from "@/lib/portfolio/types";
 
-const CLASS_COLORS: Record<AssetClass, string> = {
+export const CLASS_COLORS: Record<AssetClass, string> = {
   Equities: "var(--chart-1)",
   "Fixed Income": "var(--chart-2)",
   Alternatives: "var(--chart-4)",

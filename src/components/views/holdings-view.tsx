@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { DemoBadge } from "@/components/dashboard/demo-badge";
 import { BackupDialog } from "@/components/holdings/backup-dialog";
 import { AssetClassSection } from "@/components/holdings/asset-class-section";
@@ -13,8 +14,12 @@ import { PageHeader } from "@/components/shared/page-header";
 import { summarize, weight } from "@/lib/portfolio/calc";
 import { HOLDING_CLASSES } from "@/lib/portfolio/types";
 
-export function HoldingsView() {
+export function HoldingsView({ openImport = false }: { openImport?: boolean }) {
   const state = usePortfolio();
+  // Arrived from "Upload your own": the dialog opens by itself, and the address goes back to plain /holdings.
+  useEffect(() => {
+    if (openImport) window.history.replaceState(null, "", "/holdings");
+  }, [openImport]);
   if (!state) return <LoadingPage title="Holdings" subtitle="Positions by asset class" />;
   const { holdings: positions, cash, isDemoData, pricesUpdatedAt } = state.doc;
   const { totalValue } = summarize(positions, cash);
@@ -29,7 +34,7 @@ export function HoldingsView() {
             {isDemoData && <DemoBadge />}
             <PriceRefresh updatedAt={pricesUpdatedAt} />
             <BackupDialog />
-            <ImportDialog existing={toExistingLots(positions)} />
+            <ImportDialog existing={toExistingLots(positions)} defaultOpen={openImport} />
           </>
         }
       />

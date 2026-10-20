@@ -51,7 +51,12 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
   When the preview opens, whatever the file left blank is looked up before anything is saved: a stock's sector and country from market data (an ETF becomes "Diversified"), then Claude for what market data can't answer (sectors; maturity / type for bond and alternatives funds, the fund library first). Looked-up values are marked "looked up", the Import button waits until the lookups finish, and a quiet note counts rows still blank. Values in the file are never replaced.
 - **Backup** (button on Holdings) — because the portfolio lives in one browser, you can download it as a file and restore it
   later, or move it to another browser or device. Restoring replaces the current portfolio after a confirm step.
-- A demo portfolio (~$500K) shown to every new visitor, clearly badged and removable.
+- **Home page** (`/`) — a short intro, three ~$500K demo portfolios and "Upload your own". Each demo is built to show something different:
+  *Conservative Income* (about 10% stocks, 60% bonds, 15% alternatives, 15% cash: low risk score, bond maturities, gold and REITs, almost all US),
+  *Global Diversified* (35/45/15/5: moderate score, many countries on the map through international and emerging-market funds) and
+  *Aggressive Growth* (85% stocks: high score, tech-heavy sectors versus the S&P 500, the biggest economies). Their fund weights are saved with them, so every
+  view works with no lookup. A new visitor has no portfolio until they pick one (inner pages send them home); a visitor who already has their own portfolio sees
+  "Continue with my portfolio" and is warned before a demo replaces it. Demo portfolios are badged and removable.
 
 ## Hosting and data
 - **Hosting:** Vercel, connected to the GitHub repository. Every push to `main` builds and deploys the live site automatically;

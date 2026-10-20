@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { TopBar } from "@/components/layout/top-bar";
+import { PortfolioGate } from "@/components/providers/portfolio-gate";
 import { StorageGuard } from "@/components/providers/storage-guard";
 import { PriceAutoRefresh } from "@/components/shared/price-auto-refresh";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,7 +13,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   title: APP_NAME,
-  description: "Analyze an investment portfolio: allocation, sector tilts and holdings.",
+  description: "Analyze an investment portfolio: allocation, sector and country exposure (looking through ETFs and bond funds) and risk.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -25,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="min-h-screen px-4 pb-8 pt-24 md:px-6">
             <div className="mx-auto max-w-[1400px]">
               <StorageGuard />
-              {children}
+              <PortfolioGate>{children}</PortfolioGate>
             </div>
           </main>
         </TooltipProvider>
