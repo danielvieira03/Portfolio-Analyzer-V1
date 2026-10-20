@@ -27,6 +27,8 @@ export const holdingSchema = z
     subtype: z.string().nullish().transform((v) => v || null),
     /** Headquarters country of an individual stock (ISO two-letter code); filled from market data, never typed. */
     country: z.string().regex(/^[A-Z]{2}$/, "Not a country code").nullish().transform((v) => v || null),
+    /** Dividend per share over the last year, filled from market data at each price refresh, never typed. */
+    dividend: z.number().finite().min(0).max(1_000_000).nullish().transform((v) => v ?? null),
     shares: positiveNumber("Shares"),
     costBasisPerShare: nonNegativeNumber("Cost basis"),
     currentPrice: nonNegativeNumber("Price"),

@@ -11,6 +11,8 @@ export interface MarketProfile {
   isEtf: boolean;
   /** The company's headquarters country (ISO two-letter code); null for ETFs and funds, or when the provider has none. */
   country: string | null;
+  /** The provider's last-year dividend per share (0 = pays none), or null when it gave none. Used for the Income tab. */
+  dividend?: number | null;
   /** Funds only, and only when looked up for the Add form: the provider's own fund category ("Core Investment Grade Bond"). */
   category?: string | null;
 }
@@ -26,12 +28,14 @@ export function parseProfile(json: unknown): MarketProfile | null {
   if (price <= 0) return null;
   const isEtf = r.isEtf === true || r.isFund === true;
   const country = str(r.country)?.toUpperCase() ?? null;
+  const dividend = typeof r.lastDividend === "number" && Number.isFinite(r.lastDividend) && r.lastDividend >= 0 ? r.lastDividend : null;
   return {
     name: str(r.companyName) ?? str(r.symbol) ?? "",
     price,
     sector: str(r.sector),
     isEtf,
     country: !isEtf && country && /^[A-Z]{2}$/.test(country) ? country : null,
+    dividend,
   };
 }
 

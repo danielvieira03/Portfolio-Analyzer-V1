@@ -22,6 +22,8 @@ export interface PricePlan {
     country?: string | null;
     /** Equities with no sector saved: the stock's sector in the app's names, or "Diversified" for an ETF. */
     sector?: string;
+    /** The profile's dividend per share, when it gave one. */
+    dividend?: number;
   }[];
   /** Holdings the provider answered for but has no price: keep the manual price, flag it. */
   missing: string[];
@@ -37,7 +39,9 @@ export function planPriceUpdates(targets: PriceTarget[], profiles: Map<string, M
     if (!profiles.has(t.ticker)) continue;
     const p = profiles.get(t.ticker);
     const sector = t.assetClass === "Equities" && !t.sector && p ? equitySector(p) : null;
-    if (p) plan.found.push({ id: t.id, price: p.price, ...(t.assetClass === "Equities" && p.country ? { country: p.country } : {}), ...(sector ? { sector } : {}) });
+    if (p) plan.found.push({ id: t.id, price: p.price, ...(t.assetClass === "Equities" && p.country ? { country: p.country } : {}), ...(sector ? { sector } : {}),
+      ...(typeof p.dividend === "number" ? { dividend: p.dividend } : {}),
+    });
     else plan.missing.push(t.id);
   }
   return plan;

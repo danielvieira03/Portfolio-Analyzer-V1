@@ -36,6 +36,7 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
   a bond fund with no duration is looked up by Claude (the tracked index's duration is accepted when the fund's own isn't published, never an estimate). Each lookup that
   finds nothing is tried again only after a week. Because equities now score 3.5 to 4.8 instead of a flat 5, a typical all-stock portfolio lands near 4.3 (the S&P 500 itself is about 4.3),
   so "Aggressive" (4.5+) needs heavy technology, energy or crypto.
+- **Income** (tab after Risk Analysis) — expected annual income from Equities (stocks and equity ETFs), Fixed Income and Alternatives that pay, as low / expected / high (expected -10% / +10%), computed by one shared function (`portfolioIncome`, `src/lib/portfolio/income.ts`) from each holding's dividend per share (saved at every price refresh, no extra API call) x shares; shows total, average monthly income, portfolio yield, a Sankey of the top 3 income holdings per category, and a section per category (yield on the whole category value, top 5 plus "Show all"); pre-tax, no reinvestment, cash interest excluded, holdings with no dividend data are "unavailable" and never guessed.
 - **Maturity and Type** — Fixed Income holdings have a Maturity (short / medium / long-term / not specified) and
   Alternatives a Type (commodities, REITs, crypto, infrastructure, other), as sortable columns and form fields.
   Missing values are filled automatically in the import preview, or with the "Look up with Claude" button on the

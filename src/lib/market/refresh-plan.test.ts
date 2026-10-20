@@ -114,3 +114,11 @@ describe("planPriceUpdates: filling a blank sector", () => {
     expect(plan.found.map((f) => f.sector)).toEqual([undefined, undefined, undefined]);
   });
 });
+
+describe("planPriceUpdates: dividends", () => {
+  const prof = (dividend?: number | null) => ({ name: "n", price: 100, sector: null, isEtf: false, country: null, ...(dividend === undefined ? {} : { dividend }) });
+  it("passes along the dividend, including zero, and nothing when the profile had none", () => {
+    const plan = planPriceUpdates([{ id: "a", ticker: "A", assetClass: "Equities" }, { id: "b", ticker: "B", assetClass: "Equities" }, { id: "c", ticker: "C", assetClass: "Fixed Income" }], new Map([["A", prof(1.5)], ["B", prof(0)], ["C", prof(null)]]));
+    expect(plan.found.map((f) => f.dividend)).toEqual([1.5, 0, undefined]);
+  });
+});

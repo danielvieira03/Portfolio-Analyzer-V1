@@ -61,6 +61,8 @@ const storedHolding = z.object({
   noLivePrice: z.boolean().default(false),
   // Added after v1.0: older saved portfolios have none, so it defaults to "not known".
   country: z.string().regex(/^[A-Z]{2}$/).nullable().default(null),
+  // Added after v1.5: older saved portfolios have none (= not known yet; the next price refresh fills it).
+  dividend: z.number().finite().min(0).max(1_000_000).nullable().default(null),
 });
 
 const storedDoc = z.object({
@@ -126,6 +128,7 @@ export function exportBackup(doc: PortfolioDoc, now: Date): string {
         currentPrice: h.currentPrice,
         noLivePrice: h.noLivePrice ?? false,
         country: h.country ?? null,
+        dividend: h.dividend ?? null,
       })),
       learnedFunds: doc.learnedFunds,
       etfBreakdowns: doc.etfBreakdowns,
@@ -172,6 +175,7 @@ export function parseBackup(text: string, newId: () => string = () => globalThis
       currentPrice: h.data.currentPrice,
       noLivePrice: flag,
       country: h.data.country,
+      dividend: h.data.dividend,
     });
   }
   const learnedFunds: FundRecord[] = file.data.learnedFunds ?? [];
