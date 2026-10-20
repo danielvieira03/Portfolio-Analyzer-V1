@@ -5,7 +5,7 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import { AI_MODEL } from "@/config/ai";
 import { checkSector } from "@/lib/import/enrich";
-import { SECTORS } from "@/lib/portfolio/sectors";
+import { DIVERSIFIED, SECTORS } from "@/lib/portfolio/sectors";
 import { AiError, getClient, toAiError, type AiUsage } from "./claude";
 
 export interface SectorItem {
@@ -17,7 +17,7 @@ const resultSchema = z.object({
   results: z.array(
     z.object({
       ticker: z.string(),
-      sector: z.string().describe("Exactly one of the allowed sectors, or Diversified"),
+      sector: z.enum([...SECTORS, DIVERSIFIED]).describe("Exactly one of the allowed sectors, or Diversified"),
       basis: z.string().describe("One short phrase: what you found or knew"),
     }),
   ),

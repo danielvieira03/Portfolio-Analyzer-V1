@@ -4,6 +4,7 @@
 
 import type { HoldingInput } from "@/lib/holdings/schema";
 import { SECTOR_OPTIONS } from "@/lib/holdings/schema";
+import { translateSectorName } from "@/lib/market/breakdown";
 import { equitySector, type MarketProfile } from "@/lib/market/profile";
 import { DIVERSIFIED } from "@/lib/portfolio/sectors";
 
@@ -58,8 +59,16 @@ export function sectorsForClaude(rows: Row[], extras: ExtrasMap): { ticker: stri
   return out;
 }
 
-/** Claude's answer if it is one of the app's sectors (or "Diversified"), otherwise nothing. */
-export const checkSector = (value: string): string | null => ((SECTOR_OPTIONS as readonly string[]).includes(value) ? value : null);
+/**
+ * Claude's answer as one of the app's sectors (or "Diversified"), otherwise nothing. Other spellings are translated
+ * the same way as the market data's ("Technology" -> "Information Technology"), without regard to capital letters.
+ */
+export function checkSector(value: string): string | null {
+  const v = value.trim();
+  if (v.toLowerCase() === DIVERSIFIED.toLowerCase()) return DIVERSIFIED;
+  const name = translateSectorName(v);
+  return name && (SECTOR_OPTIONS as readonly string[]).includes(name) ? name : null;
+}
 
 /** Add Claude's sectors (keyed by upper-case ticker) to the looked-up values for Equities rows. */
 export function addClaudeSectors(rows: Row[], extras: ExtrasMap, found: Record<string, string>): ExtrasMap {

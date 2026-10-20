@@ -63,7 +63,15 @@ describe("checkSector / addClaudeSectors", () => {
   it("keeps the app's sectors and Diversified, drops anything else", () => {
     expect(checkSector("Health Care")).toBe("Health Care");
     expect(checkSector("Diversified")).toBe("Diversified");
-    expect(checkSector("Technology")).toBeNull();
+    expect(checkSector("Weird Sector")).toBeNull();
+    expect(checkSector("")).toBeNull();
+  });
+  it("translates other spellings and ignores capital letters, as for market data", () => {
+    expect(checkSector("Technology")).toBe("Information Technology");
+    expect(checkSector("  healthcare ")).toBe("Health Care");
+    expect(checkSector("Financial Services")).toBe("Financials");
+    expect(checkSector("information technology")).toBe("Information Technology");
+    expect(checkSector("DIVERSIFIED")).toBe("Diversified");
   });
   it("adds Claude's sector only where there is none", () => {
     const rows = [row({ ticker: "AAA" }), row({ ticker: "BBB" }), row({ ticker: "CCC", sector: "Energy" })];
