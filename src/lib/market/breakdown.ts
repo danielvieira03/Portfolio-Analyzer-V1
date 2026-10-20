@@ -14,11 +14,14 @@ export interface FundRequest {
   sectors: boolean;
 }
 
-/** A weight from the provider as a fraction: 30.5 or "30.5%" gives 0.305. Null for anything unusable. */
+/** The most the provider may report for one weight. Single-country funds come back a little over 100% (India: 100.14%). */
+const MAX_WEIGHT_PERCENT = 110;
+
+/** A weight from the provider as a fraction: 30.5 or "30.5%" gives 0.305. Slightly over 100% counts as 100%. Null for anything unusable. */
 export function parseWeight(v: unknown): number | null {
   const n = typeof v === "number" ? v : typeof v === "string" ? Number(v.replace("%", "").trim()) : NaN;
-  if (!Number.isFinite(n) || n <= 0 || n > 100) return null;
-  return n / 100;
+  if (!Number.isFinite(n) || n <= 0 || n > MAX_WEIGHT_PERCENT) return null;
+  return Math.min(1, n / 100);
 }
 
 function rows(json: unknown): Record<string, unknown>[] {
@@ -31,7 +34,7 @@ export function parseSectorWeights(json: unknown): EtfBreakdown["sectors"] {
   for (const r of rows(json)) {
     const name = typeof r.sector === "string" ? translateSectorName(r.sector) : undefined;
     const weight = parseWeight(r.weightPercentage);
-    if (name && weight) out.set(name, (out.get(name) ?? 0) + weight);
+    if (name && weight) out.set(name, Math.min(1, (out.get(name) ?? 0) + weight));
   }
   return [...out.entries()].map(([name, weight]) => ({ name, weight }));
 }
@@ -42,7 +45,7 @@ export function parseCountryWeights(json: unknown): EtfBreakdown["countries"] {
   for (const r of rows(json)) {
     const code = typeof r.country === "string" ? countryByName(r.country)?.code : undefined;
     const weight = parseWeight(r.weightPercentage);
-    if (code && weight) out.set(code, (out.get(code) ?? 0) + weight);
+    if (code && weight) out.set(code, Math.min(1, (out.get(code) ?? 0) + weight));
   }
   return [...out.entries()].map(([code, weight]) => ({ code, weight }));
 }

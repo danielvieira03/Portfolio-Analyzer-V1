@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { BREAKDOWN_MAPPING_VERSION } from "@/config/market";
-import { addHolding, type PortfolioDoc } from "@/lib/portfolio/ledger";
+import { addHolding, demoDoc } from "@/lib/portfolio/ledger";
 import { createPortfolioStore, type StorageLike } from "./portfolio-store";
 import { onceAtATime, runPriceRefresh, type PriceFetchResult } from "./price-refresh";
 
@@ -13,7 +13,7 @@ const now = new Date("2026-10-18T12:00:00Z");
 
 function setup(opts: { updatedAt?: string | null } = {}) {
   const store = createPortfolioStore(memory());
-  store.update((d: PortfolioDoc) => ({ ...d, pricesUpdatedAt: opts.updatedAt ?? null }));
+  store.replace({ ...demoDoc("global"), etfBreakdowns: {}, pricesUpdatedAt: opts.updatedAt ?? null });
   return store;
 }
 const tickersOf = (store: ReturnType<typeof setup>) => store.getSnapshot().doc.holdings.map((h) => h.ticker);

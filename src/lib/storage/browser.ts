@@ -1,7 +1,8 @@
 // The one portfolio store of this browser, and the actions the screens call to change it.
 // BROWSER ONLY: it uses window.localStorage, so never import it from server code.
 
-import { fillSubtypes, importHoldings, addHolding, clearDemo, removeHolding, saveHolding, setCash } from "@/lib/portfolio/ledger";
+import { demoDoc, emptyDoc, fillSubtypes, importHoldings, addHolding, clearDemo, removeHolding, saveHolding, setCash } from "@/lib/portfolio/ledger";
+import type { DemoId } from "@/config/demo-portfolios";
 import type { AddOutcome, DuplicateChoice, ImportDuplicateChoice, ImportResult } from "@/lib/portfolio/ledger";
 import type { HoldingInput } from "@/lib/holdings/schema";
 import { createPortfolioStore, type PortfolioStore, type StorageLike } from "./portfolio-store";
@@ -53,6 +54,18 @@ export function removeHoldingFromPortfolio(id: string): void {
 
 export function setCashInPortfolio(amount: number): void {
   getBrowserStore().update((doc) => setCash(doc, amount));
+}
+
+/** Start with one of the demo portfolios. It replaces whatever is saved here; the visitor's learned funds are kept. */
+export function startDemoPortfolio(id: DemoId): void {
+  const store = getBrowserStore();
+  store.replace({ ...demoDoc(id), learnedFunds: store.getSnapshot().doc.learnedFunds });
+}
+
+/** Start with an empty portfolio (to import or enter holdings). Keeps what is already saved here if there is a portfolio. */
+export function startEmptyPortfolio(): void {
+  const store = getBrowserStore();
+  if (!store.getSnapshot().chosen) store.replace(emptyDoc());
 }
 
 export function clearDemoPortfolio(): void {

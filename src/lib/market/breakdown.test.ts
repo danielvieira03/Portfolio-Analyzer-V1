@@ -25,7 +25,12 @@ describe("parseWeight", () => {
     expect(parseWeight(" 7 ")).toBeCloseTo(0.07);
   });
   it("rejects zero, negative, huge and non-numbers", () => {
-    for (const v of [0, -3, 101, "abc", "", null, undefined, NaN, {}]) expect(parseWeight(v)).toBeNull();
+    for (const v of [0, -3, 150, 1000, "abc", "", null, undefined, NaN, {}]) expect(parseWeight(v)).toBeNull();
+  });
+  it("counts a weight a little over 100% (India in INDA: 100.14%) as 100%", () => {
+    expect(parseWeight("100.14%")).toBe(1);
+    expect(parseWeight(101)).toBe(1);
+    expect(parseCountryWeights([{ country: "India", weightPercentage: "100.14%" }])).toEqual([{ code: "IN", weight: 1 }]);
   });
 });
 

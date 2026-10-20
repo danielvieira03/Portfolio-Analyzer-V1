@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { DEMO_HOLDINGS } from "@/config/demo-portfolio";
+import { DEMO_PORTFOLIOS, demoById } from "@/config/demo-portfolios";
 import type { HoldingInput } from "@/lib/holdings/schema";
 import {
   addHolding, addLearnedFunds, applyBreakdowns, applyPrices, clearDemo, fillSubtypes, importHoldings, libraryFunds,
-  newVisitorDoc, removeHolding, saveHolding, setCash, type PortfolioDoc,
+  demoDoc, emptyDoc, removeHolding, saveHolding, setCash, type PortfolioDoc,
 } from "./ledger";
 
 let n = 0;
@@ -17,35 +17,46 @@ const empty = (o: Partial<PortfolioDoc> = {}): PortfolioDoc => ({
 });
 const withApple = () => addHolding(empty(), input(), undefined, id).doc;
 
-describe("newVisitorDoc", () => {
-  it("is the demo portfolio, marked as demo data, with fresh unique ids", () => {
-    const d = newVisitorDoc(id);
-    expect(d.holdings).toHaveLength(DEMO_HOLDINGS.length);
-    expect(d.isDemoData).toBe(true);
-    expect(d.seeded).toBe(true);
-    expect(d.cash).toBeGreaterThan(0);
-    expect(new Set(d.holdings.map((h) => h.id)).size).toBe(d.holdings.length);
-    expect(d.holdings.every((h) => h.noLivePrice === false)).toBe(true);
+describe("demoDoc", () => {
+  it("is a demo portfolio marked as demo data, with fresh unique ids and its funds' weights", () => {
+    for (const demo of DEMO_PORTFOLIOS) {
+      const d = demoDoc(demo.id, id);
+      expect(d.holdings).toHaveLength(demo.holdings.length);
+      expect(d.isDemoData).toBe(true);
+      expect(d.seeded).toBe(true);
+      expect(d.cash).toBe(demo.cash);
+      expect(new Set(d.holdings.map((h) => h.id)).size).toBe(d.holdings.length);
+      expect(d.holdings.every((h) => h.noLivePrice === false)).toBe(true);
+      // Every equity ETF and bond fund in the demo comes with its saved weights.
+      const funds = d.holdings.filter((h) => h.assetClass === "Fixed Income" || h.sector === "Diversified");
+      expect(funds.every((f) => d.etfBreakdowns[f.ticker]?.status === "ok")).toBe(true);
+    }
   });
   it("two visitors get separate documents (no shared state)", () => {
-    const a = newVisitorDoc();
-    const b = newVisitorDoc();
+    const a = demoDoc("global");
+    const b = demoDoc("global");
     const a2 = removeHolding(a, a.holdings[0].id);
-    expect(b.holdings).toHaveLength(DEMO_HOLDINGS.length);
-    expect(a2.holdings).toHaveLength(DEMO_HOLDINGS.length - 1);
+    expect(b.holdings).toHaveLength(demoById("global").holdings.length);
+    expect(a2.holdings).toHaveLength(demoById("global").holdings.length - 1);
+  });
+});
+
+describe("emptyDoc", () => {
+  it("has nothing in it and is not demo data", () => {
+    expect(emptyDoc()).toMatchObject({ holdings: [], cash: 0, isDemoData: false, seeded: true, etfBreakdowns: {}, learnedFunds: [] });
   });
 });
 
 describe("clearDemo", () => {
   it("empties the portfolio and never leaves demo mode on", () => {
-    const d = clearDemo(newVisitorDoc(id));
+    const d = clearDemo(demoDoc("global", id));
     expect(d).toMatchObject({ holdings: [], cash: 0, isDemoData: false, seeded: true });
   });
 });
 
 describe("addHolding", () => {
   it("adds a new holding and leaves demo mode", () => {
-    const r = addHolding(newVisitorDoc(id), input({ ticker: "ZZZ" }), undefined, id);
+    const r = addHolding(demoDoc("global", id), input({ ticker: "ZZZ" }), undefined, id);
     expect(r.outcome).toBe("added");
     expect(r.doc.holdings.at(-1)).toMatchObject({ ticker: "ZZZ", noLivePrice: false });
     expect(r.doc.isDemoData).toBe(false);
@@ -114,7 +125,7 @@ describe("removeHolding and setCash", () => {
     expect(removeHolding(d, d.holdings[0].id).holdings).toEqual([]);
   });
   it("sets cash and leaves demo mode", () => {
-    const r = setCash(newVisitorDoc(id), 1234);
+    const r = setCash(demoDoc("global", id), 1234);
     expect(r.cash).toBe(1234);
     expect(r.isDemoData).toBe(false);
   });
@@ -264,8 +275,8 @@ describe("country (hidden, from market data)", () => {
     expect(b.holdings[0]).toMatchObject({ currentPrice: 210, country: "TW" });
   });
   it("is set on the demo stocks, including foreign ones", () => {
-    const demo = newVisitorDoc(id).holdings;
-    expect(demo.find((h) => h.ticker === "AAPL")?.country).toBe("US");
+    const demo = demoDoc("global", id).holdings;
+    expect(demo.find((h) => h.ticker === "TM")?.country).toBe("JP");
     expect(demo.find((h) => h.ticker === "ASML")?.country).toBe("NL");
     expect(demo.find((h) => h.ticker === "VOO")?.country).toBeNull();
     expect(demo.find((h) => h.ticker === "BND")?.country).toBeNull();
@@ -274,8 +285,8 @@ describe("country (hidden, from market data)", () => {
 
 describe("applyBreakdowns", () => {
   const bd = (updatedAt: string) => ({ sectors: [{ name: "Energy", weight: 1 }], countries: [{ code: "US", weight: 1 }], updatedAt, status: "ok" as const });
-  it("starts empty for a new visitor", () => {
-    expect(newVisitorDoc(id).etfBreakdowns).toEqual({});
+  it("starts empty for a new portfolio", () => {
+    expect(emptyDoc().etfBreakdowns).toEqual({});
   });
   it("saves new fund breakdowns, replaces a fund's old one and keeps the others", () => {
     const a = applyBreakdowns(empty(), { VOO: bd("2026-10-01T00:00:00.000Z"), QQQ: bd("2026-10-01T00:00:00.000Z") });
@@ -284,7 +295,7 @@ describe("applyBreakdowns", () => {
     expect(b.etfBreakdowns.QQQ.updatedAt).toBe("2026-10-01T00:00:00.000Z");
   });
   it("changes nothing when there is nothing new, and never counts as an edit of demo data", () => {
-    const d = newVisitorDoc(id);
+    const d = demoDoc("global", id);
     expect(applyBreakdowns(d, {})).toBe(d);
     expect(applyBreakdowns(d, { VOO: bd("2026-10-18T00:00:00.000Z") }).isDemoData).toBe(true);
   });

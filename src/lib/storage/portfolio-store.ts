@@ -5,7 +5,7 @@
 // same object until the portfolio really changes.
 
 import { parseStoredDoc } from "@/lib/portfolio/document";
-import { newVisitorDoc, type PortfolioDoc } from "@/lib/portfolio/ledger";
+import { emptyDoc, type PortfolioDoc } from "@/lib/portfolio/ledger";
 
 export const STORAGE_KEY = "portfolio-analyzer:v1";
 /** A copy of saved data we couldn't read is kept here instead of being thrown away. */
@@ -28,6 +28,11 @@ export type StoreStatus =
 export interface StoreState {
   doc: PortfolioDoc;
   status: StoreStatus;
+  /**
+   * False until the visitor has a portfolio in this browser (a saved one, a demo they picked, or an empty start).
+   * Until then the app sends them to the home page. Not saved anywhere: it is simply "is there a saved portfolio?".
+   */
+  chosen: boolean;
 }
 
 export interface PortfolioStore {
@@ -57,43 +62,39 @@ export function createPortfolioStore(storage: StorageLike | null): PortfolioStor
     }
   };
 
-  const load = (): { doc: PortfolioDoc; status: StoreStatus } => {
-    if (!storage) return { doc: newVisitorDoc(), status: "memory-only" };
+  const load = (): { doc: PortfolioDoc; status: StoreStatus; chosen: boolean } => {
+    if (!storage) return { doc: emptyDoc(), status: "memory-only", chosen: false };
     let raw: string | null = null;
     try {
       raw = storage.getItem(STORAGE_KEY);
     } catch {
       memoryOnly = true;
-      return { doc: newVisitorDoc(), status: "memory-only" };
+      return { doc: emptyDoc(), status: "memory-only", chosen: false };
     }
-    if (raw === null) {
-      // First visit: start with the demo portfolio and save it.
-      const doc = newVisitorDoc();
-      write(doc);
-      return { doc, status: memoryOnly ? "memory-only" : "ok" };
-    }
+    // First visit: nothing is saved yet. The visitor picks a demo or starts empty on the home page.
+    if (raw === null) return { doc: emptyDoc(), status: memoryOnly ? "memory-only" : "ok", chosen: false };
     const doc = parseStoredDoc(raw);
-    if (doc) return { doc, status: "ok" };
-    // Damaged: keep a copy of what was there, then start fresh.
+    if (doc) return { doc, status: "ok", chosen: true };
+    // Damaged: keep a copy of what was there, then start with an empty portfolio.
     try {
       storage.setItem(CORRUPT_KEY, raw);
     } catch {
       /* nothing more we can do */
     }
-    const fresh = newVisitorDoc();
+    const fresh = emptyDoc();
     write(fresh);
-    return { doc: fresh, status: memoryOnly ? "memory-only" : "recovered" };
+    return { doc: fresh, status: memoryOnly ? "memory-only" : "recovered", chosen: true };
   };
 
   let state: StoreState = (() => {
     const loaded = load();
     status = loaded.status;
-    return { doc: loaded.doc, status };
+    return loaded;
   })();
 
-  const publish = (doc: PortfolioDoc, nextStatus: StoreStatus = status) => {
+  const publish = (doc: PortfolioDoc, nextStatus: StoreStatus = status, chosen = true) => {
     status = memoryOnly && nextStatus === "ok" ? "memory-only" : nextStatus;
-    state = { doc, status };
+    state = { doc, status, chosen };
     listeners.forEach((l) => l());
   };
 
@@ -115,8 +116,8 @@ export function createPortfolioStore(storage: StorageLike | null): PortfolioStor
     },
     reload() {
       const loaded = load();
-      if (JSON.stringify(loaded.doc) === JSON.stringify(state.doc) && loaded.status === state.status) return;
-      publish(loaded.doc, loaded.status);
+      if (JSON.stringify(loaded.doc) === JSON.stringify(state.doc) && loaded.status === state.status && loaded.chosen === state.chosen) return;
+      publish(loaded.doc, loaded.status, loaded.chosen);
     },
     dismissNotice() {
       if (state.status === "recovered") publish(state.doc, "ok");

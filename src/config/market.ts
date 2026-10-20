@@ -49,4 +49,4 @@ export const FMP_SECTOR_MAP: Record<string, string> = {
  * version it was made with; one made with an older version is looked up again on the next refresh, even if it is
  * under a week old. Add 1 whenever that translation is improved, so nobody keeps a partly translated copy.
  */
-export const BREAKDOWN_MAPPING_VERSION = 2;
+export const BREAKDOWN_MAPPING_VERSION = 3;

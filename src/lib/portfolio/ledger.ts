@@ -2,7 +2,8 @@
 // and returns a new one. No browser, no database, so every rule is unit-tested. The browser store
 // (src/lib/storage) saves the result. These rules are ported from the old server database code.
 
-import { DEMO_CASH, DEMO_HOLDINGS } from "@/config/demo-portfolio";
+import { demoById, type DemoId } from "@/config/demo-portfolios";
+import { DEMO_BREAKDOWNS } from "@/config/demo-data";
 import { FUND_LIBRARY } from "@/config/fund-library";
 import { isValidSubtype } from "@/config/subtypes";
 import type { HoldingInput } from "@/lib/holdings/schema";
@@ -54,11 +55,18 @@ const fromInput = (h: HoldingInput, id: string, noLivePrice = false): Position =
   country: h.country,
 });
 
-/** The portfolio of someone who has never been here: the demo portfolio. */
-export function newVisitorDoc(newId: IdMaker = defaultId): PortfolioDoc {
+/** A portfolio with nothing in it (a visitor who starts with their own file, or whose saved copy was damaged). */
+export function emptyDoc(): PortfolioDoc {
+  return { version: DOC_VERSION, holdings: [], cash: 0, isDemoData: false, seeded: true, pricesUpdatedAt: null, learnedFunds: [], etfBreakdowns: {} };
+}
+
+/** One of the demo portfolios as a saved portfolio: marked as demo data, with the demo funds' weights already in. */
+export function demoDoc(id: DemoId, newId: IdMaker = defaultId): PortfolioDoc {
+  const demo = demoById(id);
+  const tickers = new Set(demo.holdings.map((h) => h.ticker));
   return {
-    version: DOC_VERSION,
-    holdings: DEMO_HOLDINGS.map((h) => ({
+    ...emptyDoc(),
+    holdings: demo.holdings.map((h) => ({
       id: newId(),
       ticker: h.ticker,
       name: h.name,
@@ -71,12 +79,9 @@ export function newVisitorDoc(newId: IdMaker = defaultId): PortfolioDoc {
       currentPrice: h.price,
       noLivePrice: false,
     })),
-    cash: DEMO_CASH,
+    cash: demo.cash,
     isDemoData: true,
-    seeded: true,
-    pricesUpdatedAt: null,
-    learnedFunds: [],
-    etfBreakdowns: {},
+    etfBreakdowns: Object.fromEntries(Object.entries(DEMO_BREAKDOWNS).filter(([t]) => tickers.has(t))),
   };
 }
 

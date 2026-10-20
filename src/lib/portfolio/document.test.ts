@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { BACKUP_FORMAT, MAX_BACKUP_CHARS, exportBackup, parseBackup, parseStoredDoc } from "./document";
-import { newVisitorDoc, type PortfolioDoc } from "./ledger";
+import { demoDoc, type PortfolioDoc } from "./ledger";
 
 let n = 0;
 const id = () => `id${++n}`;
 const doc = (): PortfolioDoc => ({
-  ...newVisitorDoc(id),
+  ...demoDoc("global", id),
   isDemoData: false,
   pricesUpdatedAt: "2026-10-18T12:00:00.000Z",
   learnedFunds: [{ ticker: "MUB", name: "iShares Muni", assetClass: "Fixed Income", subtype: "Medium-term", durationYears: 6.2 }],
