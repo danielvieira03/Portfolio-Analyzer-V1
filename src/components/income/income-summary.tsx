@@ -32,10 +32,10 @@ export function IncomeSummary({ income }: { income: PortfolioIncome }) {
         >
           <Num className="text-primary">{formatCurrency(total.expected)}</Num>
         </Stat>
-        <Stat label="Average monthly income" note="The same each month: annual income divided by 12">
+        <Stat label="Average monthly income">
           <Num>{formatCurrency(monthly)}</Num>
         </Stat>
-        <Stat label="Portfolio yield" note="Annual income divided by total portfolio value">
+        <Stat label="Portfolio yield">
           <Num>{portfolioYield === null ? "—" : formatPercent(portfolioYield, 2)}</Num>
         </Stat>
       </div>
@@ -57,13 +57,9 @@ export function IncomeSummary({ income }: { income: PortfolioIncome }) {
       <div className="mt-3 space-y-1 text-[11px] text-muted-foreground">
         <p>Cash interest is not included.</p>
         <p>
-          An estimate, before tax and assuming no reinvestment, based on each holding&rsquo;s dividends per share over roughly the last year. One-time special
-          dividends can&rsquo;t always be told apart from regular ones.
+          An estimate, before tax and assuming no reinvestment, based on each holding&rsquo;s dividends per share over roughly the last year.
         </p>
-        <p>
-          Range accounts for risks or upsides to income earned, such as differences between expected and current yields, dividend changes, and bond fund
-          performance.
-        </p>
+        <p>Range accounts for risks or upsides to income earned.</p>
         {unavailable.length > 0 && (
           <p>
             Income not available yet for {unavailable.map((u) => u.ticker).join(", ")}; it is left out until market data provides it (it never guesses).
