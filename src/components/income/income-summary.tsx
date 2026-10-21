@@ -34,7 +34,7 @@ function RangeBar({ low, high }: { low: number; high: number }) {
 
 /** The top of the Income tab: total expected annual income and its range, the monthly average, the portfolio yield, and the Sankey. */
 export function IncomeSummary({ income }: { income: PortfolioIncome }) {
-  const { total, monthly, yield: portfolioYield, contributingCount, holdingCount, unavailable } = income;
+  const { total, monthly, yield: portfolioYield, payingShare, unavailable } = income;
   const flow = incomeFlow(income);
 
   return (
@@ -52,7 +52,7 @@ export function IncomeSummary({ income }: { income: PortfolioIncome }) {
       </div>
 
       <p className="mt-4 text-[13px] text-muted-foreground">
-        <Num className="text-foreground">{contributingCount}</Num> out of <Num className="text-foreground">{holdingCount}</Num> holdings contribute to income
+        <Num className="text-foreground">{formatPercent(payingShare, 0)}</Num> of the portfolio contributes to income
       </p>
 
       <div className="mt-3 border-t pt-3">

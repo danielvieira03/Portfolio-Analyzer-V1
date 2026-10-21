@@ -62,6 +62,9 @@ describe("portfolioIncome: ranges, totals and rates", () => {
     expect(r.contributingCount).toBe(3);
     expect(r.holdingCount).toBe(3);
   });
+  it("the share of the portfolio that contributes is the value of the paying holdings over the whole value, cash included", () => {
+    expect(r.payingShare).toBeCloseTo(19_000 / 20_000);
+  });
 });
 
 describe("portfolioIncome: holdings that pay nothing or have no data", () => {
@@ -111,12 +114,14 @@ describe("portfolioIncome: empty and cash-only portfolios", () => {
     expect(r.total.expected).toBe(0);
     expect(r.yield).toBeNull();
     expect(r.monthly).toBe(0);
+    expect(r.payingShare).toBe(0);
     expect(r.categories.every((c) => c.yield === null && c.shareOfPortfolioYield === 0)).toBe(true);
   });
   it("cash earns nothing here: a cash-only portfolio has zero income and a zero yield", () => {
     const r = income([], 5000);
     expect(r.total.expected).toBe(0);
     expect(r.yield).toBe(0);
+    expect(r.payingShare).toBe(0);
   });
 });
 

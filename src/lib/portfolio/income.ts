@@ -57,6 +57,8 @@ export interface PortfolioIncome {
   yield: number | null;
   /** Always the three categories, in order. */
   categories: CategoryIncome[];
+  /** Market value of the holdings that pay income / total portfolio value (cash included, like the yield); 0 for an empty portfolio. */
+  payingShare: number;
   /** Holdings that pay income, and all holdings (cash is not a holding). */
   contributingCount: number;
   holdingCount: number;
@@ -110,6 +112,7 @@ export function portfolioIncome(positions: Position[], cash: number): PortfolioI
     portfolioValue,
     yield: portfolioValue > 0 ? expected / portfolioValue : null,
     categories,
+    payingShare: portfolioValue > 0 ? categories.reduce((t, c) => t + c.contributors.reduce((u, h) => u + h.value, 0), 0) / portfolioValue : 0,
     contributingCount: categories.reduce((t, c) => t + c.contributors.length, 0),
     holdingCount: positions.length,
     unavailable: categories.flatMap((c) => c.unavailable),
