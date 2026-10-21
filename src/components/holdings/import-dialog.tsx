@@ -478,7 +478,7 @@ function ImportBody({
             disabled={nothingToImport || lookingUp}
             variant={mode === "replace" ? "destructive" : "default"}
           >
-            {lookingUp ? "Looking up sector, maturity and type…" : `${mode === "replace" ? "Replace with" : "Import"} ${view.holdings.length} ${view.holdings.length === 1 ? "holding" : "holdings"}`}
+            {lookingUp ? "Getting latest prices and details…" : `${mode === "replace" ? "Replace with" : "Import"} ${view.holdings.length} ${view.holdings.length === 1 ? "holding" : "holdings"}`}
           </Button>
         )}
       </DialogFooter>

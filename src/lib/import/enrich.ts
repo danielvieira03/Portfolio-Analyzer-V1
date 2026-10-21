@@ -1,6 +1,7 @@
-// Fills in what an imported file left blank (sector, country, maturity / type) while the preview is open.
-// Pure: market data answers and Claude's answers come in as plain values. A value that is already in the file
-// is never replaced.
+// Fills in what an imported file left blank (sector, country, maturity / type) while the preview is open, and
+// brings each holding's latest market price. Pure: market data answers and Claude's answers come in as plain values.
+// A sector, country, maturity or type that is already in the file is never replaced; the price always is, when the
+// market data has one (the file's price is only as fresh as the file).
 
 import type { HoldingInput } from "@/lib/holdings/schema";
 import { SECTOR_OPTIONS } from "@/lib/holdings/schema";
@@ -13,6 +14,8 @@ export interface Extras {
   sector?: string;
   country?: string;
   subtype?: string;
+  /** Latest market price, when the market data provider has one (replaces the file's price). */
+  price?: number;
 }
 /** Looked-up values, keyed "Asset Class:TICKER" (see `lotKey`). */
 export type ExtrasMap = Record<string, Extras>;
@@ -21,26 +24,28 @@ export const lotKey = (assetClass: string, ticker: string) => `${assetClass}:${t
 
 type Row = Pick<HoldingInput, "ticker" | "name" | "assetClass" | "sector" | "country">;
 
-/** Equity rows missing a sector or a country: the market data provider is asked about these (upper-case, no repeats). */
+/** Every row's ticker: the market data provider is asked about all of them (latest price; sector and country for equities). Upper-case, no repeats. */
 export function marketLookupTickers(rows: Row[]): string[] {
-  return [...new Set(rows.filter((r) => r.assetClass === "Equities" && (!r.sector || !r.country)).map((r) => r.ticker.toUpperCase()))];
+  return [...new Set(rows.map((r) => r.ticker.toUpperCase()))];
 }
 
 /**
- * What the market data answers add: a stock's sector and headquarters country, "Diversified" for an ETF / fund.
- * `profiles` only has tickers the provider answered for (null = answered, no data).
+ * What the market data answers add: the latest price for any holding, and for equities a stock's sector and headquarters
+ * country ("Diversified" for an ETF / fund). `profiles` only has tickers the provider answered for (null = answered, no data).
  */
 export function marketExtras(rows: Row[], profiles: Record<string, MarketProfile | null>): ExtrasMap {
   const out: ExtrasMap = {};
   for (const r of rows) {
-    if (r.assetClass !== "Equities") continue;
     const profile = profiles[r.ticker.toUpperCase()];
     if (!profile) continue;
     const found: Extras = {};
-    const sector = r.sector ? null : equitySector(profile);
-    if (sector) found.sector = sector;
-    const isFund = (r.sector ?? sector) === DIVERSIFIED;
-    if (!r.country && profile.country && !isFund) found.country = profile.country;
+    if (Number.isFinite(profile.price) && profile.price > 0) found.price = profile.price;
+    if (r.assetClass === "Equities") {
+      const sector = r.sector ? null : equitySector(profile);
+      if (sector) found.sector = sector;
+      const isFund = (r.sector ?? sector) === DIVERSIFIED;
+      if (!r.country && profile.country && !isFund) found.country = profile.country;
+    }
     if (Object.keys(found).length > 0) out[lotKey(r.assetClass, r.ticker)] = found;
   }
   return out;
@@ -82,7 +87,7 @@ export function addClaudeSectors(rows: Row[], extras: ExtrasMap, found: Record<s
   return out;
 }
 
-/** The row as it will be saved: looked-up values fill blanks only. */
+/** The row as it will be saved: looked-up values fill blanks only, except the price, which is the latest one when there is one. */
 export function withExtras(h: HoldingInput, extra: Extras | undefined): HoldingInput {
   if (!extra) return h;
   return {
@@ -90,6 +95,7 @@ export function withExtras(h: HoldingInput, extra: Extras | undefined): HoldingI
     sector: h.sector ?? extra.sector ?? null,
     country: h.country ?? extra.country ?? null,
     subtype: h.subtype ?? extra.subtype ?? null,
+    currentPrice: extra.price ?? h.currentPrice,
   };
 }
 

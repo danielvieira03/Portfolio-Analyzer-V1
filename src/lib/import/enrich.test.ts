@@ -9,45 +9,48 @@ const row = (o: Partial<HoldingInput> & { ticker: string }): HoldingInput => ({
 const profile = (o: Partial<MarketProfile>): MarketProfile => ({ name: "X", price: 10, sector: null, isEtf: false, country: null, ...o });
 
 describe("marketLookupTickers", () => {
-  it("asks about equity rows missing a sector or country, once each, upper-case", () => {
+  it("asks about every row, once each, upper-case (the latest price is wanted for all of them)", () => {
     const rows = [
       row({ ticker: "aapl" }),
       row({ ticker: "AAPL" }),
-      row({ ticker: "MSFT", sector: "Information Technology", country: "US" }), // complete: no need
-      row({ ticker: "BND", assetClass: "Fixed Income" }), // bonds are not asked
+      row({ ticker: "MSFT", sector: "Information Technology", country: "US" }), // complete, but its price is still wanted
+      row({ ticker: "BND", assetClass: "Fixed Income" }),
     ];
-    expect(marketLookupTickers(rows)).toEqual(["AAPL"]);
+    expect(marketLookupTickers(rows)).toEqual(["AAPL", "MSFT", "BND"]);
   });
 });
 
 describe("marketExtras", () => {
-  it("gives a stock its translated sector and country", () => {
-    const x = marketExtras([row({ ticker: "AAPL" })], { AAPL: profile({ sector: "Technology", country: "US" }) });
-    expect(x["Equities:AAPL"]).toEqual({ sector: "Information Technology", country: "US" });
+  it("gives a stock its translated sector and country, and its latest price", () => {
+    const x = marketExtras([row({ ticker: "AAPL" })], { AAPL: profile({ sector: "Technology", country: "US", price: 212.5 }) });
+    expect(x["Equities:AAPL"]).toEqual({ price: 212.5, sector: "Information Technology", country: "US" });
   });
   it("calls an ETF Diversified, with no country", () => {
     const x = marketExtras([row({ ticker: "VOO" })], { VOO: profile({ isEtf: true, sector: "Asset Management" }) });
-    expect(x["Equities:VOO"]).toEqual({ sector: "Diversified" });
+    expect(x["Equities:VOO"]).toEqual({ price: 10, sector: "Diversified" });
   });
-  it("never replaces what the file already had", () => {
-    const x = marketExtras([row({ ticker: "AAPL", sector: "Financials", country: "CA" })], { AAPL: profile({ sector: "Technology", country: "US" }) });
-    expect(x).toEqual({});
+  it("never replaces a sector or country the file already had, but still brings the latest price", () => {
+    const x = marketExtras([row({ ticker: "AAPL", sector: "Financials", country: "CA" })], { AAPL: profile({ sector: "Technology", country: "US", price: 200 }) });
+    expect(x["Equities:AAPL"]).toEqual({ price: 200 });
   });
-  it("fills only the country when the file had the sector", () => {
+  it("fills only the country (and price) when the file had the sector", () => {
     const x = marketExtras([row({ ticker: "AAPL", sector: "Financials" })], { AAPL: profile({ sector: "Technology", country: "US" }) });
-    expect(x["Equities:AAPL"]).toEqual({ country: "US" });
+    expect(x["Equities:AAPL"]).toEqual({ price: 10, country: "US" });
   });
   it("gives no country to a fund the file already called Diversified", () => {
     const x = marketExtras([row({ ticker: "VOO", sector: "Diversified" })], { VOO: profile({ isEtf: false, country: "US" }) });
-    expect(x).toEqual({});
+    expect(x["Equities:VOO"]).toEqual({ price: 10 });
   });
-  it("adds nothing for a sector name it can't translate, or a ticker with no answer", () => {
+  it("adds only the price for a sector name it can't translate, and nothing for a ticker with no answer", () => {
     const x = marketExtras([row({ ticker: "AAA" }), row({ ticker: "ZZZ" }), row({ ticker: "NUL" })], { AAA: profile({ sector: "Weird Sector" }), NUL: null });
-    expect(x).toEqual({});
+    expect(x).toEqual({ "Equities:AAA": { price: 10 } });
   });
-  it("ignores bonds and alternatives", () => {
-    const x = marketExtras([row({ ticker: "BND", assetClass: "Fixed Income" })], { BND: profile({ isEtf: true }) });
-    expect(x).toEqual({});
+  it("brings the latest price for bonds and alternatives too, and nothing else", () => {
+    const x = marketExtras(
+      [row({ ticker: "BND", assetClass: "Fixed Income" }), row({ ticker: "GLD", assetClass: "Alternatives" })],
+      { BND: profile({ isEtf: true, price: 72.1 }), GLD: profile({ price: 280 }) },
+    );
+    expect(x).toEqual({ "Fixed Income:BND": { price: 72.1 }, "Alternatives:GLD": { price: 280 } });
   });
 });
 
@@ -89,6 +92,11 @@ describe("withExtras / stillBlank", () => {
     expect(h.country).toBe("CA");
     expect(withExtras(row({ ticker: "BND", assetClass: "Fixed Income" }), { subtype: "Medium-term" }).subtype).toBe("Medium-term");
     expect(withExtras(row({ ticker: "X", sector: "Financials" }), { sector: "Energy" }).sector).toBe("Financials");
+  });
+  it("the latest price replaces the file's price; without one the file's price stays", () => {
+    expect(withExtras(row({ ticker: "A", currentPrice: 100 }), { price: 123.45 }).currentPrice).toBe(123.45);
+    expect(withExtras(row({ ticker: "A", currentPrice: 100 }), { sector: "Energy" }).currentPrice).toBe(100);
+    expect(withExtras(row({ ticker: "A", currentPrice: 100 }), undefined).currentPrice).toBe(100);
   });
   it("counts rows with nothing yet for what applies to them", () => {
     const rows = [row({ ticker: "A" }), row({ ticker: "B" }), row({ ticker: "BND", assetClass: "Fixed Income" }), row({ ticker: "GLD", assetClass: "Alternatives", subtype: "Commodities" })];

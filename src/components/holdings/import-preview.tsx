@@ -137,7 +137,7 @@ export function ImportPreview({
       )}
       {lookingUp && (
         <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
-          <Loader2 className="size-3.5 animate-spin" /> Looking up sectors, maturities and types for what the file left blank…
+          <Loader2 className="size-3.5 animate-spin" /> Getting the latest prices, and looking up sectors, maturities and types the file left blank…
         </p>
       )}
       {!lookingUp && blankCount > 0 && (
@@ -223,7 +223,8 @@ export function ImportPreview({
               const key = h ? lotKey(h.assetClass, h.ticker) : "";
               const duplicate = isDuplicate(r);
               const old = duplicate ? existing.get(key) : undefined;
-              const merged = old && h && !isLeftOut(r) ? averaged(old, h) : undefined;
+              const price = h ? extras[key]?.price ?? h.currentPrice : 0;
+              const merged = old && h && !isLeftOut(r) ? averaged(old, { ...h, currentPrice: price }) : undefined;
               return (
                 <tr key={r.line} className={cn("border-b border-border/50 align-top", r.status === "error" && "opacity-60")}>
                   {showCheck && (
@@ -272,9 +273,12 @@ export function ImportPreview({
                   </td>
                   <td className="num px-2 py-1.5">{h ? formatShares(h.shares) : "—"}</td>
                   <td className="num px-2 py-1.5">{h ? formatPrice(h.costBasisPerShare) : "—"}</td>
-                  <td className="num px-2 py-1.5">{h ? formatPrice(h.currentPrice) : "—"}</td>
                   <td className="num px-2 py-1.5">
-                    {h ? formatCurrency(h.shares * h.currentPrice) : r.cashAmount !== undefined ? formatCurrency(r.cashAmount) : "—"}
+                    {h ? formatPrice(price) : "—"}
+                    {h && extras[key]?.price !== undefined ? <span className="block text-[11px] font-sans text-muted-foreground">latest</span> : null}
+                  </td>
+                  <td className="num px-2 py-1.5">
+                    {h ? formatCurrency(h.shares * price) : r.cashAmount !== undefined ? formatCurrency(r.cashAmount) : "—"}
                   </td>
                 </tr>
               );
