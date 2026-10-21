@@ -9,7 +9,25 @@ function Stat({ label, children, note }: { label: string; children: React.ReactN
     <div>
       <p className="label-caps">{label}</p>
       <div className="mt-2 text-2xl font-semibold leading-none lg:text-3xl">{children}</div>
-      {note && <p className="mt-2 text-[12px] text-muted-foreground">{note}</p>}
+      {note && <div className="text-[12px] text-muted-foreground">{note}</div>}
+    </div>
+  );
+}
+
+/** A thin bar from the low to the high figure with a marker at the expected one (the range is always expected -10% / +10%, so the marker is centred). */
+function RangeBar({ low, high }: { low: number; high: number }) {
+  return (
+    <div className="mt-3 max-w-xs" role="img" aria-label={`Range from ${formatCurrency(low)} to ${formatCurrency(high)}`}>
+      <div className="relative h-4">
+        <div className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-primary/30" />
+        <div className="absolute left-0 top-1/2 h-2.5 w-px -translate-y-1/2 bg-primary/60" />
+        <div className="absolute right-0 top-1/2 h-2.5 w-px -translate-y-1/2 bg-primary/60" />
+        <div className="absolute left-1/2 top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background bg-primary" />
+      </div>
+      <div className="mt-1 flex justify-between text-[11px] text-muted-foreground">
+        <Num>{formatCurrency(low)}</Num>
+        <Num>{formatCurrency(high)}</Num>
+      </div>
     </div>
   );
 }
@@ -22,7 +40,7 @@ export function IncomeSummary({ income }: { income: PortfolioIncome }) {
   return (
     <Panel title="Expected Annual Income">
       <div className="grid gap-5 sm:grid-cols-3">
-        <Stat label="Expected annual income">
+        <Stat label="Expected annual income" note={<RangeBar low={total.low} high={total.high} />}>
           <Num className="text-primary">{formatCurrency(total.expected)}</Num>
         </Stat>
         <Stat label="Average monthly income">
