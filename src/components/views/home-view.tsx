@@ -20,7 +20,7 @@ export function HomeView() {
 
   return (
     // The top bar is one row shorter on this page, so pull the content up to match.
-    <div className="-mt-9 flex flex-col gap-8 pt-8 md:min-h-[calc(100dvh-5.75rem)]">
+    <div className="-mt-9 space-y-8 pt-8">
       <section className="max-w-3xl">
         <p className="label-caps text-primary">Portfolio analytics</p>
         <h1 className="mt-2 text-3xl font-semibold leading-tight tracking-tight md:text-4xl">See what is really inside your portfolio.</h1>
@@ -40,9 +40,9 @@ export function HomeView() {
         )}
       </section>
 
-      <section className="grid flex-1 gap-4 md:grid-cols-2">
+      <section className="grid gap-4 md:grid-cols-2">
         {OPTIONS.map(({ href, icon: Icon, title, text }) => (
-          <Link key={href} href={href} className="panel group flex min-h-64 flex-col items-center justify-center gap-3 p-8 text-center transition-colors hover:border-primary/60 hover:bg-primary/5">
+          <Link key={href} href={href} className="panel group flex min-h-80 flex-col items-center justify-center gap-3 p-8 text-center transition-colors hover:border-primary/60 hover:bg-primary/5">
             <Icon className="size-10 text-primary" strokeWidth={1.5} />
             <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
             <p className="max-w-md text-base text-muted-foreground">{text}</p>

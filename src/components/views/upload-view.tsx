@@ -59,7 +59,7 @@ export function UploadView() {
   };
 
   return (
-    <div className="-mt-9 flex flex-col gap-6 pt-8 md:min-h-[calc(100dvh-5.75rem)]">
+    <div className="-mt-9 space-y-6 pt-8">
       <section>
         <Link href="/" className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground transition-colors hover:text-foreground">
           <ArrowLeft className="size-3.5" /> Back
@@ -93,16 +93,13 @@ export function UploadView() {
         </section>
       )}
 
-      <section className="grid flex-1 gap-4 sm:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-3">
         {SOURCES.map(({ id, icon: Icon, label, hint, accept }) => (
           <button
             key={id}
             type="button"
             onClick={() => pick(id, accept)}
-            className={cn(
-              "panel flex min-h-56 flex-col items-center justify-center gap-3 p-6 text-center transition-colors",
-              id === "table" ? "border-primary/60 bg-primary/5 hover:bg-primary/10" : "hover:border-primary/60 hover:bg-primary/5",
-            )}
+            className="panel flex min-h-72 flex-col items-center justify-center gap-3 p-6 text-center transition-colors hover:border-primary/60 hover:bg-primary/5"
           >
             <Icon className="size-10 text-primary" strokeWidth={1.5} />
             <span className="text-2xl font-semibold tracking-tight">{label}</span>
