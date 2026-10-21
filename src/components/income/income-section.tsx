@@ -29,20 +29,6 @@ export function IncomeSection({ data }: { data: CategoryIncome }) {
       </p>
       <dl className="mt-3 grid grid-cols-2 gap-3 text-[12px]">
         <div>
-          <dt className="label-caps">Low</dt>
-          <dd className="mt-1 text-base font-semibold">
-            <Num>{formatCurrency(income.low)}</Num>
-          </dd>
-        </div>
-        <div>
-          <dt className="label-caps">High</dt>
-          <dd className="mt-1 text-base font-semibold">
-            <Num>{formatCurrency(income.high)}</Num>
-          </dd>
-        </div>
-      </dl>
-      <dl className="mt-3 grid grid-cols-2 gap-3 text-[12px]">
-        <div>
           <dt className="label-caps">Yield</dt>
           <dd className="mt-1 text-base font-semibold">
             <Num>{categoryYield === null ? "—" : formatPercent(categoryYield, 2)}</Num>

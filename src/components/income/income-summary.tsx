@@ -8,7 +8,7 @@ function Stat({ label, children, note }: { label: string; children: React.ReactN
   return (
     <div>
       <p className="label-caps">{label}</p>
-      <div className="mt-2 text-xl font-semibold leading-none lg:text-2xl">{children}</div>
+      <div className="mt-2 text-2xl font-semibold leading-none lg:text-3xl">{children}</div>
       {note && <p className="mt-2 text-[12px] text-muted-foreground">{note}</p>}
     </div>
   );
@@ -21,15 +21,9 @@ export function IncomeSummary({ income }: { income: PortfolioIncome }) {
 
   return (
     <Panel title="Expected Annual Income">
-      <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-5">
-        <Stat label="Low">
-          <Num>{formatCurrency(total.low)}</Num>
-        </Stat>
+      <div className="grid gap-5 sm:grid-cols-3">
         <Stat label="Expected annual income">
           <Num className="text-primary">{formatCurrency(total.expected)}</Num>
-        </Stat>
-        <Stat label="High">
-          <Num>{formatCurrency(total.high)}</Num>
         </Stat>
         <Stat label="Average monthly income">
           <Num>{formatCurrency(monthly)}</Num>
@@ -56,9 +50,8 @@ export function IncomeSummary({ income }: { income: PortfolioIncome }) {
       <div className="mt-3 space-y-1 text-[11px] text-muted-foreground">
         <p>Cash interest is not included.</p>
         <p>
-          An estimate, before tax and assuming no reinvestment, based on each holding&rsquo;s dividends per share over roughly the last year.
+          An estimate, based on each holding&rsquo;s dividends per share over the last year. Past performance isn&rsquo;t an indicator of future results.
         </p>
-        <p>Range accounts for risks or upsides to income earned.</p>
         {unavailable.length > 0 && (
           <p>
             Income not available yet for {unavailable.map((u) => u.ticker).join(", ")}; it is left out until market data provides it (it never guesses).
