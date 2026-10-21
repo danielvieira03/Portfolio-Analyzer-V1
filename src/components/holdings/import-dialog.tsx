@@ -32,7 +32,6 @@ export function ImportDialog({
   buttonLabel = "Import",
   prominent = false,
   buttonClassName,
-  defaultOpen = false,
 }: {
   /** Current holdings, used to flag repeated tickers, show the averaged result and warn before replacing. */
   existing: ExistingLot[];
@@ -41,10 +40,8 @@ export function ImportDialog({
   /** Filled amber button (for the empty dashboard) instead of the small outline one. */
   prominent?: boolean;
   buttonClassName?: string;
-  /** Open as soon as the page shows (used when arriving from "Upload your own"). */
-  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useState(false);
   return (
     <>
       <Button
@@ -55,13 +52,40 @@ export function ImportDialog({
       >
         <Upload /> {buttonLabel}
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-4xl">
-          {open && <ImportBody existing={existing} close={() => setOpen(false)} />}
-        </DialogContent>
-      </Dialog>
+      <ImportFlowDialog existing={existing} open={open} onOpenChange={setOpen} />
     </>
   );
+}
+
+/** The import window itself, opened and closed by whoever uses it. `initial` hands it a file chosen elsewhere (the Upload page). */
+export function ImportFlowDialog({
+  existing,
+  open,
+  onOpenChange,
+  initial,
+  onImported,
+}: {
+  existing: ExistingLot[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initial?: InitialFile;
+  /** Called when the import has been saved. */
+  onImported?: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-4xl">
+        {open && <ImportBody existing={existing} close={() => onOpenChange(false)} initial={initial} onImported={onImported} />}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** A file already chosen: which kind of reader it goes to ("table" = CSV/Excel, "ai" = screenshot or PDF) and whether it adds or replaces. */
+export interface InitialFile {
+  kind: "table" | "ai";
+  file: File;
+  mode: Mode;
 }
 
 type Step = "mode" | "choose" | "map" | "preview";
@@ -69,17 +93,21 @@ type Step = "mode" | "choose" | "map" | "preview";
 function ImportBody({
   existing,
   close,
+  initial,
+  onImported,
 }: {
   existing: ExistingLot[];
   close: () => void;
+  initial?: InitialFile;
+  onImported?: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const [step, setStep] = useState<Step>("mode");
+  const [step, setStep] = useState<Step>(initial ? "choose" : "mode");
   const [fileName, setFileName] = useState("");
   const [table, setTable] = useState<Table | null>(null);
   const [map, setMap] = useState<ColumnMap | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<Mode>("add");
+  const [mode, setMode] = useState<Mode>(initial?.mode ?? "add");
   // Repeated tickers the user unticked (kept out of the import).
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [defaultClass, setDefaultClass] = useState<HoldingClass>("Equities");
@@ -262,6 +290,17 @@ function ImportBody({
     }
   };
 
+  // A file chosen on the Upload page is read once, as soon as the window opens.
+  const started = useRef(false);
+  useEffect(() => {
+    if (!initial || started.current) return;
+    started.current = true;
+    const read = initial.kind === "table" ? onFile : onAiFile;
+    // Runs once on purpose: the file is read when the window opens, and reading it fills in this window's own state.
+    void read(initial.file);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const save = () => {
     if (!view) return;
     const valid = [];
@@ -280,6 +319,7 @@ function ImportBody({
       view.counts.leftOut ? `${view.counts.leftOut} left out` : "",
     ].filter(Boolean);
     setDone(parts.join(", ") + ".");
+    onImported?.();
   };
 
   if (done) {

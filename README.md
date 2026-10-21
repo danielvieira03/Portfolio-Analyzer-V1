@@ -25,7 +25,7 @@ _Screenshots show the built-in demo portfolio (illustrative numbers, not advice)
 - **Risk Analysis** — a 1 to 5 Risk Profile meter (scored from what you hold: equity sector, each bond fund's duration, alternative type and cash; missing sectors, fund weights and durations are looked up automatically) and equity sector weights (ETFs included, split by sector) versus the S&P 500, with a plain-English over/underweight summary.
 - **Import** — CSV and Excel (flexible column matching, manual mapping) and screenshots or PDFs read by Claude, always with a preview before anything is saved. CSV/Excel files get an automatic Claude sanity check.
 - **Backup** — download your portfolio as a file and restore it later or on another browser or device.
-- **Home page with three demo portfolios** — a short intro, then pick *Conservative Income*, *Global Diversified* or *Aggressive Growth* (each built to show a different part of the analyzer), or upload your own. Demos are clearly badged and removable in one click.
+- **Home page with three demo portfolios** — a short intro, then pick *Conservative Income*, *Global Diversified* or *Aggressive Growth* (each built to show a different part of the analyzer), or upload your own. The home page shows two options, each leading to its own page: choose a demo, or upload a CSV, Excel file, screenshot or PDF. Demos are clearly badged and removable in one click.
 
 ## How your data is stored
 Your holdings, cash and prices live in your browser's own storage on the device you use. The server never stores
