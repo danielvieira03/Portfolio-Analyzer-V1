@@ -22,24 +22,24 @@ function cardFacts(demo: DemoPortfolio) {
 export function DemoCard({ demo, onPick }: { demo: DemoPortfolio; onPick: () => void }) {
   const { slices, score, label } = useMemo(() => cardFacts(demo), [demo]);
   return (
-    <div className="panel flex flex-col p-4">
-      <h3 className="text-base font-semibold tracking-tight">{demo.name}</h3>
-      <p className="mt-1 text-muted-foreground">{demo.tagline}</p>
+    <div className="panel flex flex-col p-6">
+      <h3 className="text-xl font-semibold tracking-tight">{demo.name}</h3>
+      <p className="mt-1.5 text-[14px] text-muted-foreground">{demo.tagline}</p>
 
-      <div className="mt-4 flex items-baseline justify-between gap-2">
+      <div className="mt-8 flex items-baseline justify-between gap-2">
         <span className="label-caps">Risk</span>
         <span className="flex items-baseline gap-2">
-          <Num className="text-base font-semibold text-primary">{score.toFixed(1)}</Num>
-          <span className="text-[12px] text-muted-foreground">{label}</span>
+          <Num className="text-2xl font-semibold text-primary">{score.toFixed(1)}</Num>
+          <span className="text-[13px] text-muted-foreground">{label}</span>
         </span>
       </div>
 
-      <div className="mt-3 flex h-2 overflow-hidden rounded-[2px]" role="img" aria-label={slices.map((s) => `${s.assetClass} ${formatPercent(s.weight, 0)}`).join(", ")}>
+      <div className="mt-5 flex h-4 overflow-hidden rounded-[2px]" role="img" aria-label={slices.map((s) => `${s.assetClass} ${formatPercent(s.weight, 0)}`).join(", ")}>
         {slices.map((s) => (
           <div key={s.assetClass} style={{ width: `${s.weight * 100}%`, background: CLASS_COLORS[s.assetClass] }} />
         ))}
       </div>
-      <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+      <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 text-[13px]">
         {slices.map((s) => (
           <li key={s.assetClass} className="flex items-center gap-1.5 text-muted-foreground">
             <span className="size-2 shrink-0 rounded-[2px]" style={{ background: CLASS_COLORS[s.assetClass] }} aria-hidden />
@@ -49,8 +49,8 @@ export function DemoCard({ demo, onPick }: { demo: DemoPortfolio; onPick: () => 
         ))}
       </ul>
 
-      <p className="label-caps mt-4">Shows</p>
-      <ul className="mt-1.5 space-y-1 text-[12px] text-muted-foreground">
+      <p className="label-caps mt-10">Shows</p>
+      <ul className="mb-8 mt-3.5 space-y-3.5 text-[14px] leading-relaxed text-muted-foreground">
         {demo.shows.map((line) => (
           <li key={line} className="flex gap-2">
             <span className="mt-[7px] size-1 shrink-0 rounded-full bg-primary" aria-hidden />
@@ -59,7 +59,7 @@ export function DemoCard({ demo, onPick }: { demo: DemoPortfolio; onPick: () => 
         ))}
       </ul>
 
-      <Button className="mt-5 w-full justify-center" variant="outline" onClick={onPick}>
+      <Button className="mt-auto w-full justify-center" size="lg" variant="outline" onClick={onPick}>
         Open this demo <ArrowRight />
       </Button>
     </div>

@@ -20,7 +20,7 @@ export function HomeView() {
 
   return (
     // The top bar is one row shorter on this page, so pull the content up to match.
-    <div className="-mt-9 space-y-8 pt-8">
+    <div className="-mt-9 flex flex-col gap-8 pt-8 md:min-h-[calc(100dvh-5.75rem)]">
       <section className="max-w-3xl">
         <p className="label-caps text-primary">Portfolio analytics</p>
         <h1 className="mt-2 text-3xl font-semibold leading-tight tracking-tight md:text-4xl">See what is really inside your portfolio.</h1>
@@ -40,14 +40,14 @@ export function HomeView() {
         )}
       </section>
 
-      <section className="grid gap-3 md:grid-cols-2">
+      <section className="grid flex-1 gap-4 md:grid-cols-2">
         {OPTIONS.map(({ href, icon: Icon, title, text }) => (
-          <Link key={href} href={href} className="panel group flex flex-col gap-2 p-5 transition-colors hover:border-primary/60 hover:bg-primary/5">
-            <Icon className="size-5 text-primary" />
-            <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-            <p className="text-muted-foreground">{text}</p>
-            <span className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-medium text-primary">
-              Continue <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+          <Link key={href} href={href} className="panel group flex min-h-64 flex-col items-center justify-center gap-3 p-8 text-center transition-colors hover:border-primary/60 hover:bg-primary/5">
+            <Icon className="size-10 text-primary" strokeWidth={1.5} />
+            <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
+            <p className="max-w-md text-base text-muted-foreground">{text}</p>
+            <span className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-primary">
+              Continue <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </span>
           </Link>
         ))}

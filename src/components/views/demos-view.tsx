@@ -36,7 +36,7 @@ export function DemosView() {
 
   return (
     // The top bar is one row shorter on these pages, so pull the content up to match.
-    <div className="-mt-9 space-y-6 pt-8">
+    <div className="-mt-9 flex flex-col gap-6 pt-8 md:min-h-[calc(100dvh-5.75rem)]">
       <section>
         <Link href="/" className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground transition-colors hover:text-foreground">
           <ArrowLeft className="size-3.5" /> Back
@@ -45,8 +45,8 @@ export function DemosView() {
         <p className="mt-2 max-w-3xl text-[15px] leading-relaxed text-muted-foreground">Each one is built to show something different. Pick one to explore the whole analyzer with it.</p>
       </section>
 
-      <section>
-        <div className="grid gap-3 md:grid-cols-3">
+      <section className="flex flex-1 flex-col">
+        <div className="grid flex-1 gap-4 md:grid-cols-3">
           {DEMO_PORTFOLIOS.map((demo) => (
             <DemoCard key={demo.id} demo={demo} onPick={() => pick(demo.id)} />
           ))}
