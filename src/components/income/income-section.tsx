@@ -27,9 +27,20 @@ export function IncomeSection({ data }: { data: CategoryIncome }) {
         <Num className="text-primary">{formatCurrency(income.expected)}</Num>
         <span className="ml-2 text-[12px] font-normal text-muted-foreground">expected per year</span>
       </p>
-      <p className="mt-2 text-[12px] text-muted-foreground">
-        Low <Num className="text-foreground">{formatCurrency(income.low)}</Num> · High <Num className="text-foreground">{formatCurrency(income.high)}</Num>
-      </p>
+      <dl className="mt-3 grid grid-cols-2 gap-3 text-[12px]">
+        <div>
+          <dt className="label-caps">Low</dt>
+          <dd className="mt-1 text-base font-semibold">
+            <Num>{formatCurrency(income.low)}</Num>
+          </dd>
+        </div>
+        <div>
+          <dt className="label-caps">High</dt>
+          <dd className="mt-1 text-base font-semibold">
+            <Num>{formatCurrency(income.high)}</Num>
+          </dd>
+        </div>
+      </dl>
       <dl className="mt-3 grid grid-cols-2 gap-3 text-[12px]">
         <div>
           <dt className="label-caps">Yield</dt>

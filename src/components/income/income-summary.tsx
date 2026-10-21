@@ -8,7 +8,7 @@ function Stat({ label, children, note }: { label: string; children: React.ReactN
   return (
     <div>
       <p className="label-caps">{label}</p>
-      <div className="mt-2 text-2xl font-semibold leading-none lg:text-3xl">{children}</div>
+      <div className="mt-2 text-xl font-semibold leading-none lg:text-2xl">{children}</div>
       {note && <p className="mt-2 text-[12px] text-muted-foreground">{note}</p>}
     </div>
   );
@@ -21,16 +21,15 @@ export function IncomeSummary({ income }: { income: PortfolioIncome }) {
 
   return (
     <Panel title="Expected Annual Income">
-      <div className="grid gap-5 sm:grid-cols-3">
-        <Stat
-          label="Total expected annual income"
-          note={
-            <>
-              Low <Num className="text-foreground">{formatCurrency(total.low)}</Num> · High <Num className="text-foreground">{formatCurrency(total.high)}</Num>
-            </>
-          }
-        >
+      <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-5">
+        <Stat label="Low">
+          <Num>{formatCurrency(total.low)}</Num>
+        </Stat>
+        <Stat label="Expected annual income">
           <Num className="text-primary">{formatCurrency(total.expected)}</Num>
+        </Stat>
+        <Stat label="High">
+          <Num>{formatCurrency(total.high)}</Num>
         </Stat>
         <Stat label="Average monthly income">
           <Num>{formatCurrency(monthly)}</Num>
