@@ -129,10 +129,7 @@ export function SectorVsSp500({
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Stocks plus equity ETFs, which are split across their sectors. Portfolio weights are shares of
-            the equities that have a sector.{dataNote && ` ${dataNote}`}
-          </p>
+          {dataNote && <p className="mt-2 text-[11px] text-muted-foreground">{dataNote}</p>}
         </>
       )}
     </Panel>
