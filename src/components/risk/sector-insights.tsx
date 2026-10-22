@@ -76,9 +76,6 @@ export function SectorInsights({ rows }: { rows: SectorComparison[] }) {
           </section>
         ))}
       </div>
-      <p className="mt-3 text-[11px] text-muted-foreground">
-        Individual stocks only — broad funds are excluded.
-      </p>
     </Panel>
   );
 }
