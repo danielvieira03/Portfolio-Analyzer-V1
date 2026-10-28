@@ -1,4 +1,4 @@
-import { Coins, LayoutDashboard, ShieldAlert, Table2, type LucideIcon } from "lucide-react";
+import { Coins, LayoutDashboard, ShieldAlert, Sparkles, Table2, type LucideIcon } from "lucide-react";
 
 export interface NavItem {
   label: string;
@@ -12,6 +12,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Holdings", href: "/holdings", icon: Table2 },
   { label: "Risk Analysis", href: "/risk", icon: ShieldAlert },
   { label: "Income", href: "/income", icon: Coins },
+  { label: "Ask AI", href: "/ask", icon: Sparkles },
 ];
 
 export const APP_NAME = "Portfolio Analyzer";

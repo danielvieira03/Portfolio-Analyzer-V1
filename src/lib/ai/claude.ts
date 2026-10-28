@@ -11,7 +11,7 @@ import { extractionSchema, reviewSchema, type Extraction, type Review } from "./
 /** An error whose message is safe and useful to show to the user. */
 export class AiError extends Error {
   constructor(
-    public code: "no_key" | "auth" | "credit" | "rate_limit" | "connection" | "refused" | "too_long" | "bad_file" | "failed",
+    public code: "no_key" | "auth" | "credit" | "rate_limit" | "connection" | "refused" | "too_long" | "bad_file" | "failed" | "limit" | "empty_portfolio",
     message: string,
   ) {
     super(message);
