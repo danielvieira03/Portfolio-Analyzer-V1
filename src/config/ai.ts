@@ -23,13 +23,13 @@ export const CHAT_LIMITS = {
   /** How many of the latest chat messages are sent with each question. */
   historyMessages: 6,
   /** Questions one visitor may ask per rolling hour. */
-  questionsPerHour: 5,
+  questionsPerHour: 10,
   /** Give up waiting for Claude after this long (a question that searches the web takes longer). */
   timeoutMs: 75_000,
   /** Web searches Claude may run for one question (each reads about 13,000 tokens of results). */
   webSearchMaxUses: 2,
   /** Questions per rolling hour that may use web search (they also count toward `questionsPerHour`). After that the chat answers from the portfolio data only. */
-  webQuestionsPerHour: 3,
+  webQuestionsPerHour: 5,
   /** Largest portfolio snapshot the server accepts, in characters. */
   maxSnapshotChars: 24_000,
 } as const;
