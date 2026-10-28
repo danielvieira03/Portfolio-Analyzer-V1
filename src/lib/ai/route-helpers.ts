@@ -13,7 +13,7 @@ export function isSameOrigin(req: Request): boolean {
 
 const STATUS: Record<AiError["code"], number> = {
   no_key: 503, auth: 502, credit: 402, rate_limit: 429, connection: 502,
-  refused: 422, too_long: 422, bad_file: 422, failed: 500,
+  refused: 422, too_long: 422, bad_file: 422, failed: 500, limit: 429, empty_portfolio: 422,
 };
 
 export function errorResponse(e: unknown) {
