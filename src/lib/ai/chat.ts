@@ -29,6 +29,9 @@ export function streamChatReply(messages: ChatMessage[], snapshotJson: string, s
           {
             model: CHAT_MODEL,
             max_tokens: CHAT_LIMITS.maxReplyTokens,
+            // No thinking before the answer: with a reply cap this small it could use up all of it before any text. This is the
+            // "off" setting this model accepts ("disabled" is refused); if CHAT_MODEL is changed to a model that wants "disabled", change it here.
+            thinking: { type: "between_tools" },
             system: [
               { type: "text", text: CHAT_SYSTEM },
               { type: "text", text: chatDataBlock(snapshotJson), cache_control: { type: "ephemeral" } },
@@ -41,7 +44,7 @@ export function streamChatReply(messages: ChatMessage[], snapshotJson: string, s
           if (event.type === "content_block_delta" && event.delta.type === "text_delta") controller.enqueue(encoder.encode(event.delta.text));
         }
         const final = await stream.finalMessage();
-        console.log(`[chat] ${final.usage.input_tokens} in (+${final.usage.cache_creation_input_tokens ?? 0} cache write, ${final.usage.cache_read_input_tokens ?? 0} cache read) / ${final.usage.output_tokens} out tokens`);
+        console.log(`[chat] ${final.usage.input_tokens} in (+${final.usage.cache_creation_input_tokens ?? 0} cache write, ${final.usage.cache_read_input_tokens ?? 0} cache read) / ${final.usage.output_tokens} out tokens, stopped: ${final.stop_reason}`);
       } catch (e) {
         const message = timer.signal.aborted && !signal?.aborted ? "Claude took too long to answer. Please try again." : toAiError(e).message;
         controller.enqueue(encoder.encode(STREAM_ERROR_MARK + message));

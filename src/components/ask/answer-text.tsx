@@ -1,10 +1,12 @@
 import { Fragment } from "react";
 
-/** **bold** inside a line. */
+/** **bold** and *italic* inside a line. */
 function inline(text: string) {
-  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+  return text.split(/(\*\*[^*]+\*\*|\*[^*\s][^*]*\*)/g).map((part, i) =>
     part.startsWith("**") && part.endsWith("**") && part.length > 4 ? (
       <strong key={i} className="font-semibold text-foreground">{part.slice(2, -2)}</strong>
+    ) : part.startsWith("*") && part.endsWith("*") && part.length > 2 ? (
+      <em key={i}>{part.slice(1, -1)}</em>
     ) : (
       <Fragment key={i}>{part}</Fragment>
     ),
