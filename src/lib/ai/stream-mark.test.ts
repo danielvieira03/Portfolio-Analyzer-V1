@@ -7,7 +7,7 @@ describe("parseChatStream", () => {
   });
   it("shows searching until answer text follows the search", () => {
     expect(parseChatStream(`Let me check.${SEARCH_MARK}`)).toMatchObject({ text: "Let me check.", searching: true, usedWeb: true });
-    expect(parseChatStream(`Let me check.${SEARCH_MARK}Rates rose.`)).toMatchObject({ text: "Let me check.Rates rose.", searching: false, usedWeb: true });
+    expect(parseChatStream(`Let me check.${SEARCH_MARK}Rates rose.`)).toMatchObject({ text: "Let me check.\nRates rose.", searching: false, usedWeb: true });
   });
   it("reads the sources list and keeps only real web links", () => {
     const list = JSON.stringify([{ title: "Fed", url: "https://federalreserve.gov/a" }, { title: "Bad", url: "javascript:alert(1)" }, { url: "https://x.com/y" }]);

@@ -16,8 +16,10 @@ export const CHAT_MODEL = AI_MODEL;
 export const CHAT_LIMITS = {
   /** Longest question a visitor can send, in characters. */
   maxQuestionChars: 500,
-  /** Longest reply Claude may write, in tokens (about 500 words). */
-  maxReplyTokens: 700,
+  /** Longest reply Claude may write, in tokens (about 650 words; answers are asked to be much shorter). */
+  maxReplyTokens: 900,
+  /** Same for a question that may search the web: Claude's notes between searches count toward it too. */
+  maxReplyTokensWeb: 2000,
   /** How many of the latest chat messages are sent with each question. */
   historyMessages: 6,
   /** Questions one visitor may ask per rolling hour. */

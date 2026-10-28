@@ -49,7 +49,7 @@ export function parseChatStream(raw: string): ParsedStream {
   const lastSearch = body.lastIndexOf(SEARCH_MARK);
   const searching = lastSearch !== -1 && body.slice(lastSearch + SEARCH_MARK.length).replace(NOWEB_MARK, "").trim() === "";
   return {
-    text: body.split(SEARCH_MARK).join("").split(NOWEB_MARK).join("").trim(),
+    text: body.split(SEARCH_MARK).join("\n").split(NOWEB_MARK).join("").trim(),
     searching,
     usedWeb: lastSearch !== -1,
     webPaused: body.includes(NOWEB_MARK),

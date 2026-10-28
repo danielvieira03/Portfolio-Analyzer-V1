@@ -42,6 +42,7 @@ export function streamChatReply(messages: ChatMessage[], snapshotJson: string, o
       const sources = new Map<string, ChatSource>();
       let usage: ChatUsage = noUsage();
       let told = false;
+      let cutShort = false;
       try {
         if (!opts.allowWeb) send(NOWEB_MARK);
         const convo: Anthropic.MessageParam[] = [...messages];
@@ -49,7 +50,7 @@ export function streamChatReply(messages: ChatMessage[], snapshotJson: string, o
           const stream = client.messages.stream(
             {
               model: CHAT_MODEL,
-              max_tokens: CHAT_LIMITS.maxReplyTokens,
+              max_tokens: opts.allowWeb ? CHAT_LIMITS.maxReplyTokensWeb : CHAT_LIMITS.maxReplyTokens,
               // No thinking before the answer: with a reply cap this small it could use up all of it before any text. This is the
               // "off" setting this model accepts ("disabled" is refused); if CHAT_MODEL is changed to a model that wants "disabled", change it here.
               thinking: { type: "between_tools" },
@@ -84,6 +85,7 @@ export function streamChatReply(messages: ChatMessage[], snapshotJson: string, o
             cacheReadTokens: final.usage.cache_read_input_tokens ?? 0,
             searches: final.usage.server_tool_use?.web_search_requests ?? 0,
           });
+          cutShort = final.stop_reason === "max_tokens";
           // A paused turn is continued, unless that could pass the cost cap (then we stop and keep what was written).
           if (final.stop_reason !== "pause_turn" || estimateCost(usage, CHAT_PRICES) >= WEB_COST_CAP_USD) {
             console.log(`[chat] ${usage.inputTokens} in (+${usage.cacheWriteTokens} cache write, ${usage.cacheReadTokens} cache read) / ${usage.outputTokens} out tokens, ${usage.searches} searches, about $${estimateCost(usage, CHAT_PRICES).toFixed(3)}, stopped: ${final.stop_reason}`);
@@ -91,6 +93,7 @@ export function streamChatReply(messages: ChatMessage[], snapshotJson: string, o
           }
           convo.push({ role: "assistant", content: final.content as Anthropic.ContentBlockParam[] });
         }
+        if (cutShort) send("\n\n*(This answer was cut short. Ask a narrower question to get the rest.)*");
         if (sources.size > 0) send(SOURCES_MARK + JSON.stringify([...sources.values()].slice(0, 6)));
       } catch (e) {
         const message = timer.signal.aborted && !opts.signal?.aborted ? "Claude took too long to answer. Please try again." : toAiError(e).message;
