@@ -3,16 +3,29 @@
 
 import { CHAT_LIMITS } from "@/config/ai";
 import type { ChatMessage } from "./chat";
-import { STREAM_ERROR_MARK } from "./stream-mark";
+import { parseChatStream, type ChatSource, type ParsedStream } from "./stream-mark";
 
-/** Sends the latest messages with the snapshot and calls `onText` with the whole answer so far, as it arrives. */
-export async function streamChat(messages: ChatMessage[], snapshot: string, onText: (answerSoFar: string) => void, signal?: AbortSignal): Promise<string> {
+/** One message on the screen: what is sent to the server is only `role` and `content`; the rest is shown with an answer. */
+export interface ChatTurn extends ChatMessage {
+  /** Claude is searching the web right now. */
+  searching?: boolean;
+  /** The answer used web search. */
+  usedWeb?: boolean;
+  /** Web search was paused for this visitor, so the answer uses the portfolio data only. */
+  webPaused?: boolean;
+  sources?: ChatSource[];
+}
+
+const turnFrom = (p: ParsedStream): ChatTurn => ({ role: "assistant", content: p.text, searching: p.searching, usedWeb: p.usedWeb, webPaused: p.webPaused, sources: p.sources });
+
+/** Sends the latest messages with the snapshot and calls `onUpdate` with the whole answer so far, as it arrives. Returns the finished answer. */
+export async function streamChat(messages: ChatMessage[], snapshot: string, onUpdate: (answerSoFar: ChatTurn) => void, signal?: AbortSignal): Promise<ChatTurn> {
   let res: Response;
   try {
     res = await fetch("/api/chat", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ messages: messages.slice(-CHAT_LIMITS.historyMessages), snapshot }),
+      body: JSON.stringify({ messages: messages.slice(-CHAT_LIMITS.historyMessages).map(({ role, content }) => ({ role, content })), snapshot }),
       signal,
     });
   } catch (e) {
@@ -25,17 +38,18 @@ export async function streamChat(messages: ChatMessage[], snapshot: string, onTe
   }
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
-  let text = "";
+  let raw = "";
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
-    text += decoder.decode(value, { stream: true });
-    const cut = text.indexOf(STREAM_ERROR_MARK);
-    if (cut === -1) onText(text);
-    else throw new Error(text.slice(cut + STREAM_ERROR_MARK.length) || "Something went wrong. Please try again.");
+    raw += decoder.decode(value, { stream: true });
+    const parsed = parseChatStream(raw);
+    if (parsed.error !== null) throw new Error(parsed.error);
+    onUpdate(turnFrom(parsed));
   }
-  if (!text.trim()) throw new Error("Claude didn’t send an answer. Please try again.");
-  return text;
+  const parsed = parseChatStream(raw);
+  if (!parsed.text) throw new Error("Claude didn’t send an answer. Please try again.");
+  return { ...turnFrom(parsed), searching: false };
 }
 
 const KEY = "portfolio-analyzer:ask-ai:asked";

@@ -22,8 +22,12 @@ export const CHAT_LIMITS = {
   historyMessages: 6,
   /** Questions one visitor may ask per rolling hour. */
   questionsPerHour: 5,
-  /** Give up waiting for Claude after this long. */
-  timeoutMs: 60_000,
+  /** Give up waiting for Claude after this long (a question that searches the web takes longer). */
+  timeoutMs: 75_000,
+  /** Web searches Claude may run for one question (each reads about 13,000 tokens of results). */
+  webSearchMaxUses: 2,
+  /** Questions per rolling hour that may use web search (they also count toward `questionsPerHour`). After that the chat answers from the portfolio data only. */
+  webQuestionsPerHour: 3,
   /** Largest portfolio snapshot the server accepts, in characters. */
   maxSnapshotChars: 24_000,
 } as const;
@@ -35,3 +39,16 @@ export const EXAMPLE_QUESTIONS = [
   "How can I increase my potential income?",
   "How do I lower the duration of my portfolio?",
 ] as const;
+
+/**
+ * What one web-assisted question may cost at most, in US dollars. The server adds up the real cost after each step and stops
+ * continuing once it passes this, so a question stays inside roughly 10-20 cents.
+ */
+export const WEB_COST_CAP_USD = 0.2;
+
+/**
+ * Prices used for that estimate, in US dollars per million tokens, and per web search. These are the model's list prices as
+ * understood when this was written: CHECK THEM against docs.claude.com when you change CHAT_MODEL (a wrong price only makes
+ * the estimate and the cap less exact; `max_uses` still limits the searches).
+ */
+export const CHAT_PRICES = { inputPerMillion: 3, outputPerMillion: 15, cacheWriteFactor: 1.25, cacheReadFactor: 0.1, perSearch: 0.01 } as const;

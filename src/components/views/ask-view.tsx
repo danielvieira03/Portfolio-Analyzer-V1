@@ -12,15 +12,14 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Panel } from "@/components/shared/panel";
 import { Button } from "@/components/ui/button";
 import { CHAT_LIMITS } from "@/config/ai";
-import type { ChatMessage } from "@/lib/ai/chat";
-import { loadAsked, saveAsked, streamChat } from "@/lib/ai/chat-client";
+import { loadAsked, saveAsked, streamChat, type ChatTurn } from "@/lib/ai/chat-client";
 import { checkLimit, limitMessage } from "@/lib/ai/rate-limit";
 import { snapshotText } from "@/lib/ai/snapshot";
 
 export function AskView() {
   const state = usePortfolio();
   // The conversation lives only in this page's memory: reloading or leaving the tab clears it.
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatTurn[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastQuestion, setLastQuestion] = useState("");
@@ -39,7 +38,7 @@ export function AskView() {
   if (!state) return <LoadingPage title="Ask AI" subtitle="Ask about your portfolio" />;
   const { doc } = state;
 
-  async function ask(question: string, history: ChatMessage[]) {
+  async function ask(question: string, history: ChatTurn[]) {
     const snapshot = snapshotText(doc);
     if (!snapshot) return;
     const check = checkLimit(loadAsked(), Date.now(), CHAT_LIMITS.questionsPerHour);
@@ -48,16 +47,16 @@ export function AskView() {
       setError(limitMessage(CHAT_LIMITS.questionsPerHour));
       return;
     }
-    const conversation: ChatMessage[] = [...history, { role: "user", content: question }];
+    const conversation: ChatTurn[] = [...history, { role: "user", content: question }];
     setMessages([...conversation, { role: "assistant", content: "" }]);
     setLastQuestion(question);
     setBusy(true);
     const controller = new AbortController();
     abort.current = controller;
     try {
-      const answer = await streamChat(conversation, snapshot, (soFar) => setMessages([...conversation, { role: "assistant", content: soFar }]), controller.signal);
+      const answer = await streamChat(conversation, snapshot, (soFar) => setMessages([...conversation, soFar]), controller.signal);
       saveAsked(check.stamps);
-      setMessages([...conversation, { role: "assistant", content: answer }]);
+      setMessages([...conversation, answer]);
     } catch (e) {
       if (controller.signal.aborted) return;
       setMessages(conversation); // the question stays; the half answer is dropped
@@ -113,7 +112,7 @@ export function AskView() {
             </p>
           )}
           {messages.map((m, i) => (
-            <MessageBubble key={i} role={m.role} content={m.content} pending={busy && i === messages.length - 1} />
+            <MessageBubble key={i} turn={m} pending={busy && i === messages.length - 1} />
           ))}
           {error && (
             <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[13px] text-destructive">
@@ -130,7 +129,7 @@ export function AskView() {
         <Composer busy={busy} onSend={(q) => ask(q, messages.filter((m) => m.content).slice(-(CHAT_LIMITS.historyMessages - 1)))} />
       </Panel>
       <p className="mx-auto max-w-3xl text-center text-[11px] text-muted-foreground">
-        Analysis based on your holdings and estimated data. Not personalized investment advice.
+        Analysis based on your holdings and estimated data. Not personalized investment advice. Market information may come from the web.
       </p>
     </div>
   );

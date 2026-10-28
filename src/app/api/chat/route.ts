@@ -19,6 +19,8 @@ const bodySchema = z.object({
 // Questions asked per visitor (by IP) in the last hour. In memory only: it resets when the server restarts and each
 // server copy keeps its own, so it stops casual overuse, not a determined abuser (the app has no database).
 const asked = new Map<string, number[]>();
+// Same, for the questions that really searched the web (a stricter limit: a search costs far more than a plain answer).
+const askedWeb = new Map<string, number[]>();
 
 function visitorId(req: Request): string {
   return req.headers.get("x-forwarded-for")?.split(",")[0].trim() || req.headers.get("x-real-ip") || "unknown";
@@ -46,7 +48,13 @@ export async function POST(req: Request) {
     asked.set(id, check.stamps);
     if (asked.size > 5000) for (const [k, v] of asked) if (Date.now() - Math.max(...v) > 3_600_000) asked.delete(k);
 
-    const stream = streamChatReply(messages, body.data.snapshot, req.signal);
+    // Web search is allowed while the visitor has web questions left this hour; a question is only counted if it really searched.
+    const web = checkLimit(askedWeb.get(id) ?? [], Date.now(), CHAT_LIMITS.webQuestionsPerHour);
+    const stream = streamChatReply(messages, body.data.snapshot, {
+      allowWeb: web.allowed,
+      onWebSearch: () => askedWeb.set(id, [...(askedWeb.get(id) ?? []).filter((t) => t > Date.now() - 3_600_000), Date.now()]),
+      signal: req.signal,
+    });
     return new Response(stream, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" } });
   } catch (e) {
     return errorResponse(e);
