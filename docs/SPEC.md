@@ -13,7 +13,7 @@ It is a rebuild of an earlier plain HTML/JS version, with the emphasis on qualit
 - **Dashboard** — total value, cost basis, unrealized gain/loss and cash; allocation by asset
   class and by equity sector (stocks plus equity ETFs split across their sectors; top 7 sectors, "Unclassified" for what has no sector data, the rest grouped as "Other" with a hover
   card listing them), by fixed-income maturity and by alternatives type; top 5 holdings; and **Exposure by Country**: an SVG world map
-  (Natural Earth data, drawn with d3-geo; no images or paid map services) plus a list of countries with percentages. Countries with no
+  (Natural Earth data, drawn with d3-geo; no images or paid map services) plus a list of the top 10 countries with percentages to 2 decimals (a "See full list of countries" button under it shows all of them, and "Show top 10 only" folds it back). Countries with no
   exposure are muted grey; countries with exposure go from a faint to full amber on a square-root scale (so small exposures stay visible);
   hovering a country shows its name and share. Percentages are shares of the holdings that have a country; Equity and Fixed Income are included (ETFs and bond funds are split by their country weights), Alternatives and cash are not, and the card says so; the part with no country is shown as "Unclassified" in the small print. The map uses the 110m Natural Earth resolution, so very small countries
   (e.g. Singapore) appear in the list but are not drawn.

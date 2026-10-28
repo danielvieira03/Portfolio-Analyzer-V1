@@ -3,12 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Num } from "@/components/shared/num";
 import { Panel } from "@/components/shared/panel";
+import { Button } from "@/components/ui/button";
 import { countryName } from "@/config/countries";
 import { formatPercent } from "@/lib/format";
 import { exposureOpacity } from "@/lib/map/shade";
 import type { WorldMap } from "@/lib/map/world";
 import type { CountryExposure } from "@/lib/portfolio/country-exposure";
 import { fundDataNote, unclassifiedNote } from "@/lib/portfolio/exposure-notes";
+
+/** Countries listed beside the map until the visitor asks for the full list. */
+const COUNTRY_LIST_TOP = 10;
 
 let cachedWorld: WorldMap | null = null;
 
@@ -44,8 +48,10 @@ export function CountryExposureCard({ exposure }: { exposure: CountryExposure })
   const world = useWorld();
   const boxRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<Hover | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const rows = exposure.rows;
+  const listed = showAll ? rows : rows.slice(0, COUNTRY_LIST_TOP);
   const byCode = new Map(rows.map((r) => [r.code, r]));
   const maxWeight = rows[0]?.weight ?? 0;
   const drawn = new Set(world?.countries.map((c) => c.code).filter(Boolean));
@@ -114,7 +120,7 @@ export function CountryExposureCard({ exposure }: { exposure: CountryExposure })
                 >
                   <p className="font-medium">{hoveredName}</p>
                   <p className="num !text-left text-muted-foreground">
-                    {hoveredRow ? formatPercent(hoveredRow.weight, 1) : "No exposure"}
+                    {hoveredRow ? formatPercent(hoveredRow.weight, 2) : "No exposure"}
                   </p>
                 </div>
               )}
@@ -126,8 +132,8 @@ export function CountryExposureCard({ exposure }: { exposure: CountryExposure })
               <span>Country</span>
               <span>Share</span>
             </div>
-            <ul className="max-h-72 overflow-y-auto pr-1 xl:max-h-[22rem]">
-              {rows.map((r) => (
+            <ul className={showAll ? "max-h-72 overflow-y-auto pr-1 xl:max-h-[22rem]" : undefined}>
+              {listed.map((r) => (
                 <li key={r.code} className="flex items-center gap-2 border-b border-border/50 py-1.5 last:border-0">
                   <span
                     className="size-2.5 shrink-0 rounded-sm bg-primary"
@@ -135,10 +141,15 @@ export function CountryExposureCard({ exposure }: { exposure: CountryExposure })
                     aria-hidden="true"
                   />
                   <span className="min-w-0 flex-1 truncate">{r.name}</span>
-                  <Num className="font-medium">{formatPercent(r.weight, 1)}</Num>
+                  <Num className="font-medium">{formatPercent(r.weight, 2)}</Num>
                 </li>
               ))}
             </ul>
+            {rows.length > COUNTRY_LIST_TOP && (
+              <Button variant="link" size="sm" className="mt-1 px-0" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll}>
+                {showAll ? `Show top ${COUNTRY_LIST_TOP} only` : "See full list of countries"}
+              </Button>
+            )}
           </div>
         </div>
       )}
