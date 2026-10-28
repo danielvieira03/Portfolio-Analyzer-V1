@@ -27,3 +27,11 @@ export const CHAT_LIMITS = {
   /** Largest portfolio snapshot the server accepts, in characters. */
   maxSnapshotChars: 24_000,
 } as const;
+
+/** The clickable example questions above the Ask AI box. */
+export const EXAMPLE_QUESTIONS = [
+  "What are the main risks of my portfolio?",
+  "What should I consider trimming or adding?",
+  "How can I increase my potential income?",
+  "How do I lower the duration of my portfolio?",
+] as const;

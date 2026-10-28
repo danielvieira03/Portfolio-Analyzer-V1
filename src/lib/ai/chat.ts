@@ -3,14 +3,12 @@
 import { CHAT_LIMITS, CHAT_MODEL } from "@/config/ai";
 import { getClient, toAiError } from "./claude";
 import { CHAT_SYSTEM, chatDataBlock } from "./prompts";
+import { STREAM_ERROR_MARK } from "./stream-mark";
 
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
 }
-
-/** What follows the text in the stream when something goes wrong half way (the browser shows it as an error). */
-export const STREAM_ERROR_MARK = "\u001eERROR:";
 
 /**
  * Asks Claude and returns the reply as a stream of plain text. The rules and the portfolio data are sent as system
