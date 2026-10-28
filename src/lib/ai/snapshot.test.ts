@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SP500_SECTOR_WEIGHTS } from "@/config/sp500-sectors";
+import { FALLBACK_BENCHMARK } from "@/lib/market/benchmark";
 import { allocationByClass, compareSectors, summarize } from "@/lib/portfolio/calc";
 import { portfolioIncome } from "@/lib/portfolio/income";
 import { bondDurations, demoDoc, emptyDoc, type PortfolioDoc } from "@/lib/portfolio/ledger";
@@ -35,7 +35,7 @@ describe("buildPortfolioSnapshot", () => {
       expect(snap.income.lowAnnual).toBeCloseTo(income.total.low, 2);
       expect(snap.income.highAnnual).toBeCloseTo(income.total.high, 2);
       expect(snap.allocationByAssetClass.map((s) => s.assetClass)).toEqual(allocationByClass(doc.holdings, doc.cash).map((s) => s.assetClass));
-      const sectors = compareSectors(doc.holdings, SP500_SECTOR_WEIGHTS, doc.etfBreakdowns);
+      const sectors = compareSectors(doc.holdings, FALLBACK_BENCHMARK.weights, doc.etfBreakdowns);
       expect(snap.sectorsVsSp500.rows).toHaveLength(sectors.length);
       expect(snap.sectorsVsSp500.rows[0].sp500Pct).toBeCloseTo(sectors[0].benchmark * 100, 1);
     }
@@ -66,6 +66,14 @@ describe("buildPortfolioSnapshot", () => {
     expect(notes).toContain("No sector data for: S1");
     expect(notes).toContain("No duration for: ZZBOND");
     expect(notes).toContain("Income not available yet for: S2");
+  });
+
+  it("compares against the benchmark it is given (and says as of when)", () => {
+    const fresh = { asOf: "2030-01-02", weights: { ...FALLBACK_BENCHMARK.weights, "Information Technology": 50, Financials: 0.5 } };
+    const snap = buildPortfolioSnapshot(demoDoc("global"), fresh)!;
+    expect(snap.sectorsVsSp500.benchmarkAsOf).toBe("2030-01-02");
+    expect(snap.sectorsVsSp500.rows.find((r) => r.sector === "Information Technology")!.sp500Pct).toBe(50);
+    expect(buildPortfolioSnapshot(demoDoc("global"))!.sectorsVsSp500.benchmarkAsOf).toBe(FALLBACK_BENCHMARK.asOf);
   });
 
   it("flags a demo portfolio", () => {

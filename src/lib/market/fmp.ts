@@ -152,3 +152,13 @@ export async function fetchBreakdowns(funds: FundRequest[], now: Date = new Date
   }
   return { status: "ok", breakdowns };
 }
+
+// ---- The S&P 500 benchmark (SPY's sector weights) ----
+
+/** SPY's raw sector-weights answer, or null on any trouble (no key, limit, plan restriction, offline). One call. */
+export async function fetchBenchmarkSectors(fund: string): Promise<unknown | null> {
+  const key = process.env.FINANCIAL_MODELING_API_KEY?.trim();
+  if (!key) return null;
+  const answer = await fetchWeights("sector-weightings", fund, key);
+  return answer === "empty" || answer === "limit" || answer === "restricted" || answer === "error" ? null : answer;
+}

@@ -2,7 +2,7 @@
 // already shows. It only CALLS the shared functions (nothing is recalculated here) and rounds for size. When a new
 // analytic is added to the app, add it here too (and to snapshot.test.ts) so the assistant can talk about it.
 
-import { SP500_AS_OF, SP500_SECTOR_WEIGHTS } from "@/config/sp500-sectors";
+import { FALLBACK_BENCHMARK, type Benchmark } from "@/lib/market/benchmark";
 import { allocationByClass, compareSectors, gainLossPct, summarize, topHoldings } from "@/lib/portfolio/calc";
 import { countryExposure } from "@/lib/portfolio/country-exposure";
 import { durationType, topContributors } from "@/lib/portfolio/duration";
@@ -22,7 +22,7 @@ const pct = (fraction: number) => Math.round(fraction * 1000) / 10; // 0.1234 ->
 const years = (n: number) => Math.round(n * 10) / 10;
 
 /** The snapshot as a plain object, or null when there are no holdings (the chat then asks the visitor to add some). */
-export function buildPortfolioSnapshot(doc: PortfolioDoc) {
+export function buildPortfolioSnapshot(doc: PortfolioDoc, benchmark: Benchmark = FALLBACK_BENCHMARK) {
   const { holdings: positions, cash, etfBreakdowns } = doc;
   if (positions.length === 0) return null;
 
@@ -75,8 +75,8 @@ export function buildPortfolioSnapshot(doc: PortfolioDoc) {
     },
     sectorsVsSp500: {
       note: "Equities only (stocks plus equity ETFs split across their sectors); percentages are shares of the equities that have a sector.",
-      benchmarkAsOf: SP500_AS_OF,
-      rows: compareSectors(positions, SP500_SECTOR_WEIGHTS, etfBreakdowns).map((r) => ({ sector: r.sector, portfolioPct: pct(r.portfolio), sp500Pct: pct(r.benchmark), differencePct: pct(r.difference) })),
+      benchmarkAsOf: benchmark.asOf,
+      rows: compareSectors(positions, benchmark.weights, etfBreakdowns).map((r) => ({ sector: r.sector, portfolioPct: pct(r.portfolio), sp500Pct: pct(r.benchmark), differencePct: pct(r.difference) })),
       unclassifiedSharePct: pct(exposure.sector.unclassified.weight),
     },
     countries: {
@@ -115,7 +115,7 @@ export function buildPortfolioSnapshot(doc: PortfolioDoc) {
 export type PortfolioSnapshot = NonNullable<ReturnType<typeof buildPortfolioSnapshot>>;
 
 /** The snapshot as compact JSON text (what is sent to the server), or null for an empty portfolio. */
-export function snapshotText(doc: PortfolioDoc): string | null {
-  const snapshot = buildPortfolioSnapshot(doc);
+export function snapshotText(doc: PortfolioDoc, benchmark?: Benchmark): string | null {
+  const snapshot = buildPortfolioSnapshot(doc, benchmark);
   return snapshot ? JSON.stringify(snapshot) : null;
 }

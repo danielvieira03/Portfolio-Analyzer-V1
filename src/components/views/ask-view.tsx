@@ -6,6 +6,7 @@ import { Composer } from "@/components/ask/composer";
 import { MessageBubble } from "@/components/ask/message-bubble";
 import { DemoBadge } from "@/components/dashboard/demo-badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { useBenchmark } from "@/components/providers/use-benchmark";
 import { usePortfolio } from "@/components/providers/use-portfolio";
 import { LoadingPage } from "@/components/shared/loading-page";
 import { PageHeader } from "@/components/shared/page-header";
@@ -18,6 +19,7 @@ import { snapshotText } from "@/lib/ai/snapshot";
 
 export function AskView() {
   const state = usePortfolio();
+  const benchmark = useBenchmark();
   // The conversation lives only in this page's memory: reloading or leaving the tab clears it.
   const [messages, setMessages] = useState<ChatTurn[]>([]);
   const [busy, setBusy] = useState(false);
@@ -39,7 +41,7 @@ export function AskView() {
   const { doc } = state;
 
   async function ask(question: string, history: ChatTurn[]) {
-    const snapshot = snapshotText(doc);
+    const snapshot = snapshotText(doc, benchmark);
     if (!snapshot) return;
     const check = checkLimit(loadAsked(), Date.now(), CHAT_LIMITS.questionsPerHour);
     setError(null);
