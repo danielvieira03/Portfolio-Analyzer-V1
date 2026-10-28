@@ -27,8 +27,14 @@ export function AskView() {
   const abort = useRef<AbortController | null>(null);
   const end = useRef<HTMLDivElement>(null);
 
-  useEffect(() => end.current?.scrollIntoView({ block: "end" }), [messages, error]);
-  useEffect(() => () => abort.current?.abort(), []);
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: "end" });
+  }, [messages, error]);
+  useEffect(() => {
+    return () => {
+      abort.current?.abort();
+    };
+  }, []);
 
   if (!state) return <LoadingPage title="Ask AI" subtitle="Ask about your portfolio" />;
   const { doc } = state;
