@@ -1,6 +1,6 @@
 # Portfolio Analyzer
 
-**Version 1.7** — A dark, terminal-style web app for analyzing an investment portfolio: allocation, sector tilts
+**Version 1.8** — A dark, terminal-style web app for analyzing an investment portfolio: allocation, sector tilts
 versus the S&P 500, a risk profile, and a full holdings ledger, with automatic prices and CSV / Excel / screenshot import.
 
 Each visitor's portfolio is saved **in their own browser**: no accounts, no login, and no server database, so
@@ -65,7 +65,8 @@ one call per holding for every open tab (plus 1 to 2 calls per ETF or bond fund 
 provider, and keep the link private if you don't want strangers using your keys.
 
 ## Releases
-Releases are tagged on GitHub. The current release is **v1.7**.
+Releases are tagged on GitHub. The current release is **v1.8**.
+- **v1.8** — new Ask AI tab (after Income): a chat that answers questions about your portfolio with Claude, using the numbers the app already calculates. Replies stream in, with example questions and a Clear chat button. For outside information such as current market risks it can search the web (limited searches, an estimated cost ceiling, sources shown). Limits: 10 questions an hour, 5 of them with web search. Analysis, not personalized advice.
 - **v1.7** — the home page is now an intro with two options, each opening its own page: Choose a demo portfolio (`/demos`) or Upload your own portfolio (`/upload`: CSV or Excel, screenshot, PDF). The Income tab is simpler (one expected annual income with a range bar, share of the portfolio that earns income, no low/high clutter), and the import preview now brings each holding's latest market price instead of the price in the file.
 - **v1.6** — new Income tab: expected annual income (with a low and high range) from stocks, equity ETFs, bond funds and income-paying alternatives, a Sankey of where it comes from, average monthly income, portfolio yield and a section per category.
 - **v1.5** — the Risk Profile meter is now scored from what you hold (equity sector, each bond fund's duration, alternative type, cash) instead of the asset-class mix. Missing stock sectors, equity-ETF sector weights and bond-fund durations are filled in automatically (market data first, then Claude).
